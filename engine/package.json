@@ -1,0 +1,19 @@
+{
+  "name": "@perpify/engine",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Perpify off-chain matching engine — deterministic core, isolated margin, funding, liquidations.",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "test": "vitest run",
+    "demo": "tsx src/demo.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

@@ -1,0 +1,29 @@
+# deps
+node_modules/
+.pnpm-store/
+__pycache__/
+*.pyc
+.venv/
+
+# env & secrets — never commit
+.env
+.env.*
+!.env.example
+*.key
+keystore/
+
+# build artifacts
+out/
+cache/
+broadcast/
+dist/
+.next/
+*.tsbuildinfo
+
+# data (refetch via risk/gap/fetch_data.py)
+risk/data/*.csv
+!risk/data/.gitkeep
+
+# misc
+.DS_Store
+*.log

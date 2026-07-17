@@ -1,0 +1,14 @@
+{
+  "name": "perpify",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Perpify testnet V1 — AI-priced perpetuals venue on Base. Prices the dark, clears the reopen.",
+  "scripts": {
+    "engine:dev": "pnpm --filter @perpify/engine dev",
+    "web:dev": "pnpm --filter @perpify/web dev",
+    "test": "pnpm -r test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
