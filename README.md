@@ -27,12 +27,15 @@ milestones M0–M4.
 ## Status
 
 - **M0:** repo scaffold + architecture freeze — done.
-- **M1 (in progress):** deterministic engine core — DONE (book, isolated margin with
-  gap×tier coefficients, funding, liquidations with signed explainers, insurance-fund
-  backstop, conservation law, hash-chained events, byte-identical replay; 23 tests incl.
-  400-command fuzz). Run `cd engine && npm install && npm test && npm run demo`.
-- Next in M1: contracts v0 (Foundry) + Sepolia deploy; engine ↔ chain settlement.
-- Blocked on operator: SPY CSV (gap stats), GitHub repo, Alchemy/Basescan keys.
+- **M1a — engine core: DONE.** Book, isolated margin with gap×tier coefficients, funding,
+  liquidations with signed explainers, insurance-fund backstop, conservation law,
+  hash-chained events, byte-identical replay; 23 tests incl. 400-command fuzz.
+  Run `cd engine && npm install && npm test && npm run demo`.
+- **M1b — contracts v0: DONE.** MockUSDC, PerpVault, Settlement, RiskRegistry,
+  OracleAdapter, PVaultTranches (full waterfall + catastrophe mode); 18 tests incl.
+  150-op conservation fuzz. Run `cd contracts/harness && npm install && npm test`.
+- Next in M1: Sepolia deploy (needs faucet ETH) + engine ↔ chain settlement client.
+- Blocked on operator: SPY CSV (gap stats), deployer faucet drip.
 
 ## Principles (from the Playbook — non-negotiable)
 

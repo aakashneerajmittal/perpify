@@ -19,6 +19,7 @@ broadcast/
 dist/
 .next/
 *.tsbuildinfo
+contracts/harness/build.json
 
 # data (refetch via risk/gap/fetch_data.py)
 risk/data/*.csv
