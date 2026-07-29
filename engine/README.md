@@ -19,6 +19,16 @@ feature (fairness log + reopen replay demo).
 8. `settlement.ts` — epoch batcher → Base Sepolia (impure shell)
 9. `replay.ts` — rebuild full state from the command log; must be byte-identical
 
+## Wire layer (`src/wire/`)
+
+The engine serves the Density frontend dialect (see `docs/density-reuse-map.md`,
+harvest #1) so the M2 UI transplant is mechanical: `density.ts` pure mappers
+(ORDER_TRADE_UPDATE / ACCOUNT_UPDATE envelopes, aggregated `{bp,ap,…,b,a}` book,
+position-monitoring risk shape with live-coefficient liquidation prices), `bus.ts`
+(per-owner fan-out over the pure core), `server.ts` (the three ws endpoints, ping/pong
+heartbeat, origin allowlist). The `marketDataStream` carries a Perpify extension: `gc`,
+the live gap coefficient, rides every price frame.
+
 ## Testing bar
 
 - Property tests on book invariants (no crossed book, price-time honored, qty conservation)
