@@ -1,0 +1,38 @@
+{
+  "version": "gap-v0.1",
+  "fittedOn": "1995-01-04..2026-07-17",
+  "nSessions": 7936,
+  "rms": {
+    "extended|calm": 0.0045786,
+    "extended|crisis": 0.01635319,
+    "extended|elevated": 0.01025528,
+    "extended|normal": 0.00618733,
+    "weeknight|calm": 0.00351759,
+    "weeknight|crisis": 0.01535142,
+    "weeknight|elevated": 0.00842219,
+    "weeknight|normal": 0.00532147
+  },
+  "counts": {
+    "weeknight|calm": 2252,
+    "weeknight|normal": 2448,
+    "weeknight|elevated": 1270,
+    "weeknight|crisis": 244,
+    "extended|calm": 625,
+    "extended|normal": 679,
+    "extended|elevated": 348,
+    "extended|crisis": 70
+  },
+  "rmsRef": 0.00532147,
+  "alpha": 0.168812,
+  "regimeBoundsAnnVol": [
+    0.12,
+    0.2,
+    0.35
+  ],
+  "ewmaLambda": 0.94,
+  "shrinkK": 60,
+  "coeffFloor": 1.0,
+  "coeffCap": 2.5,
+  "precloseRampHours": 2.0,
+  "methodology": "RMS log-gap by darkType x volRegime, shrinkage K, power-law glide d^alpha"
+}
