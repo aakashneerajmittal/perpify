@@ -5,9 +5,9 @@ acted on, unless it blocks the current item. An item is done only when its done-
 
 | # | Who | Item | Done when |
 |---|-----|------|-----------|
-| 1 | Aakash (2 min) | Faucet drip: send Base Sepolia test ETH to `0xecBa1161598A7b931B43DF11b9ab163931C54427` (search "Base Sepolia faucet" — Coinbase/Alchemy) | Claude verifies balance > 0 on-chain |
+| 1 | ✅ DONE Jul 29 | ~~Faucet drip~~ — funded 0.2 ETH from Aakash's demo wallet | Verified: deployer balance 0.2 ETH |
 | 2 | Aakash (1 min) | Delete the classic GitHub token (github.com/settings/tokens) — Density audit is done | Token gone from the settings page |
-| 3 | Claude | Deploy all six contracts to Base Sepolia (public RPC, from the cloud workspace) | Six addresses live, verified reachable, recorded in `docs/deployments.md`, pushed |
+| 3 | ✅ DONE Jul 29 | ~~Deploy all six contracts to Base Sepolia~~ | Live + smoke-tested; see `docs/deployments.md`; gas 0.000026 ETH |
 | 4 | Claude | Gap model v0: expected-gap distribution → margin coefficient, calibrated on the 31y dataset, backtested; publishes signed readings on the 4h dark-period cadence | Backtest report in repo; coefficient reproducible from script; sample readings generated |
 | 5 | Claude | Engine ↔ chain: settlement client posts epoch roots to `Settlement`, risk service posts gap readings to `RiskRegistry` automatically | An epoch root and a gap reading visible on Sepolia, posted by the services, not by hand |
 | 6 | Claude | Engine speaks the Density wire protocol (ws/api layer adopts the audited message shapes) | WS serves book/orders/account in those shapes; tests green |

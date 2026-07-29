@@ -1,0 +1,15 @@
+{
+  "network": "base-sepolia",
+  "chainId": 84532,
+  "deployedAt": "2026-07-29T09:32:46.051Z",
+  "deployer": "0xecBa1161598A7b931B43DF11b9ab163931C54427",
+  "operator": "0xecBa1161598A7b931B43DF11b9ab163931C54427",
+  "contracts": {
+    "MockUSDC": "0x7eD361C00412BB32B867a46119838e40C480f2Ae",
+    "PerpVault": "0x76600D3138e0D6B3cF088b02D84f02e7F4Ad7cB2",
+    "Settlement": "0xB6703a8822AB7113EBcAa35830C7b22AE2204c43",
+    "RiskRegistry": "0xa4Db0eF215F18305d453Ed329A0Bb7CC48EADbdE",
+    "OracleAdapter": "0xBA70aD8b373924924623974a464C156945bcD5Cb",
+    "PVaultTranches": "0x4CcfF8169da1c88c22AB7660FaDA23F28f5DBEb2"
+  }
+}
