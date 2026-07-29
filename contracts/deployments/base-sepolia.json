@@ -11,5 +11,6 @@
     "RiskRegistry": "0xa4Db0eF215F18305d453Ed329A0Bb7CC48EADbdE",
     "OracleAdapter": "0xBA70aD8b373924924623974a464C156945bcD5Cb",
     "PVaultTranches": "0x4CcfF8169da1c88c22AB7660FaDA23F28f5DBEb2"
-  }
+  },
+  "deployBlock": 44774617
 }

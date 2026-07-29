@@ -9,7 +9,7 @@ acted on, unless it blocks the current item. An item is done only when its done-
 | 2 | Aakash (1 min) | Delete the classic GitHub token (github.com/settings/tokens) — Density audit is done | Token gone from the settings page |
 | 3 | ✅ DONE Jul 29 | ~~Deploy all six contracts to Base Sepolia~~ | Live + smoke-tested; see `docs/deployments.md`; gas 0.000026 ETH |
 | 4 | ✅ DONE Jul 29 | ~~Gap model v0~~ — fit + OOS backtest (`risk/gap/BACKTEST.md`) + publish pipeline; first live reading + `gap@v0.1` artifact hash posted to RiskRegistry on Base Sepolia | All three done-checks passed; 99% tail breaches 2.5% vs static 4.8%, median coeff 1.000 |
-| 5 | Claude | Engine ↔ chain: settlement client posts epoch roots to `Settlement`, risk service posts gap readings to `RiskRegistry` automatically | An epoch root and a gap reading visible on Sepolia, posted by the services, not by hand |
+| 5 | ✅ DONE Jul 29 | ~~Engine ↔ chain~~ — epoch 1 settled on Sepolia (root verified byte-identical on read-back); risk cycle service posting live readings; `docs/OPERATIONS.md` + cron lines | Both done-checks passed by service runs, zero hand-entered values |
 | 6 | Claude | Engine speaks the Density wire protocol (ws/api layer adopts the audited message shapes) | WS serves book/orders/account in those shapes; tests green |
 | 7 | Aakash (5 min) | Send the cofounder reuse-permission email (Claude drafts it as part of this item) | Cofounder replies yes in writing |
 | 8 | Claude | Maker bot (quotes around index, spread widens with gap coefficient) + taker bots | Live book on Sepolia sustained through a full weekend, unattended |
