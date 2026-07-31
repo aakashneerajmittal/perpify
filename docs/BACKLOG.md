@@ -11,7 +11,7 @@ acted on, unless it blocks the current item. An item is done only when its done-
 | 4 | ✅ DONE Jul 29 | ~~Gap model v0~~ — fit + OOS backtest (`risk/gap/BACKTEST.md`) + publish pipeline; first live reading + `gap@v0.1` artifact hash posted to RiskRegistry on Base Sepolia | All three done-checks passed; 99% tail breaches 2.5% vs static 4.8%, median coeff 1.000 |
 | 5 | ✅ DONE Jul 29 | ~~Engine ↔ chain~~ — epoch 1 settled on Sepolia (root verified byte-identical on read-back); risk cycle service posting live readings; `docs/OPERATIONS.md` + cron lines | Both done-checks passed by service runs, zero hand-entered values |
 | 6 | ✅ DONE Jul 29 | ~~Engine speaks the Density wire protocol~~ — mappers + bus + 3 ws endpoints; gap coefficient rides the price stream | 31/31 tests green incl. live-socket round trips |
-| 7 | Aakash (5 min) | Send the cofounder reuse-permission email (Claude drafts it as part of this item) | Cofounder replies yes in writing |
+| 7 | ✅ DONE Jul 29 | ~~Cofounder reuse permission~~ — written yes received (WhatsApp) | Hardening: screenshot → email-to-self for the data room |
 | 8 | Claude | Maker bot (quotes around index, spread widens with gap coefficient) + taker bots | Live book on Sepolia sustained through a full weekend, unattended |
 | 9 | Both | **M1 milestone demo**: scripted session on Sepolia — deposit → trade → weekend coefficient rises → gap prints → liquidation with signed explainer on-chain → conservation + replay checks | Aakash watches it run end-to-end; replay byte-identical. **M1 complete.** |
 | 10 | Aakash (15 min) | TradingView Charting Library license application (Claude supplies exact steps) | Application submitted (approval arrives async, needed by M2 chart work) |

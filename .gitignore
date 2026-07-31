@@ -28,3 +28,6 @@ risk/data/*.csv
 # misc
 .DS_Store
 *.log
+
+# venue runtime command logs (replayable state, not source)
+engine/logs/
