@@ -110,7 +110,6 @@ async function main() {
       },
     });
   };
-  applyRiskReading();
 
   // bots (they dispatch through the persisting wrapper so every action is replayable)
   const botBus = { dispatch, state: bus.state };
@@ -160,12 +159,17 @@ async function main() {
   every(DEFAULT_MAKER.requoteMs, () => maker.requote());
   takers.forEach((t, i) => every(3000 + i * 700, () => t.step()));
 
-  // funding hourly; risk refresh every 15 min (runs the python publisher in live mode)
-  every(3_600_000, () => dispatch({ kind: "FundingTick", market: "SPX-PERP" }));
-  every(900_000, () => {
-    if (!OFFLINE) spawnSync("python3", [join(repoRoot, "risk", "gap", "publish.py")], { timeout: 120_000 });
+  // funding hourly; risk refresh every 15 min. The publisher is LOCAL computation
+  // (no chain), so it runs in offline mode too — this is what makes the coefficient
+  // rise into the weekend whether or not we're posting to chain.
+  const refreshReading = () => {
+    const r = spawnSync("python3", [join(repoRoot, "risk", "gap", "publish.py")], { timeout: 120_000 });
+    if (r.status !== 0) console.error("[risk] publish.py failed; holding last reading", r.stderr?.toString().slice(0, 200));
     applyRiskReading();
-  });
+  };
+  refreshReading(); // fresh at boot
+  every(3_600_000, () => dispatch({ kind: "FundingTick", market: "SPX-PERP" }));
+  every(900_000, refreshReading);
 
   // daily epoch settlement in live mode
   if (chain) {
