@@ -6,6 +6,7 @@
   "description": "Perpify off-chain matching engine — deterministic core, isolated margin, funding, liquidations.",
   "scripts": {
     "dev": "tsx watch src/main.ts",
+    "venue": "tsx src/main.ts",
     "test": "vitest run",
     "demo": "tsx src/demo.ts",
     "epoch-cycle": "tsx src/run-epoch-cycle.ts",
