@@ -31,32 +31,50 @@ export interface OrderMeta {
   qty: bigint;
   filled: bigint;
   status: "NEW" | "PARTIALLY_FILLED" | "FILLED" | "CANCELED" | "REJECTED" | "EXPIRED";
+  price?: bigint; // limit price (0 for pure-market IOC) — lets the UI show open-order price
 }
 
 export function toOrderTradeUpdate(orderId: string, meta: OrderMeta, fill: Trade | null, feeUsd6: bigint): WireMessage {
+  const orderType = meta.tif === "IOC" ? "MARKET" : "LIMIT";
+  const execType = meta.status === "NEW" ? "NEW" : meta.status === "CANCELED" ? "CANCELED" : fill ? "TRADE" : meta.status;
+  const side = meta.side.toUpperCase();
   return {
     eventType: "ORDER_TRADE_UPDATE",
     orderID: orderId,
     eventData: {
-      symbol: "SPX-PERP",
-      orderID: orderId,
-      brokerOrderID: orderId, // engine IS the venue: no external broker id
-      side: meta.side.toUpperCase(),
-      orderType: meta.tif === "IOC" ? "MARKET" : "LIMIT",
-      timeInForce: meta.tif,
-      q: f8(meta.qty),
-      ap: fill ? f8(fill.price) : "0.00000000",
-      stopPrice: "0.00000000",
-      status: meta.status,
+      // Binance-style single-letter fields — the shape the Density frontend actually reads
+      // (positionsHandler/checkFor* consume s, c, i, S, X, x, L, l, ot, p).
+      s: "SPX-PERP", // symbol
+      c: orderId, // client order id (the engine order id IS the client id for UI orders)
+      i: orderId, // order id
+      S: side, // BUY / SELL
+      o: orderType, // order type
+      ot: orderType, // original order type
+      f: meta.tif, // time in force
+      q: f8(meta.qty), // original qty
+      p: meta.price !== undefined ? f8(meta.price) : "0.00000000", // order (limit) price
+      ap: fill ? f8(fill.price) : "0.00000000", // average price
+      sp: "0.00000000", // stop price
+      x: execType, // execution type
+      X: meta.status, // order status
       l: fill ? f8(fill.qty) : "0.00000000", // last filled qty
-      z: f8(meta.filled), // accumulated filled qty
-      N: "USDC",
+      z: f8(meta.filled), // cumulative filled qty
+      L: fill ? f8(fill.price) : "0.00000000", // last filled price
       n: f6(feeUsd6), // commission
+      N: "USDC", // commission asset
       T: fill ? fill.seq : 0, // engine sequence-time (deterministic venue clock)
-      t: fill ? fill.id : "",
-      m: fill ? fill.maker === meta.owner : false,
-      ps: "BOTH",
+      t: fill ? fill.id : "", // trade id
+      m: fill ? fill.maker === meta.owner : false, // is maker
       rp: "0.000000", // realized pnl per fill lands with the intake API (M2)
+      ps: "BOTH", // position side (one-way V1)
+      // verbose aliases (kept for any consumer using long names)
+      symbol: "SPX-PERP",
+      brokerOrderID: orderId, // engine IS the venue: no external broker id
+      side,
+      orderType,
+      timeInForce: meta.tif,
+      status: meta.status,
+      stopPrice: "0.00000000",
     },
   };
 }

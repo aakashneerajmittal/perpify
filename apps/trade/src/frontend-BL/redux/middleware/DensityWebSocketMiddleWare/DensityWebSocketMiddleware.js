@@ -463,6 +463,20 @@ const densitySocketMiddleware = () => {
         startApiPollingWhenStreamNotConnected(store, handleCreateMarketOrderEvent);
         break;
       }
+      // PERPIFY: order intake flows over the SAME authenticated account socket the fills
+      // arrive on. The engine replies with ORDER_TRADE_UPDATE / ACCOUNT_UPDATE (handled above).
+      case "PERPIFY_PLACE_ORDER": {
+        if (socket && socket.readyState === 1) socket.send(JSON.stringify(payload));
+        break;
+      }
+      case "PERPIFY_CANCEL_ORDER": {
+        if (socket && socket.readyState === 1) socket.send(JSON.stringify({ type: "cancel", orderId: payload?.orderId }));
+        break;
+      }
+      case "PERPIFY_MARKET_CLOSE": {
+        if (socket && socket.readyState === 1) socket.send(JSON.stringify({ type: "market_close" }));
+        break;
+      }
       default:
         return next(action);
     }

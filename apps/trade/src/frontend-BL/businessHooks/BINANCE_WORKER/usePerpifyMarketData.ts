@@ -28,6 +28,15 @@ export default function usePerpifyMarketData({ tradeScreen }: { tradeScreen?: bo
     dispatch({ type: "SET_SELECTED_SYMBOL_SUCCESS", payload: { selectedSymbol: SYMBOL } });
     dispatch({ type: "SET_ORDER_BOOK_LOADING", payload: SYMBOL }); // sets OrderBook.symbol = SPX-PERP
     dispatch({ type: "BINANCE_WS_OPENED", payload: { connecting: false, opened: true } });
+    // Default leverage for the order form's margin/cost preview (normally seeded from a REST
+    // leverage-bracket call the engine doesn't serve). Without an entry here leverageFromServer
+    // is undefined → NaN margin → "Max Buying Power --" and a permanently disabled order button.
+    dispatch({ type: "SET_LEVERAGE_POS_RISK", payload: { sym: SYMBOL, leverage: 10 } });
+    // Seed the margin type (engine V1 is isolated-only). A market fill's ORDER_TRADE_UPDATE
+    // arrives before the position's ACCOUNT_UPDATE, so createNewPosition needs this entry present
+    // up front — otherwise the new position's marginType is undefined and PositionRow crashes on
+    // marginType.toLowerCase().
+    dispatch({ type: "SET_MARGIN_TYPE", payload: { sym: SYMBOL, marginType: "ISOLATED" } });
 
     const wsBase = BASE_URL().binanceWsBase.replace(/\/marketDataStream$/, ""); // → ws://<engine>
     let closed = false;

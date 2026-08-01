@@ -95,106 +95,89 @@ const placeStrategyOrders = (orderDetails, dispatch, navigationCallback, setShow
     });
 };
 
+// PERPIFY testnet: place orders over the account WebSocket to the engine (no REST order
+// endpoint). Market = marketable IOC that crosses the book (±5% acts as a slippage cap);
+// Limit = GTC resting order. Fills, positions and balance come back over the same socket
+// as ORDER_TRADE_UPDATE / ACCOUNT_UPDATE. TP/SL bracket and stop-trigger orders are not on
+// testnet yet, so they're declined cleanly rather than silently dropped.
+export const PERPIFY_PLACE_ORDER = "PERPIFY_PLACE_ORDER";
+
+const placePerpifyOrder = (params, dispatch, setShowLoader, setOrderConfirm, navigationCallback, setOrderStatus, setOrderErrors) => {
+  const fail = (message) => {
+    setOrderStatus("failed");
+    setOrderErrors(message);
+    setShowLoader(false);
+    setOrderConfirm(false);
+    dispatch(showSnackBar({ src: ORDER_CREATION_FAIL, message, type: "failure" }));
+  };
+
+  if (params.type !== 0 && params.type !== 1) {
+    return fail("Stop & trigger orders are coming soon on the Perpify testnet.");
+  }
+
+  const side = params.side === "BUY" ? "buy" : "sell";
+  const qty = Number(params.quantity);
+  const ref = Number(params.lastTradedPrice) || Number(params.price) || 0;
+
+  let price;
+  let tif;
+  if (params.type === 0) {
+    if (!(ref > 0)) return fail("No market price yet — try again in a moment.");
+    price = side === "buy" ? ref * 1.05 : ref * 0.95; // cross the book (5% slippage cap)
+    tif = "IOC";
+  } else {
+    price = Number(params.price);
+    tif = "GTC";
+  }
+
+  if (!(qty > 0) || !(price > 0)) return fail("Enter a valid size and price.");
+
+  const clientId = `ui-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
+  dispatch({
+    type: PERPIFY_PLACE_ORDER,
+    payload: {
+      type: "place_order",
+      id: clientId,
+      symbol: params.symbol,
+      side,
+      qty,
+      price: Number(price.toFixed(2)),
+      tif,
+      reduceOnly: !!params.reduceOnly
+    }
+  });
+
+  // Optimistic: the fill / open-order / balance updates arrive over the account WS.
+  setShowLoader(false);
+  setOrderConfirm(false);
+  setOrderStatus("success");
+  navigationCallback(params.type);
+  dispatch(
+    showSnackBar({
+      src: ORDER_CREATION_SUCESS,
+      message: params.type === 0 ? "Market order sent" : "Limit order placed",
+      type: "success"
+    })
+  );
+};
+
 export const createOrder = (params, dispatch, setShowLoader, setOrderConfirm, navigationCallback, setOrderStatus, setOrderErrors) => {
   setShowLoader(true);
-  if (!params.takeProfitEnabled && !params.stopLossEnabled) {
-    const axiosWithApiServerPromise = axiosWithApiServer({
-      method: "post",
-      url: "/v1/futures/order",
-      body: JSON.stringify({ ...params, type: returnOrderType(params) }),
-      headers: JSON.stringify({ accept: "*/*" })
-    });
-    axiosWithApiServerPromise
-      .then((response) => {
-        setShowLoader(false);
-        setOrderConfirm(false);
-        setOrderStatus("success");
-        navigationCallback(params.type);
-        dispatch(
-          showSnackBar({
-            src: ORDER_CREATION_SUCESS,
-            message: "Your order has been created successfully",
-            type: "success"
-          })
-        );
-        dispatch({
-          type: DENSITY_WS_SUBSCRIBE_CREATE_ORDER,
-          payload: {
-            data: [response?.data?.order],
-            type: params.type === 0 ? "MARKET" : "LIMIT",
-            eventType: "CREATE_ORDER"
-          }
-        });
+  if (params.takeProfitEnabled || params.stopLossEnabled) {
+    // Bracket (TP/SL / OCO) orders need the engine's conditional-order support (M2).
+    setOrderStatus("failed");
+    setShowLoader(false);
+    setOrderConfirm(false);
+    dispatch(
+      showSnackBar({
+        src: ORDER_CREATION_FAIL,
+        message: "Take-profit / stop-loss brackets are coming soon on the Perpify testnet.",
+        type: "failure"
       })
-      .catch((err) => {
-        setOrderStatus("failed");
-        setOrderErrors(err.response.data.details);
-        dispatch(
-          showSnackBar({
-            src: ORDER_CREATION_FAIL,
-            message: err.response?.data.details,
-            type: "failure"
-          })
-        );
-        setShowLoader(false);
-        setOrderConfirm(false);
-      });
-  } else if (params.takeProfitEnabled && params.stopLossEnabled) {
-    const orderDetails = [];
-    orderDetails.push({
-      symbol: params.symbol,
-      type: returnOrderType(params),
-      side: params.side,
-      price: params.price,
-      reduceOnly: false,
-      quantity: params.quantity
-    });
-    if (params.stopPrice) {
-      orderDetails[0].stopPrice = params.stopPrice;
-    }
-    orderDetails.push({
-      symbol: params.symbol,
-      side: params.side === "BUY" ? "SELL" : "BUY",
-      type: "TAKE_PROFIT_MARKET",
-      quantity: String(params.quantity),
-      timeInForce: "GTE_GTC",
-      reduceOnly: true,
-      stopPrice: String(params.takeProfit)
-    });
-    orderDetails.push({
-      symbol: params.symbol,
-      side: params.side === "BUY" ? "SELL" : "BUY",
-      type: "STOP_MARKET",
-      quantity: String(params.quantity),
-      timeInForce: "GTE_GTC",
-      reduceOnly: true,
-      stopPrice: String(params.stopLoss)
-    });
-    placeStrategyOrders(orderDetails, dispatch, navigationCallback, setShowLoader, setOrderConfirm, setOrderStatus, setOrderErrors);
-  } else {
-    const orderDetails = [];
-    orderDetails.push({
-      symbol: params.symbol,
-      type: returnOrderType(params),
-      side: params.side,
-      price: params.price,
-      reduceOnly: false,
-      quantity: params.quantity
-    });
-    if (params.stopPrice) {
-      orderDetails[0].stopPrice = params.stopPrice;
-    }
-    orderDetails.push({
-      symbol: params.symbol,
-      side: params.side === "BUY" ? "SELL" : "BUY",
-      type: params.takeProfitEnabled ? "TAKE_PROFIT_MARKET" : "STOP_MARKET",
-      quantity: String(params.quantity),
-      timeInForce: "GTE_GTC",
-      reduceOnly: true,
-      stopPrice: params.takeProfitEnabled ? String(params.takeProfit) : String(params.stopLoss)
-    });
-    placeStrategyOrders(orderDetails, dispatch, navigationCallback, setShowLoader, setOrderConfirm, setOrderStatus, setOrderErrors);
+    );
+    return;
   }
+  placePerpifyOrder(params, dispatch, setShowLoader, setOrderConfirm, navigationCallback, setOrderStatus, setOrderErrors);
 };
 
 const returnOrderType = (params) => {

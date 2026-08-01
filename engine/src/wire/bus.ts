@@ -57,6 +57,7 @@ export class EngineBus {
             qty: ev.order.qty,
             filled: 0n,
             status: "NEW",
+            price: ev.order.price,
           });
           break;
         }
