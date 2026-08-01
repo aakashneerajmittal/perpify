@@ -1,6 +1,8 @@
+// PERPIFY brand accent (deck: --ac #4F8EFF). Replaces Density's yellow-green.
+// BUY/SELL keep their own green/red (SUCCESS/ERROR) — this is the neutral brand accent only.
 export const DENSITY_MAIN = {
-  main: "#EBFF25",
-  tint4: "#667D00"
+  main: "#4F8EFF",
+  tint4: "#26436F"
 };
 export const NeutralDark = {
   black: "#FFFFFF",
@@ -25,7 +27,7 @@ export const DENSITY_BACKGROUND = {
 };
 export const DENSITY_TEXT = {
   default: NeutralDark.white,
-  main: "#E2FF6F",
+  main: "#4F8EFF", // PERPIFY accent (was Density yellow-green #E2FF6F)
   primary: NeutralDark.grey6,
   secondary: NeutralDark.grey3,
   tertiary: NeutralDark.grey7,

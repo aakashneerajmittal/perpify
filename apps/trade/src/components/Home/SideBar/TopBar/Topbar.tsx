@@ -4,7 +4,7 @@ import Box from "@mui/material/Box";
 import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
-import DENSITY_LOGO from "@/assets/images/logo/Logo.svg";
+import { Logo } from "@/components/UI/Logo";
 import { useNavigate } from "react-router-dom";
 import NavigationBar from "./NavigationBar";
 
@@ -23,15 +23,8 @@ export default function Topbar() {
             backgroundColor: "background.primary"
           }}
         >
-          <Box
-            onClick={() => {
-              navigate("/");
-            }}
-            sx={{
-              cursor: "pointer"
-            }}
-          >
-            <img style={{ width: "100%", height: "100%" }} src={DENSITY_LOGO} alt="density" />
+          <Box sx={{ display: "flex", alignItems: "center", py: 0.5 }}>
+            <Logo withName={false} style={{ width: "34px", height: "34px" }} />
           </Box>
 
           <IconButton size="small" edge="start" color="inherit" aria-label="menu">
