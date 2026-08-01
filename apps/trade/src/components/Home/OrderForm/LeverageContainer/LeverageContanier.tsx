@@ -19,11 +19,20 @@ const LeverageContanier = () => {
   const leverageFromServer = useSelector((state: any) => state.positionsDirectory.leverage).find((item: { sym: any }) => item.sym === selectedSymbol.toUpperCase());
   const [leverage, setLeverage] = useState(1);
   const { state, dispatchOrderEvent } = useContext(OrderFormContext);
+  // PERPIFY: the tier-gated leverage cap from the engine (SESSION_INFO.maxLeverage).
+  // The slider maxes out here and the selected leverage is clamped to it, so a
+  // tier-A wallet (4×) never shows or submits 10× and gets rejected by the venue.
+  const engineMaxLev = useSelector((s: any) => Number(s.sessionInfo?.maxLeverage) || 0);
+  const sliderMax = engineMaxLev || state.maxLeverage || 3;
   useEffect(() => {
-    if (leverageFromServer?.leverage) {
-      setLeverage(Number(leverageFromServer?.leverage));
+    const fromServer = Number(leverageFromServer?.leverage) || 0;
+    if (fromServer) {
+      setLeverage(engineMaxLev ? Math.min(fromServer, engineMaxLev) : fromServer);
     }
-  }, [leverageFromServer?.leverage]);
+  }, [leverageFromServer?.leverage, engineMaxLev]);
+  useEffect(() => {
+    if (engineMaxLev && leverage > engineMaxLev) setLeverage(engineMaxLev);
+  }, [engineMaxLev, leverage]);
 
   const handleLeverageChange = (event: { target: any }) => {
     const value = event.target.value;
@@ -120,7 +129,7 @@ const LeverageContanier = () => {
             </Grid>
 
             <Grid item xs={12}>
-              <LeverageSlider handleLeverageChange={handleLeverageChange} leverage={leverage} maxLeverage={state.maxLeverage} confirm_leverage_change={confirm_leverage_change} />
+              <LeverageSlider handleLeverageChange={handleLeverageChange} leverage={leverage} maxLeverage={sliderMax} confirm_leverage_change={confirm_leverage_change} />
               <Typography color={"#EBB62F"} sx={{ textTransform: "capitalize" }} variant="Regular_12">
                 {state.leverageError}
               </Typography>
