@@ -8,6 +8,7 @@ import React from "react";
 import { useSelector } from "react-redux";
 import { Box, Tooltip } from "@mui/material";
 import TextView from "@/components/UI/TextView/TextView";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 
 const GapCoefficient = () => {
   const gapRaw = useSelector((state: any) => state?.BinanceStreamData?.binanceData?.["spx-perp@gapCoefficient"]);
@@ -32,7 +33,7 @@ const GapCoefficient = () => {
       <Box sx={{ minWidth: { sm: "120px", xs: "90px" } }}>
         <TextView component={"h5"} variant={"Medium_11"} color={"text.regular"} text={raised ? "Gap Coeff · pricing the dark" : "Gap Coefficient"} />
         <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.5 }}>
-          <TextView component={"p"} variant={"SemiBold_16"} style={{ color }} text={has ? gap.toFixed(2) : "--"} />
+          <TextView component={"p"} variant={"SemiBold_16"} style={{ color, fontFamily: MONO_FAMILY }} text={has ? gap.toFixed(2) : "--"} />
           {has && <TextView component={"p"} variant={"Regular_11"} style={{ color, opacity: 0.7 }} text={"×"} />}
         </Box>
       </Box>

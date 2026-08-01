@@ -16,6 +16,7 @@ import { BUTTONWRAPPERCENTRE, CONTIANER } from "@/components/CustomModals/newMod
 import { SPACE_BETWEEN } from "@/pages/UserVerification/styles";
 import TextView from "@/components/UI/TextView/TextView";
 import BasicTextFields from "@/components/UI/CustomInput/BasicTextFields";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 import CustomDivider from "@/components/UI/Divider/CustomDivider";
 import CustomButton from "@/components/UI/CustomButton/CustomButton";
 
@@ -292,7 +293,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
                 <TextView text={"Wallet Balance Used"} variant={"Medium_12"} color={"text.regular"} />
               </Grid>
               <Grid item xs={4}>
-                <TextView id="calculator-wallet-balance" text={showValuesInCalculator.current ? "--" : walletBalanceUsedAfterLeverage + " USDC "} variant={"Bold_12"} />
+                <TextView id="calculator-wallet-balance" text={showValuesInCalculator.current ? "--" : walletBalanceUsedAfterLeverage + " USDC "} variant={"Bold_12"} style={{ fontFamily: MONO_FAMILY }} />
               </Grid>
             </Grid>
             <Grid container sx={{ justifyContent: "space-between", marginBottom: "0.75rem" }}>
@@ -300,7 +301,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
                 <TextView text={"Gross P&L"} variant={"Medium_12"} color={"text.regular"} />
               </Grid>
               <Grid item xs={4}>
-                <TextView id="calculator-grosspnl" text={showValuesInCalculator.current ? "--" : grosspnl + " USDC "} variant={"Bold_12"} />
+                <TextView id="calculator-grosspnl" text={showValuesInCalculator.current ? "--" : grosspnl + " USDC "} variant={"Bold_12"} style={{ fontFamily: MONO_FAMILY }} />
               </Grid>
             </Grid>
             <CustomDivider alignment="" />
@@ -309,7 +310,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
                 <TextView text={"Net P&L " + `(as ${makerTakerToggle.split("_")[1]})`} variant={"Medium_12"} color={"text.regular"} />
               </Grid>
               <Grid item xs={4}>
-                <TextView id="calculator-netpnl" text={showValuesInCalculator.current ? "--" : netpnl + " USDC "} variant={"Bold_12"} />
+                <TextView id="calculator-netpnl" text={showValuesInCalculator.current ? "--" : netpnl + " USDC "} variant={"Bold_12"} style={{ fontFamily: MONO_FAMILY }} />
               </Grid>
             </Grid>
             <Grid container sx={{ justifyContent: "space-between", marginBottom: "0.75rem" }}>
@@ -317,7 +318,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
                 <TextView text={"ROE"} variant={"Medium_12"} color={"text.regular"} />
               </Grid>
               <Grid item xs={4}>
-                <TextView id="calculator-roe" text={showValuesInCalculator.current ? "--" : roe + " % "} variant={"Bold_12"} />
+                <TextView id="calculator-roe" text={showValuesInCalculator.current ? "--" : roe + " % "} variant={"Bold_12"} style={{ fontFamily: MONO_FAMILY }} />
               </Grid>
             </Grid>
           </Box>
@@ -335,7 +336,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
                 </Grid>
               </Grid>
               <Grid item xs={4}>
-                <TextView id="calculator-commision" text={showValuesInCalculator.current ? "--" : commission + " USDC "} variant={"Bold_12"} />
+                <TextView id="calculator-commision" text={showValuesInCalculator.current ? "--" : commission + " USDC "} variant={"Bold_12"} style={{ fontFamily: MONO_FAMILY }} />
               </Grid>
             </Grid>
             {isCalculationsExpanded && (
@@ -352,6 +353,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
                     text={showValuesInCalculator.current ? "--" : `${commissionMultiplier()} X ${contractSize} X (${entryPrice} + ${exitPrice})`}
                     color={"text.quaternary"}
                     variant={"Medium_12"}
+                    style={{ fontFamily: MONO_FAMILY }}
                   />
                 </Box>
               </Box>
@@ -362,7 +364,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
                 <TextView text={"Funding Rate:"} variant={"Medium_12"} color={"text.regular"} />
               </Grid>
               <Grid item xs={5}>
-                <TextView id="calculator-funding-rate" text={showValuesInCalculator.current ? "--" : fundingRate} variant={"Bold_12"} color={"text.regular"} />
+                <TextView id="calculator-funding-rate" text={showValuesInCalculator.current ? "--" : fundingRate} variant={"Bold_12"} color={"text.regular"} style={{ fontFamily: MONO_FAMILY }} />
               </Grid>
             </Grid>
             <TextView
@@ -386,7 +388,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
                 <TextView text={"Liquidation Price"} variant={"Medium_12"} color={"text.regular"} />
               </Grid>
               <Grid item xs={4}>
-                <TextView id="calculator-liquidation-price" text={showValuesInCalculator.current ? "--" : liquidationPrice ? liquidationPrice + " USDC " : "--"} variant={"Bold_12"} />
+                <TextView id="calculator-liquidation-price" text={showValuesInCalculator.current ? "--" : liquidationPrice ? liquidationPrice + " USDC " : "--"} variant={"Bold_12"} style={{ fontFamily: MONO_FAMILY }} />
               </Grid>
             </Grid>
             <Grid container sx={{ justifyContent: "space-between", marginBottom: "0.75rem" }}>
@@ -394,7 +396,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
                 <TextView text={"Breakeven Price " + `(as ${makerTakerToggle.split("_")[1]})`} variant={"Medium_12"} color={"text.regular"} />
               </Grid>
               <Grid item xs={4}>
-                <TextView id="calculator-break-even" text={showValuesInCalculator.current ? "--" : breakevenPrice + " USDC "} variant={"Bold_12"} />
+                <TextView id="calculator-break-even" text={showValuesInCalculator.current ? "--" : breakevenPrice + " USDC "} variant={"Bold_12"} style={{ fontFamily: MONO_FAMILY }} />
               </Grid>
             </Grid>
           </Box>
@@ -615,7 +617,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
                 <Grid item xs={2} sx={{ marginRight: "1rem" }}>
                   <BasicTextFields
                     id="calculator-leverage"
-                    inputProps={{ style: { textAlign: "center" } }}
+                    inputProps={{ style: { textAlign: "center", fontFamily: MONO_FAMILY } }}
                     value={leverage + "x"}
                     styles={{ textAlign: "center" }}
                     onChange={(event: any) => {
@@ -642,6 +644,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
                   placeholder={"0.00"}
                   onChange={(e) => handlePricePrecisionForEntryPrice(e.target.value)}
                   label={"Entry Price"}
+                  inputProps={{ style: { fontFamily: MONO_FAMILY } }}
                   InputProps={{
                     endAdornment: (
                       <InputAdornment position="end">
@@ -664,6 +667,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
                     placeholder={"0.00"}
                     onChange={(e) => handlePricePrecisionForExitPrice(e.target.value)}
                     label={"Exit Price"}
+                    inputProps={{ style: { fontFamily: MONO_FAMILY } }}
                     InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">
@@ -686,6 +690,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
                     id="calculator-contract-size"
                     placeholder={"0.00"}
                     onChange={(e) => handleQuantityPrecision(e.target.value)}
+                    inputProps={{ style: { fontFamily: MONO_FAMILY } }}
                     label={`Size In Contract (${selectedSymbolFromCalculator?.split("USDT")[0]})`}
                     InputProps={{
                       endAdornment: (
@@ -714,6 +719,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
                         placeholder={"0.00"}
                         onChange={(e) => setWalletBalanceUsed(e.target.value)}
                         label={"Wallet Balance In USDC"}
+                        inputProps={{ style: { fontFamily: MONO_FAMILY } }}
                       />
                     </Box>
                     <TextView text={"Note: Does not account for potential impact of other open positions."} variant={"Medium_10"} color={"text.regular"} />
@@ -834,7 +840,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
                       <TextView variant={"Regular_12"} text={"Maker:"} color={"text.quaternary"} />
                     </Grid>
                     <Grid item sx={{ marginLeft: "0.25rem" }}>
-                      <TextView variant={"SemiBold_12"} text={"0.02%"} />
+                      <TextView variant={"SemiBold_12"} text={"0.02%"} style={{ fontFamily: MONO_FAMILY }} />
                     </Grid>
                     <Grid item sx={{ marginLeft: "0.25rem", marginRight: "0.25rem" }}>
                       <TextView variant={"Regular_12"} text={"|"} color={"text.quaternary"} />
@@ -843,7 +849,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
                       <TextView variant={"Regular_12"} text={"Taker:"} />
                     </Grid>
                     <Grid item sx={{ marginLeft: "0.25rem" }}>
-                      <TextView variant={"SemiBold_12"} text={"0.05%"} />
+                      <TextView variant={"SemiBold_12"} text={"0.05%"} style={{ fontFamily: MONO_FAMILY }} />
                     </Grid>
                   </Grid>
                   <Box sx={{ marginTop: "0.5rem", marginBottom: "0.5rem" }}>

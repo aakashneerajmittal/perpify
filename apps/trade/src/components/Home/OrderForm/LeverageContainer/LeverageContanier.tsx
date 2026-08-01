@@ -10,6 +10,7 @@ import BalanceLabel from "../BalanceLabel";
 import OrderFormContext from "../OrderFormNewWrapper";
 import LeverageSlider from "./LeverageSlider";
 import MaximumBuyingPower from "./MaximumBuyingPower";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 
 const LeverageContanier = () => {
   const dispatch = useDispatch();
@@ -77,7 +78,7 @@ const LeverageContanier = () => {
               placement="top"
               title={<TextView text={LeverageToolTip} />}
             >
-              <Typography variant="Medium_12" textAlign={"center"} component={"h6"}>
+              <Typography variant="Medium_12" textAlign={"center"} component={"h6"} sx={{ fontFamily: MONO_FAMILY }}>
                 {leverage}
                 <Typography variant="Regular_10" component={"span"}>
                   {" x"}

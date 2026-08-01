@@ -1,6 +1,7 @@
 import React, { memo } from "react";
 import { useSelector } from "react-redux";
 import TextView from "@/components/UI/TextView/TextView";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 import PropTypes from "prop-types";
 interface MarkPriceProps {
   symbolPricePrecision: number;
@@ -12,7 +13,7 @@ interface MarkPriceProps {
 
 const MarkPrice = ({ symbolPricePrecision, setDecimalPrecision, variant, symbol, styles }: MarkPriceProps) => {
   const markPriceSnapshot = useSelector((state: { BinanceStreamData: { binanceData: any } }) => state.BinanceStreamData.binanceData?.[`${symbol?.toLowerCase()}@markPrice@1s`]);
-  return <TextView id={"market-seg-mark-price"} variant={variant} component="p" style={{ ...styles }} text={String(setDecimalPrecision(markPriceSnapshot, symbolPricePrecision))} />;
+  return <TextView id={"market-seg-mark-price"} variant={variant} component="p" style={{ ...styles, fontFamily: MONO_FAMILY }} text={String(setDecimalPrecision(markPriceSnapshot, symbolPricePrecision))} />;
 };
 
 MarkPrice.propTypes = {

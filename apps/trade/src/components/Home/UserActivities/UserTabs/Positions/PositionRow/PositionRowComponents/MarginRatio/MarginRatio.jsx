@@ -2,6 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import useMarginRatio from "./useMarginRatio";
 import TextView from "@/components/UI/TextView/TextView";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 
 function MarginRatio({ symbol }) {
   const { marginRatio } = useMarginRatio({
@@ -21,6 +22,7 @@ function MarginRatio({ symbol }) {
       variant="medium_12_500"
       component={"p"}
       style={{
+        fontFamily: MONO_FAMILY,
         color: marginRatio > 60 ? "text.error" : marginRatio < 40 ? "text.success" : "#ec9719"
       }}
       text={fallbackForNaN(marginRatio)}

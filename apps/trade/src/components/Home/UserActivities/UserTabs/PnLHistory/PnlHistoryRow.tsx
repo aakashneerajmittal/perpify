@@ -5,6 +5,7 @@ import TextView from "@/components/UI/TextView/TextView";
 import PnLOrderSummaryModal from "@/components/CustomModals/newModal/PnLOrderSummaryModal";
 import { FETCH_TRADES } from "@/frontend-api-service/Api/PnLHistory/PnLHistory";
 import { SymbolWrapper } from "@/components/UI/SymbolWrapper/SymbolWrapper";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 
 const options: Object = {
   year: "numeric",
@@ -49,7 +50,7 @@ const PnlHistoryRow = ({ hideTradingFee, rowData, index }: { rowData: any; index
           {DataCharge?.Symbol ? <SymbolWrapper symbol={DataCharge?.Symbol} /> : <TextView variant="medium_12_500">---</TextView>}
         </Grid>
         <Grid item xs={0.9}>
-          <TextView component={"p"} variant="medium_12_500">
+          <TextView component={"p"} variant="medium_12_500" style={{ fontFamily: MONO_FAMILY }}>
             {fee[0] + " " + fee[1]}
           </TextView>
         </Grid>
@@ -72,7 +73,7 @@ const PnlHistoryRow = ({ hideTradingFee, rowData, index }: { rowData: any; index
         </Grid>
         <Grid item xs={1}></Grid>
         <Grid item xs={1}>
-          <TextView style={{ pt: "auto", mr: "2rem" }} variant="medium_12_500" color={DataCharge?.Amount > 0 ? "text.success" : "text.error"}>
+          <TextView style={{ pt: "auto", mr: "2rem", fontFamily: MONO_FAMILY }} variant="medium_12_500" color={DataCharge?.Amount > 0 ? "text.success" : "text.error"}>
             {DataCharge?.Amount?.toFixed(4)}
           </TextView>
         </Grid>
@@ -109,24 +110,24 @@ const PnlHistoryRow = ({ hideTradingFee, rowData, index }: { rowData: any; index
         </Grid>
         <Grid item xs={1}>
           <TextView
-            style={{ leterSpacing: "0.5px" }}
+            style={{ leterSpacing: "0.5px", fontFamily: MONO_FAMILY }}
             text={(Number(DataPnl?.ExecutedQty.toFixed(5)) * Number(DataPnl?.EntryPrice)).toFixed(2) + " USDT"}
             component={"p"}
             variant="medium_12_500"
             id="PnLHistory-QtyInUsdt"
           />
-          <TextView style={{ leterSpacing: "0.5px" }} component={"p"} variant="medium_12_500" color={"text.secondary"} id="PnLHistory-Qty">
+          <TextView style={{ leterSpacing: "0.5px", fontFamily: MONO_FAMILY }} component={"p"} variant="medium_12_500" color={"text.secondary"} id="PnLHistory-Qty">
             {setDecimalPrecision(DataPnl?.ExecutedQty, symbolQuantityPrecision)} {DataPnl?.Symbol?.toUpperCase().replace("USDT", "")}
           </TextView>
         </Grid>
 
         <Grid item xs={1.5}>
-          <TextView style={{ leterSpacing: "0.5px" }} variant="medium_12_500" id="PnLHistory-EntryPrice">
+          <TextView style={{ leterSpacing: "0.5px", fontFamily: MONO_FAMILY }} variant="medium_12_500" id="PnLHistory-EntryPrice">
             {setDecimalPrecision(DataPnl?.EntryPrice?.toString(), symbolPricePrecision)}
           </TextView>
         </Grid>
         <Grid item xs={1}>
-          <TextView style={{ leterSpacing: "0.5px" }} variant="medium_12_500" id="PnLHistory-ExitPrice">
+          <TextView style={{ leterSpacing: "0.5px", fontFamily: MONO_FAMILY }} variant="medium_12_500" id="PnLHistory-ExitPrice">
             {setDecimalPrecision(DataPnl?.ExitPrice?.toString(), symbolPricePrecision)}
           </TextView>
         </Grid>
@@ -148,7 +149,7 @@ const PnlHistoryRow = ({ hideTradingFee, rowData, index }: { rowData: any; index
         </Grid>
         <Grid item xs={1.2}>
           <TextView
-            style={{ leterSpacing: "0.5px" }}
+            style={{ leterSpacing: "0.5px", fontFamily: MONO_FAMILY }}
             variant="medium_12_500"
             color={DataPnl?.GrossPnl > 0 ? "text.success" : DataPnl?.GrossPnl === 0 ? "text.white" : "text.error"}
             id="PnLHistory-realizePnL"
@@ -203,7 +204,8 @@ const PnlHistoryRow = ({ hideTradingFee, rowData, index }: { rowData: any; index
                   "&:hover": {
                     color: "text.main"
                   },
-                  letterSpacing: "0.5px"
+                  letterSpacing: "0.5px",
+                  fontFamily: MONO_FAMILY
                 }}
               >
                 {DataPnl?.Fee?.toFixed(4)}

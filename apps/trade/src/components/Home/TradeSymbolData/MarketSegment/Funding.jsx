@@ -3,6 +3,7 @@ import { PropTypes } from "prop-types";
 import { useSelector } from "react-redux";
 import { Typography } from "@mui/material";
 import moment from "moment";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 
 const Funding = ({ symbol, styles, contextListner }) => {
   // const setMarkPrice = useSelector(
@@ -70,7 +71,7 @@ const Funding = ({ symbol, styles, contextListner }) => {
   }, [symbol, markPriceSnapshot]);
 
   return (
-    <Typography component="h5" variant={"Medium_12"}>
+    <Typography component="h5" variant={"Medium_12"} sx={{ fontFamily: MONO_FAMILY }}>
       {fundingRate}
     </Typography>
   );

@@ -17,6 +17,7 @@ import GenerateSignalConfirmation from "./GenerateSignalConfirmation";
 import { WalletBalanceUsedTooltip } from "@/assets/strings/tooltip.string";
 import TextView from "../../UI/TextView/TextView";
 import { SymbolPrecisionHelper } from "@/helpers";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 import { useSelector } from "react-redux";
 import ShareOrderFormModal from "./ShareOrderFormModal";
 import { recordCleverTapEvent } from "@/utils/recordCleverTapEvent";
@@ -106,7 +107,7 @@ const OrderformSubmit = () => {
                     <Typography component={"h6"} variant="Medium_12" color={"text.quaternary"}>
                       {"Wallet Balance Used"}
                     </Typography>
-                    <Typography component={"h6"} variant="Medium_12">
+                    <Typography component={"h6"} variant="Medium_12" sx={{ fontFamily: MONO_FAMILY }}>
                       {setDecimalPrecision(state.costValue, 2)}
                       <Typography ml={0.5} variant="Medium_12" color={"text.regular"}>
                         {"USDC"}

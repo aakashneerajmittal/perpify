@@ -9,6 +9,7 @@ import {
 } from "@/frontend-BL/redux/constants/Constants";
 import { SymbolPrecisionHelper } from "@/helpers";
 import TextView from "@/components/UI/TextView/TextView";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 interface PositionPnLProps {
   symbol: string;
   isRoE: boolean;
@@ -104,6 +105,7 @@ const PositionPnL = ({ symbol, variant, posAmt, entryPrice, marginType }: Positi
             variant={variant}
             style={{
               textAlign: "left",
+              fontFamily: MONO_FAMILY,
               color: Number(showPNL.unRealisedPnl) > 0 ? "text.success" : Number(showPNL.unRealisedPnl) === 0 ? "text.primary" : showPNL.unRealisedPnl === "--" ? "text.primary" : "text.error"
             }}
             text={showPNL.unRealisedPnl}
@@ -115,6 +117,7 @@ const PositionPnL = ({ symbol, variant, posAmt, entryPrice, marginType }: Positi
             variant={"Medium_11"}
             style={{
               textAlign: "left",
+              fontFamily: MONO_FAMILY,
               color: Number(showPNL.unRealisedPnl) > 0 ? "text.success" : Number(showPNL.unRealisedPnl) === 0 ? "text.primary" : showPNL.unRealisedPnl === "--" ? "text.primary" : "text.error"
             }}
             text={`${showPNL.roe} %`}

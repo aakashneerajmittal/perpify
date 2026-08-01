@@ -2,6 +2,7 @@ import React from "react";
 import { Grid, Typography } from "@mui/material";
 import { ORDERFORM_CONSTANTS } from "../../../../frontend-BL/businessHooks/ORDER_FORM/Constants/Orderform_const";
 import { numberWithCommas } from "@/helpers/commaHelper";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 
 import { useSelector } from "react-redux";
 
@@ -16,7 +17,7 @@ const MaximumBuyingPower = ({ id, leverage, alignment }: { id: string; leverage:
         </Typography>
       </Grid>
       <Grid xs={alignment === "vertical" ? 12 : 6} item display={"flex"} justifyContent={alignment !== "vertical" && "right"}>
-        <Typography id="orderForm-maxBuyingPower" variant={alignment === "vertical" ? "Medium_12" : "Medium_11"} component={"h6"}>
+        <Typography id="orderForm-maxBuyingPower" variant={alignment === "vertical" ? "Medium_12" : "Medium_11"} component={"h6"} sx={{ fontFamily: MONO_FAMILY }}>
           {numberWithCommas(Math.trunc(leverage * availableBalance * 100) / 100) + " "}
           <Typography component={"span"} variant={alignment === "vertical" ? "Medium_11" : "Medium_10"}>
             {"USDC"}

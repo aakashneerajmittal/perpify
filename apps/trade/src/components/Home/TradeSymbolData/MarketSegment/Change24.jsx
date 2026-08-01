@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { PropTypes } from "prop-types";
 import { Typography } from "@mui/material";
 import { useSelector } from "react-redux";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 const COLOR_INDICATOR = {
   green: "#28b67e",
   red: "#f46251"
@@ -80,7 +81,7 @@ const DayLow = ({
 
   return (
     // <Typography component={"p"} sx={styles}>
-    <Typography variant={"Medium_12"} component={"h5"} sx={{ ...styles, color: changemarketSegment?.indicator ?? "#2FDAAF" }}>
+    <Typography variant={"Medium_12"} component={"h5"} sx={{ ...styles, color: changemarketSegment?.indicator ?? "#2FDAAF", fontFamily: MONO_FAMILY }}>
       {/* {changemarketSegment?.priceChange ?? "--"} */}
       {/* <span style={{ color: "#A9A9A9" }}>{" / "}</span>{" "} */}
       {changemarketSegment?.percentageChange !== undefined ? changemarketSegment?.percentageChange + "%" : "--"}

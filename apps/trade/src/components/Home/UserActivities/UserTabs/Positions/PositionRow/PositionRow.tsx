@@ -23,6 +23,7 @@ import ClosePosition from "./PositionRowComponents/ClosePosition/ClosePosition";
 import { getCurrencyUrl } from "@/helpers/CurrencyLogo";
 import MarkPrice from "@/components/Home/TradeSymbolData/MarketSegment/MarkPrice";
 import TextView from "@/components/UI/TextView/TextView";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 
 import SharePositionCell from "./PositionRowComponents/SharePositionCell/SharePositionCell";
 interface PositionRowProps {
@@ -115,10 +116,10 @@ const PositionRow = ({
       </Grid>
 
       <Grid xs={1.2} item textAlign={"center"}>
-        <Typography id="position-size-Contract" textAlign={"left"} component={"p"} variant="medium_12_500">
+        <Typography id="position-size-Contract" textAlign={"left"} component={"p"} variant="medium_12_500" sx={{ fontFamily: MONO_FAMILY }}>
           {setDecimalPrecision(String(Math.abs(Number(posAmt))), symbolQuantityPrecision) ?? "--"} {symbol.replace("USDT", "").toUpperCase()}
         </Typography>
-        <Typography textAlign={"left"} id="position-size-Usdt" variant="medium_12_500" component={"p"} color={"text.regular"}>
+        <Typography textAlign={"left"} id="position-size-Usdt" variant="medium_12_500" component={"p"} color={"text.regular"} sx={{ fontFamily: MONO_FAMILY }}>
           {setDecimalPrecision(String(Math.abs(Number(posAmt) * Number(entryPrice))), 2)}
           {" USDC"}
         </Typography>
@@ -127,10 +128,10 @@ const PositionRow = ({
         <MarkPrice symbolPricePrecision={symbolPricePrecision} variant="medium_12_500" setDecimalPrecision={setDecimalPrecision} symbol={symbol} styles={{}} />
       </Grid>
       <Grid xs={1} item>
-        <TextView id="position-entryPrice" textAlign={"left"} component={"p"} text={setDecimalPrecision(String(entryPrice), symbolPricePrecision)} variant="medium_12_500" />
+        <TextView id="position-entryPrice" textAlign={"left"} component={"p"} text={setDecimalPrecision(String(entryPrice), symbolPricePrecision)} variant="medium_12_500" style={{ fontFamily: MONO_FAMILY }} />
       </Grid>
       <Grid xs={1} item>
-        <TextView textAlign={"left"} color={"text.regular"} component={"p"} id="position-liquidationPrice" variant="medium_12_500">
+        <TextView textAlign={"left"} color={"text.regular"} component={"p"} id="position-liquidationPrice" variant="medium_12_500" style={{ fontFamily: MONO_FAMILY }}>
           <LiquidationPrice symbol={symbol} />
         </TextView>
       </Grid>

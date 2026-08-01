@@ -1,6 +1,7 @@
 import React from "react";
 import { Box } from "@mui/material";
 import TextView from "@/components/UI/TextView/TextView";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 import { useSelector } from "react-redux";
 import PropTypes from "prop-types";
 interface OrderBookRowProps {
@@ -24,7 +25,7 @@ const OrderBookRow = ({ setDecimalPrecision, Max, rowType, symbolQuantityPrecisi
       }}
     >
       <TextView
-        style={{ flex: 1 }}
+        style={{ flex: 1, fontFamily: MONO_FAMILY }}
         component={"h4"}
         variant="SemiBold_11"
         color={rowType === "BID" ? "text.success" : "text.error"}
@@ -32,7 +33,7 @@ const OrderBookRow = ({ setDecimalPrecision, Max, rowType, symbolQuantityPrecisi
       />
 
       <TextView
-        style={{ flex: 1 }}
+        style={{ flex: 1, fontFamily: MONO_FAMILY }}
         component={"h4"}
         textAlign={"center"}
         variant="Regular_11"
@@ -40,7 +41,7 @@ const OrderBookRow = ({ setDecimalPrecision, Max, rowType, symbolQuantityPrecisi
       />
 
       <TextView
-        style={{ flex: 1 }}
+        style={{ flex: 1, fontFamily: MONO_FAMILY }}
         component={"h4"}
         textAlign={"end"}
         variant="Regular_11"

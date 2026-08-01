@@ -2,6 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import { InputAdornment, Typography } from "@mui/material";
 import BasicTextFields from "@/components/UI/CustomInput/BasicTextFields";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 const TakeProfit = ({
   TakeProfitStopLossEventHook,
   bg,
@@ -33,7 +34,8 @@ const TakeProfit = ({
         inputProps={{
           // Optionally limit the input length
           pattern: ".[0-9]{1,2}", // Pattern for browsers that support HTML5 validation
-          title: "Please enter a valid number (up to 2 decimal places)" // Title for HTML5 validation
+          title: "Please enter a valid number (up to 2 decimal places)", // Title for HTML5 validation
+          style: { fontFamily: MONO_FAMILY }
         }}
         InputProps={{
           endAdornment: (
@@ -56,7 +58,7 @@ const TakeProfit = ({
       {estimateProfitForTakeProfit.length > 0 && !takeProfitValidationError.length > 0 && (
         <Typography variant="Regular_10" color={"text.secondary"}>
           {dropDownValueForStoploss === "amount" ? "Take Profit Price: " : "Est Profit: "}
-          <Typography variant="SemiBold_11" color="text.success">
+          <Typography variant="SemiBold_11" color="text.success" sx={{ fontFamily: MONO_FAMILY }}>
             {estimateProfitForTakeProfit}
             {" USDT"}
           </Typography>

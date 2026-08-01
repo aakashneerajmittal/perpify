@@ -10,6 +10,7 @@ import { useSelector, useDispatch } from "react-redux";
 import ToggleGroup from "@/components/UI/ToggleGroup/ToggleGroup";
 import TextView from "@/components/UI/TextView/TextView";
 import { SymbolPrecisionHelper } from "@/helpers";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 const QuantityField = ({ quantityFieldHook }: { quantityFieldHook: any }) => {
   const dispatch = useDispatch();
   const [open, setOpen] = React.useState(false);
@@ -107,7 +108,8 @@ const QuantityField = ({ quantityFieldHook }: { quantityFieldHook: any }) => {
                   inputProps={{
                     // Optionally limit the input length
                     pattern: ".[0-9]{1,2}", // Pattern for browsers that support HTML5 validation
-                    title: "Please enter a valid number (up to 2 decimal places)" // Title for HTML5 validation
+                    title: "Please enter a valid number (up to 2 decimal places)", // Title for HTML5 validation
+                    style: { fontFamily: MONO_FAMILY }
                   }}
                   disabled={IsSizeFieldDisabled(OrderType)}
                   onChange={quantityType === "USDT" ? handleQuantityChange : handleSizeInContractAssetChange}

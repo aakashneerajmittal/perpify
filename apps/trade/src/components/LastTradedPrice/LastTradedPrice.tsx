@@ -3,6 +3,7 @@ import React, { useMemo, memo } from "react";
 import { useSelector } from "react-redux";
 // import { SetAggTradeStatus } from "@/frontend-BL/redux/actions/User/SetAggTradeStatus.ac";
 import TextView from "../UI/TextView/TextView";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 interface lastTradedPriceProps {
   arrow?: boolean;
   contextListner: string;
@@ -63,7 +64,7 @@ const lastTradedPrice: React.FC<lastTradedPriceProps> = ({ arrow, symbolPricePre
         placement="bottom"
         title={<TextView text={"Last Traded Price (USDC)"} />}
       >
-        <TextView id={id || ""} component={"span"} variant={variant} color={getLastPriceColor} text={convertToPrecisionValueForPrice(snapltp, symbolPricePrecision)} />
+        <TextView id={id || ""} component={"span"} variant={variant} color={getLastPriceColor} style={{ fontFamily: MONO_FAMILY }} text={convertToPrecisionValueForPrice(snapltp, symbolPricePrecision)} />
         {arrow && (
           <TextView style={{ ml: 1 }} variant={"SemiBold_16"} color={getLastPriceColor} component={"span"}>
             {getArrowBasedOnLastPrice}

@@ -2,6 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import { InputAdornment, Typography } from "@mui/material";
 import BasicTextFields from "@/components/UI/CustomInput/BasicTextFields";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 const StopLoss = ({
   TakeProfitStopLossEventHook,
   bg,
@@ -30,6 +31,7 @@ const StopLoss = ({
         placeholder={"0.00"}
         value={stopLoss}
         onChange={handleStopLoss}
+        inputProps={{ style: { fontFamily: MONO_FAMILY } }}
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
@@ -51,7 +53,7 @@ const StopLoss = ({
         <Typography variant="Regular_10" color={"text.secondary"}>
           {dropDownValueForStoploss === "amount" ? "Stop Loss Price: " : "Est Loss: "}
 
-          <Typography variant="SemiBold_11" color="text.error">
+          <Typography variant="SemiBold_11" color="text.error" sx={{ fontFamily: MONO_FAMILY }}>
             {estimateProfitForStopLoss}
             {" USDT"}
           </Typography>

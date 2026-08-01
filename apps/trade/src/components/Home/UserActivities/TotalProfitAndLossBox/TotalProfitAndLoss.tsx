@@ -1,4 +1,5 @@
 import TextView from "@/components/UI/TextView/TextView";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 import React, { useMemo } from "react";
 import { useSelector } from "react-redux";
 interface Props {
@@ -68,6 +69,7 @@ export const TotalProfitAndLoss = ({ variant }: Props) => {
           component="span"
           variant={variant ?? "SemiBold_14"}
           style={{
+            fontFamily: MONO_FAMILY,
             color: Number(showPNL.unrelealizedPnl) > 0 ? "text.success" : Number(showPNL.unrelealizedPnl) === 0 ? "text.primary" : showPNL.unrelealizedPnl === "--" ? "text.primary" : "text.error"
           }}
           text={showPNL?.unrelealizedPnl?.toFixed(4)}
@@ -75,6 +77,7 @@ export const TotalProfitAndLoss = ({ variant }: Props) => {
           <TextView
             variant={"Medium_12"}
             style={{
+              fontFamily: MONO_FAMILY,
               color: Number(showPNL.unrelealizedPnl) > 0 ? "text.success" : Number(showPNL.unrelealizedPnl) === 0 ? "text.primary" : showPNL.unrelealizedPnl === "--" ? "text.primary" : "text.error"
             }}
           >

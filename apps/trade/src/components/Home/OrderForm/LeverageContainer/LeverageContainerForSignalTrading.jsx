@@ -8,6 +8,7 @@ import BalanceLabel from "../BalanceLabel";
 import OrderFormContext from "../OrderFormNewWrapper";
 import LeverageSlider from "./LeverageSlider";
 import MaximumBuyingPower from "./MaximumBuyingPower";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 
 const LeverageContanier = () => {
   const selectedSymbol = useSelector((state) => state.selectSymbol.selectedSymbol);
@@ -44,7 +45,7 @@ const LeverageContanier = () => {
       >
         <Grid container justifyContent={"space-between"} alignItems={"center"}>
           <Grid item xs={12}>
-            <Typography variant="Medium_12" textAlign={"center"} component={"h6"}>
+            <Typography variant="Medium_12" textAlign={"center"} component={"h6"} sx={{ fontFamily: MONO_FAMILY }}>
               {state.leverageForSignalTrading}
               <Typography variant="Regular_10" id="leverage-value" component={"span"}>
                 {" x"}

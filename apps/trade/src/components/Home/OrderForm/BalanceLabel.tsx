@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Box, Typography, Tooltip } from "@mui/material";
 import { numberWithCommas } from "@/helpers/commaHelper";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 import AddBoxIcon from "@mui/icons-material/AddBox";
 import { ORDERFORM_CONSTANTS } from "../../../frontend-BL/businessHooks/ORDER_FORM/Constants/Orderform_const";
 import { useNavigate } from "react-router-dom";
@@ -24,7 +25,7 @@ const BalanceLabel = () => {
       </Box>
       {isCalculatorOpen && <OrderFormCalculatorModal isCalculatorOpen={isCalculatorOpen} setIsCalculatorOpen={setIsCalculatorOpen} />}
       <Box sx={{ display: "flex", mt: 1 }}>
-        <Typography variant="Medium_12" component={"h6"} id="orderForm-availableBalance">
+        <Typography variant="Medium_12" component={"h6"} id="orderForm-availableBalance" sx={{ fontFamily: MONO_FAMILY }}>
           {availableCrossWalletBalanceForPlacingNewOrder === 0 ? "--" : numberWithCommas(Math.trunc(availableCrossWalletBalanceForPlacingNewOrder * 100) / 100)}
           {" USDC"}
         </Typography>

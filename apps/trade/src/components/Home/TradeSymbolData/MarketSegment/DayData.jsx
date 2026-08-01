@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { PropTypes } from "prop-types";
 import { Typography } from "@mui/material";
 import { useSelector } from "react-redux";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 const DayLow = ({ symbol, setDecimalPrecision, color, symbolPricePrecision, type, contextListner }) => {
   // const setTickerData = useSelector((state) => state.BinanceStreamData.ticker);
   const webWorkerInstance = useSelector((state) => state.getPersonalDetails.binanceWebWorkerInstance);
@@ -61,7 +62,7 @@ const DayLow = ({ symbol, setDecimalPrecision, color, symbolPricePrecision, type
     setTickerData(tickerSnapshot);
   }, [symbol, tickerSnapshot]);
   return (
-    <Typography color={color} component={"h5"} variant={"Medium_12"}>
+    <Typography color={color} component={"h5"} variant={"Medium_12"} sx={{ fontFamily: MONO_FAMILY }}>
       {setDecimalPrecision(changemarketSegment, symbolPricePrecision)}
     </Typography>
   );

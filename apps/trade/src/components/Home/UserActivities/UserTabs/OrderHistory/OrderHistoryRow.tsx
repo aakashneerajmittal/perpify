@@ -9,6 +9,7 @@ import { getRowColor, SymbolPrecisionHelper } from "@/helpers";
 import { getCurrencyUrl } from "@/helpers/CurrencyLogo";
 import OrderSummaryModal from "@/components/CustomModals/newModal/OrderSummaryModal";
 import { SymbolWrapper } from "@/components/UI/SymbolWrapper/SymbolWrapper";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 const OrderHistoryRow = ({ rowData, index }: { rowData: any; index: string }) => {
   const { setDecimalPrecision, symbolQuantityPrecision, symbolPricePrecision } = SymbolPrecisionHelper({ symbol: rowData?.symbol });
   const [showOrderSummaryModal, setShowOrderSummaryModal] = useState(false);
@@ -58,16 +59,16 @@ const OrderHistoryRow = ({ rowData, index }: { rowData: any; index: string }) =>
         </Grid>
 
         <Grid item xs={1.4}>
-          <Typography letterSpacing={"0.5px"} component={"p"} variant="medium_12_500" id="AorderHistory-ve-Exe-Time">
+          <Typography letterSpacing={"0.5px"} component={"p"} variant="medium_12_500" id="AorderHistory-ve-Exe-Time" sx={{ fontFamily: MONO_FAMILY }}>
             {setDecimalPrecision(rowData.avgPrice, symbolPricePrecision)}
           </Typography>
         </Grid>
         <Grid item xs={1.2}>
-          <Typography letterSpacing={"0.5px"} component={"p"} variant="medium_12_500" id="orderHistory-Executed-QTY">
+          <Typography letterSpacing={"0.5px"} component={"p"} variant="medium_12_500" id="orderHistory-Executed-QTY" sx={{ fontFamily: MONO_FAMILY }}>
             {rowData.executedQtyInUSDT.toFixed(2)}
             {" USDT"}
           </Typography>
-          <Typography letterSpacing={"0.5px"} component={"p"} variant="medium_12_500" color={"text.regular"} id="orderHistory-Executed-QTY">
+          <Typography letterSpacing={"0.5px"} component={"p"} variant="medium_12_500" color={"text.regular"} id="orderHistory-Executed-QTY" sx={{ fontFamily: MONO_FAMILY }}>
             {setDecimalPrecision(rowData.executedQty, symbolQuantityPrecision)} {rowData?.symbol.toUpperCase().replace("USDT", "")}
           </Typography>
         </Grid>

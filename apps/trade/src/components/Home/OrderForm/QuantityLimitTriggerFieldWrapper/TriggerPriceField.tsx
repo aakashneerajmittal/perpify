@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import BasicTextFields from "@/components/UI/CustomInput/BasicTextFields";
 import { InputAdornment } from "@mui/material";
 import TextView from "@/components/UI/TextView/TextView";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 
 const TriggerPriceField = ({ quantityFieldHook }: { quantityFieldHook: any }) => {
   const { triggerPrice, triggerPriceError, handleTriggerPriceChange, handleLastPrice } = quantityFieldHook;
@@ -15,6 +16,7 @@ const TriggerPriceField = ({ quantityFieldHook }: { quantityFieldHook: any }) =>
         type="number"
         placeholder={"0.00"}
         onChange={handleTriggerPriceChange}
+        inputProps={{ style: { fontFamily: MONO_FAMILY } }}
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">

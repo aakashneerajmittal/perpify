@@ -7,6 +7,7 @@ import { TableCell, Tooltip, Box, Grid, Typography } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import { getRowColor } from "@/helpers";
 import { numberWithCommas } from "@/helpers/commaHelper";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 // React, redux, hooks
 import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -164,32 +165,32 @@ const OpenOrders = () => {
             </Typography>
           </Grid>
           <Grid item xs={1}>
-            <Typography variant="medium_12_500" id="openOrder-rowData-Price">
+            <Typography variant="medium_12_500" id="openOrder-rowData-Price" sx={{ fontFamily: MONO_FAMILY }}>
               {rowData.price !== 0 && rowData.price !== "0" ? numberWithCommas(Number(rowData.price)) : "--"}
             </Typography>
           </Grid>
           <Grid item xs={1.2}>
-            <Typography variant="medium_12_500" id="openOrder-Stop-Price">
+            <Typography variant="medium_12_500" id="openOrder-Stop-Price" sx={{ fontFamily: MONO_FAMILY }}>
               {rowData.stopPrice !== 0 && rowData.stopPrice !== "0" ? rowData.stopPrice : "--"}
             </Typography>
           </Grid>
           <Grid item xs={1.2}>
             <Box id="openOrder-rowData-Qty">
-              <Typography variant="medium_12_500" component={"p"}>
+              <Typography variant="medium_12_500" component={"p"} sx={{ fontFamily: MONO_FAMILY }}>
                 {numberWithCommas(Number(rowData.quantity))} {rowData?.symbol.toUpperCase().replace("USDT", "")}
               </Typography>
-              <Typography variant="medium_12_500" color={"text.regular"} component={"p"}>
+              <Typography variant="medium_12_500" color={"text.regular"} component={"p"} sx={{ fontFamily: MONO_FAMILY }}>
                 {(rowData.price !== 0 && rowData.price !== "0" ? rowData.quantity * rowData.price : rowData.quantity * rowData.stopPrice).toFixed(2)} {" USDT"}
               </Typography>
             </Box>
           </Grid>
           <Grid item xs={1.2}>
             <Box id="openOrder-executedQuantity">
-              <Typography variant="medium_12_500" component={"p"}>
+              <Typography variant="medium_12_500" component={"p"} sx={{ fontFamily: MONO_FAMILY }}>
                 {numberWithCommas(Number(rowData.executedQuantity))}
                 {" of"}
               </Typography>
-              <Typography color={"text.regular"} variant="medium_12_500" component={"p"}>
+              <Typography color={"text.regular"} variant="medium_12_500" component={"p"} sx={{ fontFamily: MONO_FAMILY }}>
                 {numberWithCommas(Number(rowData.quantity))} {rowData?.symbol.toUpperCase().replace("USDT", "")}
               </Typography>
             </Box>
@@ -346,21 +347,21 @@ const OpenOrders = () => {
             </Typography>
           </Grid>
           <Grid item xs={1}>
-            <Typography variant="medium_12_500" id="openOrder-rowData-Price">
+            <Typography variant="medium_12_500" id="openOrder-rowData-Price" sx={{ fontFamily: MONO_FAMILY }}>
               {rowData.p !== 0 && rowData.p !== "0" ? numberWithCommas(Number(rowData.p)) : "--"}
             </Typography>
           </Grid>
           <Grid item xs={1.2}>
-            <Typography variant="medium_12_500" id="openOrder-Stop-Price">
+            <Typography variant="medium_12_500" id="openOrder-Stop-Price" sx={{ fontFamily: MONO_FAMILY }}>
               {rowData.sp !== 0 && rowData.sp !== "0" ? rowData.sp : "--"}
             </Typography>
           </Grid>
           <Grid item xs={1.2}>
             <Box id="openOrder-rowData-Qty">
-              <Typography variant="medium_12_500" component={"p"}>
+              <Typography variant="medium_12_500" component={"p"} sx={{ fontFamily: MONO_FAMILY }}>
                 {numberWithCommas(Number(rowData.q))} {rowData?.s.toUpperCase().replace("USDT", "")}
               </Typography>
-              <Typography variant="medium_12_500" color={"text.regular"} component={"p"}>
+              <Typography variant="medium_12_500" color={"text.regular"} component={"p"} sx={{ fontFamily: MONO_FAMILY }}>
                 {(rowData.p !== 0 && rowData.p !== "0" ? rowData.q * rowData.p : rowData.q * rowData.sp).toFixed(2)}
                 {" USDT"}
               </Typography>
@@ -368,11 +369,11 @@ const OpenOrders = () => {
           </Grid>
           <Grid item xs={1.2}>
             <Box id="openOrder-executedQuantity">
-              <Typography variant="medium_12_500" component={"p"}>
+              <Typography variant="medium_12_500" component={"p"} sx={{ fontFamily: MONO_FAMILY }}>
                 {numberWithCommas(Number(rowData.l))}
                 {" of"}
               </Typography>
-              <Typography color={"text.regular"} variant="medium_12_500" component={"p"}>
+              <Typography color={"text.regular"} variant="medium_12_500" component={"p"} sx={{ fontFamily: MONO_FAMILY }}>
                 {numberWithCommas(Number(rowData.q))} {rowData?.s.toUpperCase().replace("USDT", "")}
               </Typography>
             </Box>
