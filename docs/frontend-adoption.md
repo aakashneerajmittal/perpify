@@ -57,6 +57,62 @@ for a testnet wallet, and add the gap-coefficient surface that is Perpify's diff
    iteration; then a public deploy (static host + engine tunnel/VPS) so an investor trades
    it from their own laptop.
 
+## Status (Aug 1) — the trade loop is LIVE and verified
+
+All nine steps are done; the SPX-PERP screen is a working, tradeable testnet product,
+verified end-to-end headless (Chromium, zero page errors) at each step:
+
+- **Boot + render** — app serves, trade screen paints (boot crashes fixed: `getSupportChat`
+  `fcWidget.on` guard, third-party `<script>`s removed, analytics init guarded).
+- **Market data** — live SPX-PERP mark/index/**gap coefficient** + aggregated book from the
+  engine (`usePerpifyMarketData` → same redux shapes the header/book already read).
+- **Symbol config** — static `SPX-PERP` exchange-info injected (precision/tick/step/min-notional)
+  so price, book, order form, positions all populate. Default leverage + isolated margin-type
+  seeded (normally REST-sourced) so the order button enables and fills render.
+- **Chart** — open-source Lightweight Charts, live from `/marketDataStream`, amber when the gap
+  coefficient is elevated. (Licensed TradingView lib stays out until production.)
+- **Auth → burner wallet** — "Login to Trade" mints a `0x` address in localStorage
+  (`config/perpifySession`); `GENERATE_TOKEN` returns it; the account WS connects with
+  `?token=<address>`; engine `--demo` funds **$100k (tier B)** on first connect. Balance is
+  derived from the WS `ACCOUNT_UPDATE` (no REST account endpoint).
+- **Order placement** — order form → `place_order` over the account WS (market = marketable
+  IOC crossing the book, ±5% slippage cap; limit = GTC). Engine `ORDER_TRADE_UPDATE` now emits
+  the Binance single-letter fields the frontend reads, so fills map to positions with entry/
+  size/liq/PnL. Verified: BUY → Positions(1), balance drops.
+- **Close** — "Close" / "Close All" send `market_close` over the WS; the exit modal + cancel
+  route through `perpifyWsBridge`. Verified: BUY → Close → Positions(0), balance returns
+  (diff = fees + slippage).
+- **Rebrand** — every visible label reads **USDC**; no "USDT"/"Density" on the trade surface.
+- **Feature flags** — nav shows only Trade + Portfolio; tabs only Chart + Order Book; News,
+  Market/multi-symbol, Leaderboard, Assets/fiat hidden (code kept — flip a flag in
+  `perpifyFeatures.js`).
+
+Remaining before an investor URL: retheme polish (colors/logo), TP-SL & stop orders (declined
+cleanly for now), and the public deploy (static host + engine tunnel/VPS).
+
+## Running the demo (verified procedure)
+
+Engine (clean two-sided book — **use `--fresh`**, else a long command log skews the maker
+one-sided and market orders can't fill):
+
+```
+cd engine && npx tsx src/main.ts --demo --offline --fresh --origins=http://localhost:5199,null
+```
+
+Frontend — production build served on :5199 (matches the origin above):
+
+```
+cd apps/trade && npx vite build && python3 -m http.server 5199 --directory build
+```
+
+For live visual iteration use `npx vite dev` instead (serves on :5173 — then start the engine
+with `--origins=http://localhost:5173,null`). For a deployed demo, set `VITE_PERPIFY_WS` /
+`VITE_PERPIFY_ENGINE` to the engine's public URL before `vite build` (defaults to
+`ws://localhost:8787` / `http://localhost:8787`).
+
+Then open the URL → **Login to Trade** (funds $100k) → enter a size (USDC notional) → **BUY/SELL**
+→ position appears with live PnL → **Close**. Everything streams over the one account WebSocket.
+
 ## Where the work happens
 
 Correctness-critical, headless-testable pieces (engine REST intake, data mappers) are done
