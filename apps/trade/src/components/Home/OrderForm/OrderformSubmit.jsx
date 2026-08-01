@@ -8,6 +8,7 @@ import useOrderFormSubmit from "@/frontend-BL/businessHooks/ORDER_FORM/useOrderF
 import { Box, Tooltip, Typography } from "@mui/material";
 import CustomDivider from "../../UI/Divider/CustomDivider";
 import { useCheckLoginStatus } from "@/frontend-BL/services/ThirdPartyServices/SuperTokens/SuperTokenHelper";
+import { connectWallet } from "@/config/perpifySession";
 import { useNavigate } from "react-router-dom";
 import OrderConfirmedModal from "../../CustomModals/OrderConfirmedModal";
 import GenerateSignalConfirmation from "./GenerateSignalConfirmation";
@@ -41,15 +42,20 @@ const OrderformSubmit = () => {
   };
 
   const handleLogin = () => {
-    window.gtag("event", "Login to Trade");
-    recordCleverTapEvent("ORDERFORM_CTA_LOGIN_TO_TRADE");
-    navigate("/auth");
+    // PERPIFY testnet: "Login to Trade" mints a burner wallet in-place (no /auth page).
+    // useCheckLoginStatus flips to logged-in, which opens the account WS (SideBar effect),
+    // and the engine funds the demo account. No real signup/2FA on testnet.
+    try {
+      window.gtag?.("event", "Login to Trade");
+    } catch {
+      /* analytics disabled on testnet */
+    }
+    connectWallet();
   };
 
   const handleSignUp = () => {
-    window.gtag("event", "Sign Up");
-    recordCleverTapEvent("ORDERFORM_CTA_SIGN_UP");
-    navigate("/auth/signup");
+    // Testnet has no separate signup — same one-click burner wallet as login.
+    handleLogin();
   };
 
   return (

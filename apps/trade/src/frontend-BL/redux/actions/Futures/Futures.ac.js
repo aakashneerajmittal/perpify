@@ -42,24 +42,41 @@ import { QUICK_ORDER, SERVER_DOWN_HELPER } from "../../../../frontend-api-servic
 import { GetAppURL } from "../../../../frontend-api-service/Base";
 import { recordCleverTapEvent } from "../../../../utils/recordCleverTapEvent";
 
-export const fetchFutureAccountDetails = () => (dispatch) => {
-  getFuturesAccountDetailsApi()
-    .then((response) => {
-      dispatch({
-        type: "FUTURES_ACCOUNT_INFO_FETCH_SUCCESS",
-        payload: response.data
-      });
-    })
-    .catch((error) => {
-      dispatch(
-        showSnackBar({
-          src: "FUTURES_ACCOUNT_INFO_FETCH_FAIL",
-          message: error.response.data.details,
-          details: error.response.data.details,
-          type: "failure"
-        })
-      );
-    });
+// PERPIFY testnet: the account balance is streamed over the account WebSocket
+// (ACCOUNT_UPDATE → applyPerpifyAccountBalances) rather than fetched from a REST endpoint
+// the engine does not serve. This thunk is intentionally inert so the many legacy callers
+// (sidebar bootstrap, pong-timer fallbacks, order-placement pollers) don't error against a
+// missing endpoint. The WS is the single source of truth for balance and positions.
+export const fetchFutureAccountDetails = () => () => {};
+
+/**
+ * Derive the `accountInfo` slice the balance UI reads (totalWalletBalance,
+ * totalCrossWalletBalance, availableBalance, totalIsolatedWalletBalance, maxWithdrawAmount)
+ * from an engine ACCOUNT_UPDATE eventData ({ balances:[{asset,walletBalance,...}], positions:[...] }).
+ * walletBalance is free (non-reserved) collateral; isolated collateral and uPnL come from
+ * the open positions. Isolated-only V1 ⇒ cross wallet == free.
+ */
+export const applyPerpifyAccountBalances = (eventData) => (dispatch) => {
+  const balances = eventData?.balances || [];
+  const bal = balances.find((b) => b?.asset === "USDC") || balances[0];
+  if (!bal) return;
+  const positions = eventData?.positions || [];
+  const free = Number(bal.walletBalance) || 0;
+  const iso = positions.reduce((s, p) => s + (Number(p?.isolatedWallet) || 0), 0);
+  const upnl = positions.reduce((s, p) => s + (Number(p?.unrealizedProfitAndLoss) || 0), 0);
+  dispatch({
+    type: "FUTURES_ACCOUNT_INFO_FETCH_SUCCESS",
+    payload: {
+      totalWalletBalance: (free + iso).toFixed(6),
+      totalCrossWalletBalance: free.toFixed(6),
+      totalIsolatedWalletBalance: iso.toFixed(6),
+      availableBalance: free.toFixed(6),
+      maxWithdrawAmount: free.toFixed(6),
+      totalUnrealizedProfit: upnl.toFixed(6),
+      totalMarginBalance: (free + iso + upnl).toFixed(6),
+      assets: [{ asset: "USDC", walletBalance: free.toFixed(6), availableBalance: free.toFixed(6), marginBalance: (free + upnl).toFixed(6) }]
+    }
+  });
 };
 
 export const fetchOpenOrders = (symbol) => (dispatch) => {

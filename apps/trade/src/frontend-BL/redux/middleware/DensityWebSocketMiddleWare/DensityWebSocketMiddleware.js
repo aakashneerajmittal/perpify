@@ -32,7 +32,7 @@ import {
 } from "../../../services/DensityWebSocketService/PositionHelpers";
 import { deleteApiOrderIdFromStore } from "../../../redux/actions/Futures/saveOrderDetails.ac";
 import { GENERATE_TOKEN } from "../../actions/User/GenerateToken.ac";
-import { fetchFutureAccountDetails } from "../../actions/Futures/Futures.ac";
+import { fetchFutureAccountDetails, applyPerpifyAccountBalances } from "../../actions/Futures/Futures.ac";
 import { fetchAccountPositionInfo } from "../../actions/User/AccountInfo.ac";
 import { posthog } from "posthog-js";
 import { mergeArraysWithoutCommonElements } from "./DensityWebSocketHelper";
@@ -371,8 +371,10 @@ const densitySocketMiddleware = () => {
         break;
 
       case WS_MESSAGESS.ACCOUNT_UPDATE:
-        accountUpdateHandler(payload.positions[0], store);
-        store.dispatch(fetchFutureAccountDetails());
+        // PERPIFY: engine streams the full balance here (no REST account endpoint on testnet).
+        // positions[] is empty right after funding — guard before the position handler reads it.
+        if (payload?.positions?.[0]) accountUpdateHandler(payload.positions[0], store);
+        store.dispatch(applyPerpifyAccountBalances(payload));
         break;
       default:
     }
