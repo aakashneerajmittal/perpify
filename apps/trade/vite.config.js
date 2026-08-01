@@ -12,9 +12,11 @@ export default defineConfig({
   esbuild: {
     loader: "tsx"
   },
+  // PERPIFY: HTTPS + mkcert made opt-in. Plain http for local/cloud dev (set
+  // PERPIFY_HTTPS=1 to restore mkcert + https, e.g. if a wallet lib needs a secure origin).
   server: {
     port: 3000,
-    https: true
+    https: !!process.env.PERPIFY_HTTPS
   },
   optimizeDeps: {
     esbuildOptions: {
@@ -34,7 +36,7 @@ export default defineConfig({
     svgr(),
     tsconfigPaths(),
     viteCommonjs(),
-    mkcert(),
+    ...(process.env.PERPIFY_HTTPS ? [mkcert()] : []),
     EnvironmentPlugin(["VITE_BUILD_TYPE", "REACT_APP_PUBLIC_POSTHOG_KEY", "REACT_APP_PUBLIC_POSTHOG_URL"])
   ]
 });
