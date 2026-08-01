@@ -142,7 +142,7 @@ const MpnlHistoryRow = ({ data, hideOtherPairs }) => {
                   {DataPnl?.GrossPnl.toFixed(4)}
                 </Typography>
                 <Typography varient="h6" sx={ACCORDIANGRIDITEMHEADING}>
-                  {"GROSS P&L (USDT)"}
+                  {"GROSS P&L (USDC)"}
                 </Typography>
               </Grid>
             </Grid>

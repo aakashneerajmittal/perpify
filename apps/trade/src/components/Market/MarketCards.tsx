@@ -32,7 +32,7 @@ const Card = (props: { title: string; type: string }) => {
           }}
         >
           <Box sx={{ width: "100%" }}>
-            <MarketCardRow type={type} primaryText={"Currency (USDT)"} />
+            <MarketCardRow type={type} primaryText={"Currency (USDC)"} />
           </Box>
         </Box>
       </Box>

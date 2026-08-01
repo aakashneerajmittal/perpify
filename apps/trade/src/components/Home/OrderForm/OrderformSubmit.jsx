@@ -106,7 +106,7 @@ const OrderformSubmit = () => {
                     <Typography component={"h6"} variant="Medium_12">
                       {setDecimalPrecision(state.costValue, 2)}
                       <Typography ml={0.5} variant="Medium_12" color={"text.regular"}>
-                        {"USDT"}
+                        {"USDC"}
                       </Typography>
                     </Typography>
                   </Box>
@@ -145,7 +145,7 @@ const OrderformSubmit = () => {
             {" "}
             <CustomButton onClick={() => handleLogin()} label={"Login to Trade"} />
             <Typography mt={1} component={"p"} textAlign={"center"} variant="Medium_12">
-              New to Density?
+              New to Perpify?
               <Typography
                 ml={1}
                 variant="Medium_12"

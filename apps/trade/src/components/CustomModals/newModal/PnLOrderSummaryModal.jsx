@@ -179,7 +179,7 @@ const PnLOrderSummaryModal = ({
               </Grid>
               <Grid sx={{ width: "150px" }}>
                 <Typography textTransform={"uppercase"} variant={"Medium_10"} color={"text.secondary"}>
-                  {"gross P&L (USDT)"}
+                  {"gross P&L (USDC)"}
                 </Typography>
               </Grid>
               <Grid sx={{ width: "100px" }}>
@@ -189,7 +189,7 @@ const PnLOrderSummaryModal = ({
               </Grid>
               <Grid sx={{ width: "150px" }}>
                 <Typography textTransform={"uppercase"} variant={"Medium_10"} color={"text.secondary"}>
-                  {"exit fee (USDT)"}
+                  {"exit fee (USDC)"}
                 </Typography>
               </Grid>
             </Grid>

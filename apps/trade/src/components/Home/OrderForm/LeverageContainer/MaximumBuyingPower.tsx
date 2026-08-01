@@ -19,7 +19,7 @@ const MaximumBuyingPower = ({ id, leverage, alignment }: { id: string; leverage:
         <Typography id="orderForm-maxBuyingPower" variant={alignment === "vertical" ? "Medium_12" : "Medium_11"} component={"h6"}>
           {numberWithCommas(Math.trunc(leverage * availableBalance * 100) / 100) + " "}
           <Typography component={"span"} variant={alignment === "vertical" ? "Medium_11" : "Medium_10"}>
-            {"USDT"}
+            {"USDC"}
           </Typography>
         </Typography>
       </Grid>

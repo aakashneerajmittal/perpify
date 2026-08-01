@@ -120,7 +120,7 @@ const PositionRow = ({
         </Typography>
         <Typography textAlign={"left"} id="position-size-Usdt" variant="medium_12_500" component={"p"} color={"text.regular"}>
           {setDecimalPrecision(String(Math.abs(Number(posAmt) * Number(entryPrice))), 2)}
-          {" USDT"}
+          {" USDC"}
         </Typography>
       </Grid>
       <Grid item xs={1}>

@@ -54,7 +54,7 @@ const DepthBookChart = () => {
             }
           ],
           title: {
-            text: "PRICE (USDT)",
+            text: "PRICE (USDC)",
             style: {
               color: "#8B8B97",
               fontSize: "10px"
@@ -76,7 +76,7 @@ const DepthBookChart = () => {
             tickLength: 5,
             tickPosition: "inside",
             title: {
-              text: `SIZE ${ChangeInAsset ? "" : "(USDT)"}`,
+              text: `SIZE ${ChangeInAsset ? "" : "(USDC)"}`,
               style: {
                 color: "#8B8B97",
                 fontSize: "10px"

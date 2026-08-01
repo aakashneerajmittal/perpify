@@ -177,7 +177,7 @@ const OuickOrder = ({ SetQuickTradeActive }) => {
                     value: `${symbol.toUpperCase().replace("USDT", "")}`,
                     id: "contract-tab"
                   },
-                  { name: "USDT", value: "USDT", id: "usdt-tab" }
+                  { name: "USDC", value: "USDT", id: "usdt-tab" }
                 ]}
               />
               <Box>

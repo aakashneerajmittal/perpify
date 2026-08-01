@@ -146,7 +146,7 @@ const QuantityField = ({ quantityFieldHook }: { quantityFieldHook: any }) => {
                   name: `${symbol.toUpperCase().replace("USDT", "")}`,
                   value: `${symbol.toUpperCase().replace("USDT", "")}`
                 },
-                { name: "USDT", value: "USDT" }
+                { name: "USDC", value: "USDT" }
               ]}
             />
             <Box>

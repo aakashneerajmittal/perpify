@@ -126,7 +126,7 @@ const ChildOrders: React.FC<ChildOrdersProps> = ({ type, gridSize, parentData, d
       </Grid>
       <Grid container sx={{ ...justifyGridSx, my: 1 }}>
         <TextView color={"text.secondary"} variant="Regular_14">
-          {"Trigger Price (USDT)"}
+          {"Trigger Price (USDC)"}
         </TextView>
 
         {!showEditTriggerPriceBox && (

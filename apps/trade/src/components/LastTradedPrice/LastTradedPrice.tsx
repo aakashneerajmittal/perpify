@@ -61,7 +61,7 @@ const lastTradedPrice: React.FC<lastTradedPriceProps> = ({ arrow, symbolPricePre
         }}
         arrow
         placement="bottom"
-        title={<TextView text={"Last Traded Price (USDT)"} />}
+        title={<TextView text={"Last Traded Price (USDC)"} />}
       >
         <TextView id={id || ""} component={"span"} variant={variant} color={getLastPriceColor} text={convertToPrecisionValueForPrice(snapltp, symbolPricePrecision)} />
         {arrow && (

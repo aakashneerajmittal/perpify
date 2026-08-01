@@ -292,7 +292,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
                 <TextView text={"Wallet Balance Used"} variant={"Medium_12"} color={"text.regular"} />
               </Grid>
               <Grid item xs={4}>
-                <TextView id="calculator-wallet-balance" text={showValuesInCalculator.current ? "--" : walletBalanceUsedAfterLeverage + " USDT "} variant={"Bold_12"} />
+                <TextView id="calculator-wallet-balance" text={showValuesInCalculator.current ? "--" : walletBalanceUsedAfterLeverage + " USDC "} variant={"Bold_12"} />
               </Grid>
             </Grid>
             <Grid container sx={{ justifyContent: "space-between", marginBottom: "0.75rem" }}>
@@ -300,7 +300,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
                 <TextView text={"Gross P&L"} variant={"Medium_12"} color={"text.regular"} />
               </Grid>
               <Grid item xs={4}>
-                <TextView id="calculator-grosspnl" text={showValuesInCalculator.current ? "--" : grosspnl + " USDT "} variant={"Bold_12"} />
+                <TextView id="calculator-grosspnl" text={showValuesInCalculator.current ? "--" : grosspnl + " USDC "} variant={"Bold_12"} />
               </Grid>
             </Grid>
             <CustomDivider alignment="" />
@@ -309,7 +309,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
                 <TextView text={"Net P&L " + `(as ${makerTakerToggle.split("_")[1]})`} variant={"Medium_12"} color={"text.regular"} />
               </Grid>
               <Grid item xs={4}>
-                <TextView id="calculator-netpnl" text={showValuesInCalculator.current ? "--" : netpnl + " USDT "} variant={"Bold_12"} />
+                <TextView id="calculator-netpnl" text={showValuesInCalculator.current ? "--" : netpnl + " USDC "} variant={"Bold_12"} />
               </Grid>
             </Grid>
             <Grid container sx={{ justifyContent: "space-between", marginBottom: "0.75rem" }}>
@@ -335,7 +335,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
                 </Grid>
               </Grid>
               <Grid item xs={4}>
-                <TextView id="calculator-commision" text={showValuesInCalculator.current ? "--" : commission + " USDT "} variant={"Bold_12"} />
+                <TextView id="calculator-commision" text={showValuesInCalculator.current ? "--" : commission + " USDC "} variant={"Bold_12"} />
               </Grid>
             </Grid>
             {isCalculationsExpanded && (
@@ -370,7 +370,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
               text={
                 showValuesInCalculator.current
                   ? "--"
-                  : `${Math.abs(Number(Number(Number(fundingRate?.split("%")[0]) * entryPrice * contractSize * 0.01 * sideMultiplier()).toFixed(4)))} USDT will be ${
+                  : `${Math.abs(Number(Number(Number(fundingRate?.split("%")[0]) * entryPrice * contractSize * 0.01 * sideMultiplier()).toFixed(4)))} USDC will be ${
                       fundingFeeBuySellMultiplier() ? "deducted" : "credited"
                     } in ${fundingRate?.split("/")[1]} hrs`
               }
@@ -386,7 +386,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
                 <TextView text={"Liquidation Price"} variant={"Medium_12"} color={"text.regular"} />
               </Grid>
               <Grid item xs={4}>
-                <TextView id="calculator-liquidation-price" text={showValuesInCalculator.current ? "--" : liquidationPrice ? liquidationPrice + " USDT " : "--"} variant={"Bold_12"} />
+                <TextView id="calculator-liquidation-price" text={showValuesInCalculator.current ? "--" : liquidationPrice ? liquidationPrice + " USDC " : "--"} variant={"Bold_12"} />
               </Grid>
             </Grid>
             <Grid container sx={{ justifyContent: "space-between", marginBottom: "0.75rem" }}>
@@ -394,7 +394,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
                 <TextView text={"Breakeven Price " + `(as ${makerTakerToggle.split("_")[1]})`} variant={"Medium_12"} color={"text.regular"} />
               </Grid>
               <Grid item xs={4}>
-                <TextView id="calculator-break-even" text={showValuesInCalculator.current ? "--" : breakevenPrice + " USDT "} variant={"Bold_12"} />
+                <TextView id="calculator-break-even" text={showValuesInCalculator.current ? "--" : breakevenPrice + " USDC "} variant={"Bold_12"} />
               </Grid>
             </Grid>
           </Box>
@@ -630,7 +630,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
                 </Typography>
               )}
               <Box sx={{ marginTop: "1rem" }}>
-                <TextView text={"Max notional size allowed: " + maxNotional + " USDT"} variant="Bold_12" />
+                <TextView text={"Max notional size allowed: " + maxNotional + " USDC"} variant="Bold_12" />
               </Box>
               <Box sx={{ marginTop: "1rem", height: "275px" }}>
                 <BasicTextFields
@@ -713,7 +713,7 @@ const OrderFormCalculatorModal: React.FC<CalculatorProps> = ({ isCalculatorOpen,
                         type="number"
                         placeholder={"0.00"}
                         onChange={(e) => setWalletBalanceUsed(e.target.value)}
-                        label={"Wallet Balance In USDT"}
+                        label={"Wallet Balance In USDC"}
                       />
                     </Box>
                     <TextView text={"Note: Does not account for potential impact of other open positions."} variant={"Medium_10"} color={"text.regular"} />

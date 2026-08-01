@@ -106,7 +106,7 @@ const TotalProfitAndLossWrapper = () => {
       <Grid xs={6}>
         <Box sx={{ position: "relative" }}>
           <Box sx={{ display: "flex", alignItems: "center" }}>
-            <TextView variant="Medium_11" color={"text.quaternary"} component={"p"} text={"TOTAL P&L (USDT)"} />
+            <TextView variant="Medium_11" color={"text.quaternary"} component={"p"} text={"TOTAL P&L (USDC)"} />
             <ExpandMoreIcon
               onClick={() => SetShowDropdown(!showDropDown)}
               sx={{

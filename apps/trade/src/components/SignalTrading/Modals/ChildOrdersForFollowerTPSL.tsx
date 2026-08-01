@@ -36,7 +36,7 @@ const ChildOrdersForFollowerTPSL = ({ side, order, convertToPrecisionValueForPri
         </Grid>
         <Grid container sx={{ ...justifyGridSx, my: 1 }}>
           <Typography color={"text.secondary"} variant="Regular_14">
-            {"Trigger Price (USDT)"}
+            {"Trigger Price (USDC)"}
           </Typography>
           <Typography id="Take-Profit-triggerPrice" variant="SemiBold_12">
             {convertToPrecisionValueForPrice(order.TPStopPrice)}
@@ -74,7 +74,7 @@ const ChildOrdersForFollowerTPSL = ({ side, order, convertToPrecisionValueForPri
         </Grid>
         <Grid container sx={{ ...justifyGridSx, my: 1 }}>
           <Typography color={"text.secondary"} variant="Regular_14">
-            {"Trigger Price (USDT)"}
+            {"Trigger Price (USDC)"}
           </Typography>
           <Typography id="Take-Profit-triggerPrice" variant="SemiBold_12">
             {convertToPrecisionValueForPrice(order.SLStopPrice)}

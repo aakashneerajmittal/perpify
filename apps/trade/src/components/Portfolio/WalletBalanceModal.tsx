@@ -33,7 +33,7 @@ const WalletBalanceModal = ({ showWallet, setShowWallet }: { showWallet: boolean
         <Grid container mb={10}>
           <Grid item sx={{ backgroundColor: "background.default" }} xs={6} border={"1px solid #29292E"} py={2} px={1.8} gap={0.5}>
             <Typography variant="Medium_11" color={"text.secondary"}>
-              {"Total Balance (USDT)"}
+              {"Total Balance (USDC)"}
             </Typography>
             <Typography color={"#fff"} component={"div"} variant="Medium_12">
               {numberWithCommas(Number(totalWalletBalance)?.toFixed(2))}
@@ -41,7 +41,7 @@ const WalletBalanceModal = ({ showWallet, setShowWallet }: { showWallet: boolean
           </Grid>
           <Grid item sx={{ backgroundColor: "background.default" }} xs={6} border={"1px solid #29292E"} py={2} px={1.8} gap={0.5}>
             <Typography variant="Medium_11" color={"text.secondary"}>
-              {"Available Balance (USDT)"}
+              {"Available Balance (USDC)"}
             </Typography>
             <Typography color={"#fff"} component={"div"} variant="Medium_12">
               {numberWithCommas(Number(availableBalance)?.toFixed(2))}

@@ -169,7 +169,7 @@ const ChildOrdersEditTPSL: React.FC<ChildOrdersEditTPSLProps> = ({
       </Grid>
       <Grid container sx={{ ...justifyGridSx, my: 1 }}>
         <Typography color={"text.secondary"} variant="Regular_14">
-          {"Trigger Price (USDT)"}
+          {"Trigger Price (USDC)"}
         </Typography>
 
         {!showEditTriggerPriceBox && (

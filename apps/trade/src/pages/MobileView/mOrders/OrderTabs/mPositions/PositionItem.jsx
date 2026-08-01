@@ -132,7 +132,7 @@ const PositionItem = ({ data }) => {
                   <PositionPnL variant={"Regular_12"} isRoE={true} symbol={symbol} posAmt={posAmt} entryPrice={entryPrice} initialVal={unRealizedPnL} marginType={marginType} />
 
                   <Typography variant="Regular_10" component={"span"} color={"text.mild"}>
-                    {"P&L (USDT) | ROE"}
+                    {"P&L (USDC) | ROE"}
                   </Typography>
                 </Grid>
                 <Grid item xs={4} gap={"3px"}>

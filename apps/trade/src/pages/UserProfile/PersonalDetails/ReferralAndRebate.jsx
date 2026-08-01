@@ -68,7 +68,7 @@ const ReferralAndRebate = () => {
         <Grid item style={{ flex: "auto" }}>
           <Grid bgcolor={"background.default"} p={2}>
             <Typography color={"text.secondary"} component={"p"} variant={"Medium_11"}>
-              My Earnings (USDT)
+              My Earnings (USDC)
             </Typography>
             <Typography component={"p"} variant={"Medium_12"} color={"text.primary"} mt={1}>
               2,682,739.00
@@ -138,7 +138,7 @@ const ReferralAndRebate = () => {
         <Grid item style={{ flex: "auto" }}>
           <Grid bgcolor={"background.default"} p={2}>
             <Typography color={"text.secondary"} component={"p"} variant={"Medium_11"}>
-              My Earnings (USDT)
+              My Earnings (USDC)
             </Typography>
             <Typography component={"p"} variant={"Medium_12"} color={"text.primary"} mt={1}>
               2,682,739.00
@@ -149,7 +149,7 @@ const ReferralAndRebate = () => {
         <Grid item style={{ flex: "auto" }}>
           <Grid bgcolor={"background.default"} p={2}>
             <Typography color={"text.secondary"} component={"p"} variant={"Medium_11"}>
-              Fee (USDT)
+              Fee (USDC)
             </Typography>
             <Typography component={"p"} variant={"Medium_12"} color={"text.primary"} mt={1}>
               74429.00

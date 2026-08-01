@@ -74,13 +74,13 @@ const PorfolioSummaryCard = ({ refreshState }: { refreshState: any }) => {
           <Box display={"flex"} flexDirection={"column"} justifyContent={"space-between"}>
             <Box display={"flex"} flexDirection={"row"} justifyContent={"flex-start"} alignItems={"flex-start"} gap={5}>
               <TotalValueField
-                totalName="Gross Realised P&L (USDT)"
+                totalName="Gross Realised P&L (USDC)"
                 totalValue={portfolioSummary?.grossPnl === 0 && portfolioSummary?.netPnl === 0 && portfolioSummary?.totalFee === 0 ? "--" : numberWithCommas(portfolioSummary?.grossPnl.toFixed(2))}
                 tooltipText="Total Realised P&L excluding all Fees for the given time period"
                 color={portfolioSummary?.grossPnl > 0 ? "text.success" : portfolioSummary?.grossPnl === 0 ? "text.default" : "text.error"}
               />
               <TotalValueField
-                totalName="Net Realised P&L (USDT)"
+                totalName="Net Realised P&L (USDC)"
                 totalValue={portfolioSummary?.grossPnl === 0 && portfolioSummary?.netPnl === 0 && portfolioSummary?.totalFee === 0 ? "--" : numberWithCommas(portfolioSummary?.netPnl.toFixed(2))}
                 tooltipText="Total Realised P&L inclusive of all Fees for the give time period"
                 color={portfolioSummary?.netPnl > 0 ? "text.success" : portfolioSummary?.netPnl === 0 ? "text.default" : "text.error"}
@@ -105,7 +105,7 @@ const PorfolioSummaryCard = ({ refreshState }: { refreshState: any }) => {
         <Box display={"flex"} flexDirection={"column"} justifyContent={"space-between"} sx={{ backgroundColor: "neutral.grey3", p: "24px 32px", flex: 1, borderRadius: 2 }}>
           {/* <Box display={"flex"} flexDirection={"column"} justifyContent={"space-between"}> */}
           <TotalValueField
-            totalName="Total Fee (USDT)"
+            totalName="Total Fee (USDC)"
             totalValue={
               portfolioSummary?.grossPnl === 0 && portfolioSummary?.netPnl === 0 && portfolioSummary?.totalFee === 0
                 ? "--"

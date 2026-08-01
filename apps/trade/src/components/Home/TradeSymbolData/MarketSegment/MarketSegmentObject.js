@@ -23,11 +23,11 @@ const loaderObject = {
   textAlign: "center"
 };
 
-export const Mark = "Mark Price (USDT)";
+export const Mark = "Mark Price (USDC)";
 export const Index = "Index";
 export const twentyfourHr_change = "24h Change";
-export const Open_interest = "Open interest (USDT)";
-export const _24hrVolume = "24h volume (USDT)";
+export const Open_interest = "Open interest (USDC)";
+export const _24hrVolume = "24h volume (USDC)";
 export const Funding_Countdown = "Funding Fee / Countdown";
 export const _24h_High = "24h";
 export const _24h_Low = "24h Low";

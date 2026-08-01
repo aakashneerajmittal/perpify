@@ -153,7 +153,7 @@ const RiskParameterModal: React.FC<RiskParameterModalProps> = ({
         </Typography>
         {(!type || type === "MARGIN_PER_SIGNAL") && (
           <Box mt={1}>
-            <BasicTextFields label={"Margin allocated for each Signal (USDT)"} value={maxMarginPerSignal} onChange={handleMaxMarginChange} type={"number"} />
+            <BasicTextFields label={"Margin allocated for each Signal (USDC)"} value={maxMarginPerSignal} onChange={handleMaxMarginChange} type={"number"} />
             <Typography variant="SemiBold_11" color={"#C0DF5A"}>
               {"Note: "}
               <Typography variant="SemiBold_11" component={"span"} color={"text.secondary"}>
@@ -170,7 +170,7 @@ const RiskParameterModal: React.FC<RiskParameterModalProps> = ({
         {(!type || type === "MARGIN_ALL_SIGNAL") && (
           <Box mt={1}>
             <BasicTextFields
-              label={"Max margin that can be locked across all Signals for this Analyst (USDT)"}
+              label={"Max margin that can be locked across all Signals for this Analyst (USDC)"}
               value={maxMarginLockedAcrossAllSignals}
               onChange={handleMaxMarginLockedChange}
               type={"number"}

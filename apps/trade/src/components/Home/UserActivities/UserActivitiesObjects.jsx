@@ -178,7 +178,7 @@ export const PositionHeader = [
   },
   {
     id: 8,
-    name: "P&L (USDT)",
+    name: "P&L (USDC)",
     tooltip: "Calculated on mark price",
     gridSize: 1,
     align: "left"
@@ -610,12 +610,12 @@ export const PnLHistorySubHeader = [
   },
   {
     id: 7,
-    name: "Realised P&L (USDT)",
+    name: "Realised P&L (USDC)",
     gridSize: 1.4
   },
   {
     id: 8,
-    name: "Fee Paid (USDT)",
+    name: "Fee Paid (USDC)",
     gridSize: 1.2
   }
 ];
@@ -637,13 +637,13 @@ export const NewPnLHistorySubHeader = [
   },
   {
     id: 3,
-    name: "Entry Price(USDT)",
+    name: "Entry Price(USDC)",
     gridSize: 1.5
   },
 
   {
     id: 4,
-    name: "Exit Price(USDT)",
+    name: "Exit Price(USDC)",
     gridSize: 1
   },
   {
@@ -658,12 +658,12 @@ export const NewPnLHistorySubHeader = [
   },
   {
     id: 7,
-    name: "GROSS P&L (USDT)",
+    name: "GROSS P&L (USDC)",
     gridSize: 1.2
   },
   {
     id: 8,
-    name: "FEE (USDT)",
+    name: "FEE (USDC)",
     gridSize: 1
   },
   {

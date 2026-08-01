@@ -108,7 +108,7 @@ const OrderSummaryModal = ({ IsOpen, title, type, primaryName, secondaryAction, 
                 }}
               >
                 <Typography variant={"Medium_11"} color={"text.secondary"} sx={{}}>
-                  Total Fee (USDT)
+                  Total Fee (USDC)
                 </Typography>
                 <Typography variant={"Medium_12"} color={"text.primary"} sx={{}}>
                   {TotalFee}
@@ -127,7 +127,7 @@ const OrderSummaryModal = ({ IsOpen, title, type, primaryName, secondaryAction, 
                 }}
               >
                 <Typography variant={"Medium_11"} color={"text.secondary"} sx={{}}>
-                  Total P&L (USDT){" "}
+                  Total P&L (USDC){" "}
                 </Typography>
                 <Typography variant={"Medium_12"} color={TotalPL > 0 ? "text.success" : "text.error"} sx={{}}>
                   {TotalPL}
@@ -165,7 +165,7 @@ const OrderSummaryModal = ({ IsOpen, title, type, primaryName, secondaryAction, 
               </Grid>
               <Grid sx={{ width: "95px" }}>
                 <Typography variant={"Medium_10"} color={"text.secondary"}>
-                  {"P&L (USDT)"}
+                  {"P&L (USDC)"}
                 </Typography>
               </Grid>
               <Grid sx={{ width: "90px" }}>

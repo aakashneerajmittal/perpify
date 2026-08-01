@@ -10,8 +10,8 @@ import TextView from "../UI/TextView/TextView";
 
 const TABLE_HEADER = [
   { id: 0, name: "TRADE ID", gridSize: 4 },
-  { id: 1, name: "COMMISSION(USDT)", gridSize: 4 },
-  { id: 2, name: "P&L(USDT)", gridSize: 4 }
+  { id: 1, name: "COMMISSION(USDC)", gridSize: 4 },
+  { id: 2, name: "P&L(USDC)", gridSize: 4 }
 ];
 
 interface TradeData {

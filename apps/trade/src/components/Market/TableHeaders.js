@@ -9,7 +9,7 @@ export const marketTableHearder = [
     }
   },
   {
-    name: "PRICE (USDT)",
+    name: "PRICE (USDC)",
     gridSize: 1.5,
     styles: {
       justifyContent: "left"
@@ -23,14 +23,14 @@ export const marketTableHearder = [
     }
   },
   {
-    name: "24H HIGH / LOW (USDT)",
+    name: "24H HIGH / LOW (USDC)",
     gridSize: 2,
     styles: {
       justifyContent: "left"
     }
   },
   {
-    name: "24H VOLUME (USDT)",
+    name: "24H VOLUME (USDC)",
     gridSize: 2.5,
     styles: {
       justifyContent: "left"

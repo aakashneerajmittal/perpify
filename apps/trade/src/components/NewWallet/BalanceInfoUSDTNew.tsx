@@ -38,24 +38,24 @@ const BalanceInfoUSDTNew = () => {
   return (
     <Grid container>
       <GetGridCell
-        title={"Available Balance(USDT)"}
+        title={"Available Balance(USDC)"}
         value={availableBalance}
         toolTipTitle={`Free Balance available for placing the New Orders. It is updated on real time basis, hence there might be some discrepancy.`}
         gridSize={3}
       />
       <GetGridCell
-        title={"Cross Wallet Balance(USDT)"}
+        title={"Cross Wallet Balance(USDC)"}
         value={totalCrossWalletBalance}
         toolTipTitle={`Amount that is allocated to Cross Wallet. It is shared across all the Cross Mode positions and orders.`}
         gridSize={3}
       />
       <GetGridCell
-        title={"Withdraw-able Balance(USDT)"}
+        title={"Withdraw-able Balance(USDC)"}
         value={maxWithdrawAmount}
         toolTipTitle={`Amount that can be withdrawn, equal to Available balance - Frozen balance (received via rewards).*There can be some discrepancy in the data shown.`}
         gridSize={3}
       />
-      <GetGridCell title={"Isolated Margin(USDT)"} value={totalIsolatedWalletBalance} toolTipTitle={`It is the sum of all Isolated Margins of your positions`} gridSize={3} />
+      <GetGridCell title={"Isolated Margin(USDC)"} value={totalIsolatedWalletBalance} toolTipTitle={`It is the sum of all Isolated Margins of your positions`} gridSize={3} />
     </Grid>
   );
 };

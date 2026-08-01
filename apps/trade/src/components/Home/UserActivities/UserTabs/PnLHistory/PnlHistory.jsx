@@ -44,18 +44,18 @@ const PnLHistory = ({ clearFilters, setClearFilters, setIsDownloadDisabled, hide
     switch (name) {
       case "SIZE":
         return <TextView text={"It is executed size for closed position"} />;
-      case "Entry Price(USDT)":
+      case "Entry Price(USDC)":
         return <TextView text={"Average Price in which position was entered"} />;
-      case "Exit Price(USDT)":
+      case "Exit Price(USDC)":
         return <TextView text={"Average price via which position was exited"} />;
       case "Entry Time":
         return <TextView text={"Entry Time"} />;
       case "Exit Time":
         return <TextView text={"Exit Time"} />;
-      case "GROSS P&L (USDT)":
-        return <TextView text={"GROSS P&L (USDT)"} />;
-      case "FEE (USDT)":
-        return <TextView text={"FEE (USDT)"} />;
+      case "GROSS P&L (USDC)":
+        return <TextView text={"GROSS P&L (USDC)"} />;
+      case "FEE (USDC)":
+        return <TextView text={"FEE (USDC)"} />;
       default:
         return;
     }

@@ -85,7 +85,7 @@ const CardRow = ({ data }) => {
         }}
       >
         <Typography variant="labelSmall" component={"p"} textAlign={"start"} color="neutral.grey7">
-          {"Volume (USDT)"}
+          {"Volume (USDC)"}
         </Typography>
         <Typography variant="labelSmall" component={"p"} textAlign={"end"} color="neutral.grey7">
           {data?.value}

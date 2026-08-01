@@ -44,7 +44,7 @@ const TradeCardRow = ({ Symbol, change, value }: TradeCardData) => {
       </Box>
       <Box sx={{ display: "flex", justifyContent: "space-between", color: "text.regular" }}>
         <Typography textAlign={"center"} variant="bold_10">
-          {"Price(USDT)"}
+          {"Price(USDC)"}
         </Typography>
         <Typography textAlign={"center"} variant="bold_10">
           {value}

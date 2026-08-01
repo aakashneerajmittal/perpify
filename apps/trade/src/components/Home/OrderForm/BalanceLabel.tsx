@@ -26,7 +26,7 @@ const BalanceLabel = () => {
       <Box sx={{ display: "flex", mt: 1 }}>
         <Typography variant="Medium_12" component={"h6"} id="orderForm-availableBalance">
           {availableCrossWalletBalanceForPlacingNewOrder === 0 ? "--" : numberWithCommas(Math.trunc(availableCrossWalletBalanceForPlacingNewOrder * 100) / 100)}
-          {" USDT"}
+          {" USDC"}
         </Typography>
         <Typography
           component={"span"}

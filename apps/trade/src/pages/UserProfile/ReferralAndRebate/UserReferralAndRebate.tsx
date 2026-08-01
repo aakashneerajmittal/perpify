@@ -88,9 +88,9 @@ const REFERRAL_REWARD_HISTORY_TABLE_HEADERS = [
     name: "DATE"
   },
   {
-    id: "REWARD (USDT)",
+    id: "REWARD (USDC)",
     gridSize: "4",
-    name: "REWARD (USDT)"
+    name: "REWARD (USDC)"
   },
   {
     id: "STATUS",
@@ -106,8 +106,8 @@ const REBATE_HISTORY_TABLE_HEADERS = [
     gridSize: "2.4"
   },
   {
-    id: "REBATE CASHBACKN (USDT)",
-    name: "REBATE CASHBACKN (USDT)",
+    id: "REBATE CASHBACKN (USDC)",
+    name: "REBATE CASHBACKN (USDC)",
     gridSize: "2.4"
   },
   {
@@ -116,8 +116,8 @@ const REBATE_HISTORY_TABLE_HEADERS = [
     gridSize: "2.4"
   },
   {
-    id: "TRADING FEE (USDT)",
-    name: "TRADING FEE (USDT)",
+    id: "TRADING FEE (USDC)",
+    name: "TRADING FEE (USDC)",
     gridSize: "2.4"
   },
   {
@@ -190,7 +190,7 @@ export const UserReferralAndRebate = () => {
               <TextView variant={"Regular_22"} color={"text.highlight"} text={referralEarnings?.level || "--"} />
             </Box>
             <Box sx={{ display: "flex", flexDirection: "column", marginRight: "4rem" }}>
-              <TextView variant={"Regular_14"} text={"My earnings (USDT)"} />
+              <TextView variant={"Regular_14"} text={"My earnings (USDC)"} />
               <TextView variant={"Regular_22"} text={Number(referralEarnings?.totalReward)?.toFixed(3) || "--"} />
             </Box>
             <Box sx={{ display: "flex", flexDirection: "column", marginRight: "4rem" }}>
@@ -233,11 +233,11 @@ export const UserReferralAndRebate = () => {
             <TextView variant={"Regular_22"} color={"text.highlight"} text={String(Number(rebateEarnings?.totalRebateRate)?.toFixed(3)) || "--"} />
           </Box>
           <Box sx={{ display: "flex", flexDirection: "column", marginRight: "4rem" }}>
-            <TextView variant={"Regular_14"} text={"My earnings (USDT)"} />
+            <TextView variant={"Regular_14"} text={"My earnings (USDC)"} />
             <TextView variant={"Regular_22"} text={String(Number(rebateEarnings?.totalRebateReward)?.toFixed(3)) || "--"} />
           </Box>
           <Box sx={{ display: "flex", flexDirection: "column", marginRight: "4rem" }}>
-            <TextView variant={"Regular_14"} text={"Fee (USDT)"} />
+            <TextView variant={"Regular_14"} text={"Fee (USDC)"} />
             <TextView variant={"Regular_22"} text={String(Number(rebateEarnings?.totalRebateFees)?.toFixed(3)) || "--"} />
           </Box>
         </Box>

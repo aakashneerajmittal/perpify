@@ -15,7 +15,7 @@ const DailyPnLChart = ({ graphData }: { graphData: { labels: string[]; datasetOn
       ) : (
         <>
           <Box display="flex" flexDirection={"row"} width={"100%"} justifyContent={"space-between"} alignItems={"center"}>
-            <TextView text={"P&L (USDT)"} component="p" variant="Medium_14" color="text.regular" />
+            <TextView text={"P&L (USDC)"} component="p" variant="Medium_14" color="text.regular" />
             <Box display={"flex"} gap="24px">
               <Tooltip
                 componentsProps={{

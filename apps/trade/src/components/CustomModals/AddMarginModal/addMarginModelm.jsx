@@ -83,7 +83,7 @@ const AddMarginModalm = ({ isOpen, close, symbol }) => {
               </Button>
             </Grid>
             <Grid xs={12}>
-              <InputLabel sx={{ color: "text.primary" }}>Amount (USDT)</InputLabel>
+              <InputLabel sx={{ color: "text.primary" }}>Amount (USDC)</InputLabel>
               <BasicTextFields
                 fullWidth
                 helperText={helperText}

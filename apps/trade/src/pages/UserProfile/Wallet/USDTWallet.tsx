@@ -53,21 +53,21 @@ const USDTWalletNew = ({ IsUserVerified }: { IsUserVerified: boolean }) => {
   };
   const AccountValue = {
     availableBalance: [
-      "Available Balance (USDT)",
+      "Available Balance (USDC)",
       getBalanceValue(Number(availableBalance)),
       `Free Balance available for placing the New Orders. It is updated on real time basis, hence there might be some discrepancy.`
     ],
     crossWalletBalance: [
-      "Cross Wallet Balance (USDT)",
+      "Cross Wallet Balance (USDC)",
       getBalanceValue(Number(totalCrossWalletBalance)),
       `Amount that is allocated to Cross Wallet. It is shared across all the Cross Mode positions and orders.`
     ],
     maxWithdrawAmount: [
-      "Max Withdraw-able Balance (USDT)",
+      "Max Withdraw-able Balance (USDC)",
       getBalanceValue(Number(maxWithdrawAmount)),
       `Amount that can be withdrawn, equal to Available balance - Frozen balance (received via rewards).*There can be some discrepancy in the data shown.`
     ],
-    totalIsolatedWalletBalance: ["Isolated Margin (USDT)", getBalanceValue(Number(totalIsolatedWalletBalance)), `It is the sum of all Isolated Margins of your positions`]
+    totalIsolatedWalletBalance: ["Isolated Margin (USDC)", getBalanceValue(Number(totalIsolatedWalletBalance)), `It is the sum of all Isolated Margins of your positions`]
   };
 
   return (
