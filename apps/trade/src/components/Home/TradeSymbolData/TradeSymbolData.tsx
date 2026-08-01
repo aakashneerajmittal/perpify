@@ -5,6 +5,7 @@ import { styled } from "@mui/material/styles";
 import TradingViewChart from "./TradingViewChart/TradingViewChartWrapper";
 import TradeNews from "../../News/TradeNews";
 import OrderBookAndDepthBookChartContainer from "./OrderBookAndDepthBookChartContainer/OrderBookAndRecentTradesContainer";
+import { isEnabled } from "@/config/perpifyFeatures";
 type TradeSymbolTabType = "chart" | "orderbook" | "news";
 
 const TabPrimary = styled(Tab)<TabProps>(({ theme }) => ({
@@ -34,7 +35,8 @@ const TradeSymbolData: React.FC = () => {
   const tradeSymbolTabs = [
     { id: "1", value: "chart", label: "Chart" },
     { id: "2", value: "orderbook", label: "Order Book" },
-    { id: "3", value: "news", label: "News" }
+    // News is kept in code but switched off for the testnet phase (perpifyFeatures.news).
+    ...(isEnabled("news") ? [{ id: "3", value: "news", label: "News" }] : [])
   ];
 
   const handleChange = (event: SyntheticEvent, newValue: TradeSymbolTabType) => {

@@ -8,6 +8,7 @@ import { useTheme } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
 import SideBarIconButton from "../SideBarIconButton";
 import LeaderBoardIcon from "@/assets/icons/SideBar/LeaderBoardIcon";
+import { isEnabled } from "@/config/perpifyFeatures";
 // import { useSelector } from "react-redux";
 // import { useFeatureFlagEnabled } from "posthog-js/react";
 import { recordCleverTapEvent } from "@/utils/recordCleverTapEvent";
@@ -74,12 +75,14 @@ const TradePageIcons = () => {
         selected={activeTradePageButton === "trade"}
         label={"Trade"}
       />
-      <SideBarIconButton
-        onClick={() => navigate("/market")}
-        iconComponent={<MarketIcon strokeColor={activeTradePageButton === "market" ? `${theme.palette.neutral.black}` : `${theme.palette.neutral.grey7}`} />}
-        selected={activeTradePageButton === "market"}
-        label={"Market"}
-      />
+      {isEnabled("multiSymbolWatchlist") && (
+        <SideBarIconButton
+          onClick={() => navigate("/market")}
+          iconComponent={<MarketIcon strokeColor={activeTradePageButton === "market" ? `${theme.palette.neutral.black}` : `${theme.palette.neutral.grey7}`} />}
+          selected={activeTradePageButton === "market"}
+          label={"Market"}
+        />
+      )}
       <SideBarIconButton
         onClick={() => navigate("/portfolio")}
         iconComponent={
@@ -91,12 +94,14 @@ const TradePageIcons = () => {
         selected={activeTradePageButton === "portfolio"}
         label={"Portfolio"}
       />
-      <SideBarIconButton
-        onClick={() => navigate("/leaderboard")}
-        iconComponent={<LeaderBoardIcon fill={activeTradePageButton === "leaderboard" ? `${theme.palette.neutral.black}` : `${theme.palette.neutral.grey7}`} />}
-        selected={activeTradePageButton === "leaderboard"}
-        label={"Leaderboard"}
-      />
+      {isEnabled("leaderboard") && (
+        <SideBarIconButton
+          onClick={() => navigate("/leaderboard")}
+          iconComponent={<LeaderBoardIcon fill={activeTradePageButton === "leaderboard" ? `${theme.palette.neutral.black}` : `${theme.palette.neutral.grey7}`} />}
+          selected={activeTradePageButton === "leaderboard"}
+          label={"Leaderboard"}
+        />
+      )}
       {/* {showSignalTrading && (
         <SideBarIconButton
           onClick={handleSignalRouting}

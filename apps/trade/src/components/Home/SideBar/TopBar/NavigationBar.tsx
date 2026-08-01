@@ -8,6 +8,7 @@ import { logoutApp } from "@/frontend-BL/services/ThirdPartyServices/SuperTokens
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import CustomDivider from "@/components/UI/Divider/CustomDivider";
+import { isEnabled } from "@/config/perpifyFeatures";
 export default function NavigationBar({ state, setState }: { state: boolean; setState: Function }) {
   const Mobileroutes = [
     { name: "Trade", route: "/" },
@@ -54,21 +55,25 @@ export default function NavigationBar({ state, setState }: { state: boolean; set
               <ListItemText sx={{ fontSize: "12px" }} primary={"Orders"} />
             </ListItemButton>
           </ListItem>{" "}
-          <ListItem disablePadding onClick={() => navigate("/wallet")}>
-            <ListItemButton>
-              <ListItemText sx={{ fontSize: "12px" }} primary={"Assets"} />
-            </ListItemButton>
-          </ListItem>{" "}
+          {isEnabled("fiat") && (
+            <ListItem disablePadding onClick={() => navigate("/wallet")}>
+              <ListItemButton>
+                <ListItemText sx={{ fontSize: "12px" }} primary={"Assets"} />
+              </ListItemButton>
+            </ListItem>
+          )}{" "}
           <ListItem disablePadding onClick={() => navigate("/portfolio")}>
             <ListItemButton>
               <ListItemText sx={{ fontSize: "12px" }} primary={"Portfolio"} />
             </ListItemButton>
           </ListItem>{" "}
-          <ListItem disablePadding onClick={() => navigate("/leaderboard")}>
-            <ListItemButton>
-              <ListItemText sx={{ fontSize: "12px" }} primary={"Leaderboard"} />
-            </ListItemButton>
-          </ListItem>
+          {isEnabled("leaderboard") && (
+            <ListItem disablePadding onClick={() => navigate("/leaderboard")}>
+              <ListItemButton>
+                <ListItemText sx={{ fontSize: "12px" }} primary={"Leaderboard"} />
+              </ListItemButton>
+            </ListItem>
+          )}
         </List>
 
         <List sx={{ " .MuiListItemText-primary": { fontSize: "12px" } }}>
