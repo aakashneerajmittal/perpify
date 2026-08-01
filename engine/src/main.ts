@@ -33,6 +33,7 @@ const args = new Map(
 );
 const OFFLINE = args.has("offline");
 const DEMO = args.has("demo"); // investor demo: browsers that connect get testnet funds + a tier
+const FRESH = args.has("fresh"); // skip replaying today's command log — clean two-sided maker book
 const SOAK_S = args.has("soak") ? Number(args.get("soak")) : 0;
 const PORT = Number(args.get("port") ?? 8787);
 // browser Origins allowed to connect (local dev + a deployed demo URL via --origins=...)
@@ -78,8 +79,11 @@ async function main() {
     return bus.dispatch(cmd);
   };
 
-  const replayed = replayBootLog(bus);
-  console.log(`[boot] venue service · replayed ${replayed} commands from today's log · port ${PORT}`);
+  // --fresh: start with a clean book (maker flat, two-sided). Replaying a long accumulated
+  // log fast-forwards the maker into a skewed inventory (often one-sided), so demos/tests
+  // should boot fresh. Without --fresh the log replays for continuity across restarts.
+  const replayed = FRESH ? 0 : replayBootLog(bus);
+  console.log(`[boot] venue service · ${FRESH ? "fresh start (log replay skipped)" : `replayed ${replayed} commands from today's log`} · port ${PORT}`);
 
   const chain = OFFLINE ? null : ChainClient.fromRepo(repoRoot);
 
