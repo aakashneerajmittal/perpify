@@ -12,6 +12,7 @@
 import { useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { BASE_URL } from "@/frontend-api-service/Base";
+import SPX_PERP_SYMBOL from "@/config/perpifySymbol";
 
 const SYMBOL = "SPX-PERP";
 const KEY = SYMBOL.toLowerCase(); // "spx-perp" — the header reads `${selectedSymbol}@markPrice@1s`
@@ -19,9 +20,11 @@ const KEY = SYMBOL.toLowerCase(); // "spx-perp" — the header reads `${selected
 export default function usePerpifyMarketData({ tradeScreen }: { tradeScreen?: boolean } = {}) {
   const dispatch = useDispatch();
   const binanceData = useRef<Record<string, string>>({});
+  const stats = useRef<{ open?: number; high: number; low: number }>({ high: -Infinity, low: Infinity });
 
   useEffect(() => {
-    // 1) declare the market + mark the socket "open" so gated components render
+    // 1) declare the market + its metadata (precision/tick/step), mark the socket "open"
+    dispatch({ type: "SET_TRADABLE_SYMBOL_LIST_SUCCESS", payload: { tradablesymbolList: [SPX_PERP_SYMBOL] } });
     dispatch({ type: "SET_SELECTED_SYMBOL_SUCCESS", payload: { selectedSymbol: SYMBOL } });
     dispatch({ type: "SET_ORDER_BOOK_LOADING", payload: SYMBOL }); // sets OrderBook.symbol = SPX-PERP
     dispatch({ type: "BINANCE_WS_OPENED", payload: { connecting: false, opened: true } });
@@ -40,17 +43,44 @@ export default function usePerpifyMarketData({ tradeScreen }: { tradeScreen?: bo
       ws.onerror = () => { try { ws.close(); } catch {} };
     };
 
-    // 2) mark/index/gap coefficient → header price + ticker
+    // 2) mark/index/gap coefficient → header price + ticker + 24h stats
     open("/marketDataStream", (m) => {
       if (m?.e !== "markPriceUpdate") return;
+      const pxNum = Number(m.p);
       const px = String(m.p);
+      const s = stats.current;
+      if (s.open === undefined) s.open = pxNum;
+      s.high = Math.max(s.high, pxNum);
+      s.low = Math.min(s.low, pxNum);
+      const changePct = s.open ? (((pxNum - s.open) / s.open) * 100).toFixed(2) : "0.00";
+
       binanceData.current[`${KEY}@markPrice@1s`] = px;
       binanceData.current[`${KEY}@ticker`] = px;
       binanceData.current[`${KEY}@indexPrice`] = String(m.i);
       binanceData.current[`${KEY}@gapCoefficient`] = String(m.gc); // Perpify extension
-      if (!binanceData.current[`${KEY}@per`]) binanceData.current[`${KEY}@per`] = "0.00";
+      binanceData.current[`${KEY}@per`] = changePct;
       dispatch({ type: "SET_BINANCE_DATA", payload: { ...binanceData.current } });
-      dispatch({ type: "SET_MARKPRICE_SNAPSHOT", payload: { [`${KEY}@markPrice@1s`]: px } });
+      dispatch({ type: "SET_MARKPRICE_SNAPSHOT", payload: { [`${KEY}@markPrice@1s`]: px, indexPrice: String(m.i) } });
+
+      // 24h ticker row (session-relative on testnet) → day high/low/change, LTP
+      dispatch({
+        type: "SET_ALL_TICKER_DATA",
+        payload: {
+          symbol: SYMBOL,
+          percentage: changePct,
+          lp: px,
+          vol: "0",
+          open: String(s.open),
+          high: String(s.high),
+          low: String(s.low),
+          numberofTrades: 0,
+          previousLTP: px,
+          priceChange: s.open ? (pxNum - s.open).toFixed(2) : "0",
+          colorIndicator: pxNum >= (s.open ?? pxNum) ? 1 : 0,
+          markPrice: px,
+          indexPrice: String(m.i),
+        },
+      });
     });
 
     // 3) aggregated book → SET_ASKS / SET_BIDS ([[price, qty]] with matching symbol)
