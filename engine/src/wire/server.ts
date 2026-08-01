@@ -206,6 +206,23 @@ export class WireServer {
         },
       };
       this.dispatch(cmd);
+      return;
+    }
+
+    if (m?.type === "demo_gap") {
+      // DEMO: simulate a severe reopen gap adverse to the sender's position, big enough
+      // to breach maintenance margin across all tiers. The OracleTick handler snaps the
+      // mark and runs the liquidation scan → PositionLiquidated → signed explainer pushed
+      // to the client. The next 1s price tick resumes the normal feed. Testnet-only theatre
+      // for the "watch the reopen clear, see who's liquidated and why" demo.
+      const a = this.bus.state.accounts.get(owner);
+      if (!a?.position) return;
+      const isLong = a.position.side === "buy";
+      const idx = Number(this.bus.state.indexPx8);
+      if (!(idx > 0)) return;
+      const shocked = Math.round(idx * (isLong ? 0.7 : 1.3)); // ±30% gap
+      this.dispatch({ kind: "OracleTick", market: "SPX-PERP", indexPx: BigInt(shocked), source: "testnet-feed" });
+      return;
     }
   }
 

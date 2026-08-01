@@ -38,6 +38,7 @@ import OrderBook from "./Internal/OrderBook.r";
 import SignalTrading from "./SignalTrading/SignalTrading.r";
 import FallbackHandler from "./Internal/FallbackHandler.r";
 import sessionInfo from "./Internal/SessionInfo.r";
+import liquidation from "./Internal/Liquidation.r";
 const appReducer = combineReducers({
   futures,
   dateSelection,
@@ -76,7 +77,8 @@ const appReducer = combineReducers({
   ChangeInAsset,
   DrawerState,
   TotalProfitLossBasedOn,
-  sessionInfo
+  sessionInfo,
+  liquidation
 });
 
 const rootReducer = (state: any, action: any) => {

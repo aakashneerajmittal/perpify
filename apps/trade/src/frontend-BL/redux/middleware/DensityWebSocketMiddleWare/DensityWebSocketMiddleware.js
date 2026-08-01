@@ -385,6 +385,11 @@ const densitySocketMiddleware = () => {
         if (payload?.positions?.[0]) accountUpdateHandler(payload.positions[0], store);
         store.dispatch(applyPerpifyAccountBalances(payload));
         break;
+      case "LIQUIDATION_EXPLAINER":
+        // PERPIFY: signed liquidation explainer — surfaced as a modal (why you were
+        // liquidated: tier, gap coeff, oracle confidence, equity<MM, proof hash).
+        store.dispatch({ type: "LIQUIDATION_EXPLAINER", payload });
+        break;
       default:
     }
   };

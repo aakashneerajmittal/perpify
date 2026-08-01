@@ -92,7 +92,31 @@ export class EngineBus {
           break;
         }
         case "PositionLiquidated": {
-          touched.add(ev.explainer.owner);
+          // Forward the signed liquidation explainer to the liquidated trader so the
+          // UI can show *why* (tier, gap coeff, oracle confidence, equity<MM) with a
+          // replayable proof hash — Playbook §2.5. Units converted for the wire.
+          const ex = ev.explainer;
+          this.emitTo(ex.owner, {
+            eventType: "LIQUIDATION_EXPLAINER",
+            eventData: {
+              owner: ex.owner,
+              market: ex.market,
+              side: ex.side,
+              qty: Number(ex.qty) / 1e8,
+              avgFillPx: Number(ex.avgFillPx) / 1e8,
+              tier: ex.tierAtLiquidation,
+              confidence: ex.confidenceAtLiquidation,
+              gapCoefficient: ex.gapCoefficientAtLiquidation,
+              equity: Number(ex.equityAtTrigger) / 1e6,
+              mmRequired: Number(ex.mmRequiredAtTrigger) / 1e6,
+              queueRank: ex.queueRank,
+              modelVersion: ex.modelVersions?.tier,
+              gapModelVersion: ex.modelVersions?.gap,
+              proofHash: ex.inputsHash,
+              seq: ex.seq,
+            },
+          });
+          touched.add(ex.owner);
           break;
         }
         case "DepositApplied":

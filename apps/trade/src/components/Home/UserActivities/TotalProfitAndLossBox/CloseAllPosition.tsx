@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import PropTypes from "prop-types";
+import { Box } from "@mui/material";
 import CustomButton from "@/components/UI/CustomButton/CustomButton";
 import CloseAllModal from "@/components/CustomModals/CloseAllModal";
 import { DENSITY_WS_SUBSCRIBE_CLOSE_ORDER } from "@/frontend-BL/redux/constants/Constants";
 import { closeAllActivePositions } from "@/frontend-api-service/Api";
 import { showSnackBar } from "@/frontend-BL/redux/actions/Internal/GlobalErrorHandler.ac";
+import { perpifyWsSend } from "@/frontend-api-service/perpifyWsBridge";
+import { MONO_FAMILY } from "@/assets/Theme/typography";
 import { usePostHog } from "posthog-js/react";
 import { recordCleverTapEvent } from "@/utils/recordCleverTapEvent";
 // import CustomButton from "@/components/UI/CustomButton/CustomButton";
@@ -43,8 +46,48 @@ export const CloseAllPosition = () => {
     }
   };
 
+  const handleSimulateGap = () => {
+    // DEMO: ask the engine to simulate a severe reopen gap → liquidates this position →
+    // signed explainer modal. Shows the thesis (dark-period risk) live.
+    const ok = perpifyWsSend({ type: "demo_gap" });
+    dispatch(
+      showSnackBar({
+        src: "demo gap",
+        message: ok ? "Simulating a severe reopen gap…" : "Reconnect to simulate",
+        type: ok ? "success" : "error"
+      })
+    );
+  };
+
   return (
     <>
+      {openPositions.length > 0 && (
+        <Box
+          onClick={handleSimulateGap}
+          title="Simulate a severe reopen gap (testnet demo) — liquidates under-margined positions with a signed explainer"
+          sx={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            mr: 1,
+            px: "12px",
+            height: 32,
+            borderRadius: "6px",
+            cursor: "pointer",
+            border: "1px solid rgba(235,182,47,0.45)",
+            color: "#EBB62F",
+            background: "rgba(235,182,47,0.08)",
+            fontFamily: MONO_FAMILY,
+            fontSize: 11,
+            letterSpacing: "0.04em",
+            whiteSpace: "nowrap",
+            transition: "background 0.15s",
+            "&:hover": { background: "rgba(235,182,47,0.16)" }
+          }}
+        >
+          ⚡ Simulate gap
+        </Box>
+      )}
       <CustomButton
         id="close-allPosition-button"
         loadingTextDisable={true}
