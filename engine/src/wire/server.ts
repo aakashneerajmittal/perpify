@@ -58,7 +58,10 @@ export class WireServer {
 
     this.http.on("upgrade", (req, socket, head) => {
       const origin = req.headers.origin;
-      if (origin && !(this.opts.allowedOrigins ?? []).includes(origin)) {
+      const allowed = this.opts.allowedOrigins ?? [];
+      // "*" = allow any browser origin (testnet demo: play-money, no real funds, so the
+      // origin allowlist isn't a security boundary here). Otherwise exact-match the allowlist.
+      if (origin && !allowed.includes("*") && !allowed.includes(origin)) {
         socket.write("HTTP/1.1 403 Forbidden\r\n\r\n");
         socket.destroy();
         return;
