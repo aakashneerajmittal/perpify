@@ -1,86 +1,102 @@
-# Deploy — Perpify testnet demo (send an investor a link)
+# Deploy — Perpify testnet demo (Railway engine + Netlify frontend)
 
-Two pieces, deployed independently:
+Two pieces, deployed from the same GitHub repo:
 
-1. **Frontend** — a static build (`apps/trade/build/`) served from any static host
-   (Vercel, Netlify, Cloudflare Pages, S3+CloudFront, GitHub Pages).
-2. **Engine** — the matching venue (`Dockerfile.engine`) on any container host
-   (Fly.io, Render, Railway, a VPS). Browsers reach it over **wss** (TLS), so it sits behind
-   a TLS terminator — `deploy/Caddyfile` does this with automatic certificates.
+- **Engine** → **Railway** (always-on WebSocket server; builds `Dockerfile.engine`).
+- **Frontend** → **Netlify** (static build of `apps/trade`).
 
 ```
-   investor browser ──https──▶  app.perpify.trade      (static frontend)
-                    ──wss────▶  engine.perpify.trade   (Caddy TLS ─▶ engine :8787)
+   investor browser ──https──▶  perpify.netlify.app          (Netlify: static frontend)
+                    ──wss────▶  <name>.up.railway.app        (Railway: the engine)
 ```
 
-The frontend connects to the engine over one WebSocket (orders, fills, account, market data).
-There is no separate backend/database — the engine is the whole server.
+The frontend talks to the engine over one WebSocket (orders, fills, account, market data).
+There is no database — the engine is the whole server. Both platforms build straight from the
+repo and give you TLS (`https`/`wss`) automatically; no certificates to manage.
 
-## 1. Engine
+Do these in order. **Engine first** — you need its URL to build the frontend.
 
-Build (from repo root) and run:
+---
+
+## Part A — Engine on Railway (~5 min)
+
+1. Go to **railway.com** → sign in with GitHub → **New Project** → **Deploy from GitHub repo**
+   → pick `aakashneerajmittal/perpify`.
+2. Railway reads `railway.json` and builds `Dockerfile.engine` automatically. Wait for the
+   first deploy to go green (it runs `npm install` then starts the engine).
+3. **Settings → Networking → Generate Domain.** Railway gives you a URL like
+   `perpify-production-xxxx.up.railway.app`. **Copy it** — this is your engine host.
+4. **Variables → New Variable:** add
+   `ALLOWED_ORIGINS = https://perpify.netlify.app,null`
+   (use the exact Netlify URL you'll set in Part B — naming the Netlify site `perpify` makes it
+   `perpify.netlify.app`). Railway redeploys automatically.
+5. Check it's alive: open `https://<your-railway-domain>/` in a browser — you should see
+   `{"service":"perpify-engine","ok":true,...}`.
+
+Railway injects `PORT`; the engine reads it. It runs `--demo --offline --fresh` (funds every
+visitor $100k, no chain calls, clean two-sided maker book on each restart).
+
+---
+
+## Part B — Frontend on Netlify (~5 min)
+
+1. Go to **netlify.com** → **Add new site → Import an existing project** → GitHub →
+   pick `aakashneerajmittal/perpify`.
+2. Netlify reads `netlify.toml` (base `apps/trade`, build `vite build`, publish `build`) — leave
+   the build settings as detected.
+3. **Site configuration → Environment variables → Add** these two (from Part A step 3):
+   - `VITE_PERPIFY_WS` = `wss://<your-railway-domain>`
+   - `VITE_PERPIFY_ENGINE` = `https://<your-railway-domain>`
+4. **Site configuration → Change site name** → set it to `perpify` (so the URL is
+   `perpify.netlify.app` — matching what you put in `ALLOWED_ORIGINS`).
+5. **Deploys → Trigger deploy → Deploy site** (so the build picks up the env vars). Wait for green.
+
+---
+
+## Part C — Verify
+
+Open `https://perpify.netlify.app`:
+
+- The SPX-PERP price and chart are moving → the market-data WebSocket is connected.
+- Click **Login to Trade** → **Available Balance** shows **100,000 USDC**.
+- Place a small **BUY** → a position appears with live PnL → **Close** → it unwinds.
+
+That's the full loop, live, on a link you can send an investor.
+
+---
+
+## Troubleshooting
+
+- **Price never moves / login spins forever.** `ALLOWED_ORIGINS` on Railway doesn't match the
+  Netlify URL exactly (scheme + host, no trailing slash). Open the browser console — a `403` on
+  the WebSocket confirms it. Fix the variable on Railway; it redeploys.
+- **Frontend still hits localhost.** The Netlify env vars weren't set before the build. Set them,
+  then **Trigger deploy** again (they're baked in at build time).
+- **Orders won't fill.** The maker book drifted one-sided. On Railway, **Deployments → Restart** —
+  the engine boots `--fresh` with a clean two-sided book.
+- **Railway free usage runs out.** The engine is tiny; the Hobby plan (~$5/mo) keeps it always-on
+  with no cold starts — worth it so an investor never hits a spun-down server.
+
+---
+
+## Alternative — your own VPS (instead of Railway)
+
+Run the engine container behind Caddy for `wss` TLS (`deploy/Caddyfile` handles certificates):
 
 ```
 docker build -f Dockerfile.engine -t perpify-engine .
-docker run -d --name perpify-engine \
-  -e ALLOWED_ORIGINS="https://app.perpify.trade,null" \
-  -e PORT=8787 -p 8787:8787 \
-  perpify-engine
-```
-
-`ALLOWED_ORIGINS` **must include the frontend's exact origin** (scheme + host, no path) or the
-browser WebSocket upgrade is rejected with 403. Keep `null` too (covers non-browser clients).
-The container runs `--demo --offline --fresh`: every connecting address is funded $100k, no chain
-calls, and the maker book starts clean two-sided (see below for why `--fresh` matters).
-
-Verified: the image boots, funds a connecting wallet, and fills a market order end-to-end.
-(In the cloud sandbox the image was validated with vendored deps; `npm install` of the three
-deps — ws, ethers, tsx — runs normally on a real host/CI.)
-
-### TLS (wss) with Caddy
-
-Point `engine.perpify.trade` DNS at the host, then run Caddy with `deploy/Caddyfile`:
-
-```
+docker run -d --name perpify-engine -e ALLOWED_ORIGINS="https://perpify.netlify.app,null" \
+  -e PORT=8787 -p 8787:8787 perpify-engine
 docker run -d --name caddy --network host \
-  -v $PWD/deploy/Caddyfile:/etc/caddy/Caddyfile \
-  -v caddy_data:/data caddy:2
+  -v $PWD/deploy/Caddyfile:/etc/caddy/Caddyfile -v caddy_data:/data caddy:2
 ```
 
-Caddy fetches a Let's Encrypt cert automatically and proxies `wss://engine.perpify.trade` →
-`ws://127.0.0.1:8787`. On Fly/Render/Railway you can skip Caddy — they terminate TLS for you;
-just expose port 8787 and use the platform's `https/wss` URL.
-
-## 2. Frontend
-
-Build with the engine's **public** URLs embedded (defaults to `localhost:8787` if unset):
-
-```
-cd apps/trade
-VITE_PERPIFY_WS="wss://engine.perpify.trade" \
-VITE_PERPIFY_ENGINE="https://engine.perpify.trade" \
-npx vite build
-# deploy the build/ directory to your static host
-```
-
-(These are injected at build time via `vite.config.js` → `define`. Verified: the built bundle
-contains the wss URL, not the localhost fallback.)
-
-## 3. Sanity checks after deploy
-
-- Open the frontend URL → the SPX-PERP price and chart are moving (market-data WS connected).
-- Click **Login to Trade** → **Available Balance** shows 100,000 USDC (account WS + demo funding).
-- Place a small **BUY** → a position appears; **Close** → it unwinds. If orders don't fill,
-  the engine's maker book is one-sided — restart the engine (it boots `--fresh`).
-- If the price never moves or login spins: `ALLOWED_ORIGINS` doesn't match the frontend origin
-  (check the browser console for a 403 on the WebSocket).
+Point `engine.yourdomain.com` DNS at the host, put that host in the Netlify env vars, and add the
+Netlify URL to `ALLOWED_ORIGINS`. Everything else is the same.
 
 ## Notes
 
-- **Restart the engine to reset.** `--fresh` skips replaying the command log, so each restart is a
-  clean venue with a two-sided maker book. A long-running engine that replays a big log can drift
-  the maker one-sided (orders stop filling) — restarting fixes it.
-- **Testnet only.** Burner-wallet auth and $100k demo funding are the documented testnet stubs;
-  real wallet-signature auth and real collateral replace them for mainnet without UI changes.
-- **Single region is fine** for a demo. The engine is in-memory and deterministic; one small
-  instance handles demo load comfortably.
+- **Testnet only.** Burner-wallet auth + $100k demo funding are the documented testnet stubs; real
+  wallet-signature auth and real collateral replace them for mainnet without UI changes.
+- **Restart = clean venue.** The engine is in-memory and deterministic; `--fresh` gives a clean
+  book every restart. One small instance handles demo load comfortably.

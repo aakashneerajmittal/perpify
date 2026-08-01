@@ -47,7 +47,13 @@ export class WireServer {
     public opts: WireServerOpts,
   ) {
     this.dispatch = opts.dispatch ?? ((c) => bus.dispatch(c));
-    this.http = createServer();
+    // Plain HTTP (non-upgrade) requests get a small health/status JSON — lets deploy hosts
+    // (Railway/Render) healthcheck the port and gives a friendly response if someone opens
+    // the engine URL directly. WebSocket upgrades are handled separately below.
+    this.http = createServer((req, res) => {
+      res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+      res.end(JSON.stringify({ service: "perpify-engine", ok: true, market: "SPX-PERP", ts: this.bus.state.seq }));
+    });
     this.wss = new WebSocketServer({ noServer: true });
 
     this.http.on("upgrade", (req, socket, head) => {

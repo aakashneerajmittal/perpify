@@ -21,9 +21,12 @@ RUN npm install --no-audit --no-fund
 COPY engine/ ./
 COPY risk/ /app/risk/
 
-ENV PORT=8787
 EXPOSE 8787
 
-# ALLOWED_ORIGINS must include the deployed frontend's exact origin (comma-separated; keep `null`
-# so non-browser clients and file:// still connect). PORT overridable for hosts that inject one.
-CMD ["sh", "-c", "npx tsx src/main.ts --demo --offline --fresh --port=${PORT:-8787} --origins=${ALLOWED_ORIGINS:-null}"]
+# Config comes from the environment (the engine reads PORT + ALLOWED_ORIGINS directly):
+#   PORT             — the host injects this (Railway/Render/Fly). Defaults to 8787.
+#   ALLOWED_ORIGINS  — MUST include the deployed frontend's exact origin, comma-separated,
+#                      keeping `null` (covers non-browser clients). e.g.
+#                      "https://perpify.netlify.app,null". If unset, only localhost origins
+#                      connect and the deployed frontend's WebSocket is rejected (403).
+CMD ["npx", "tsx", "src/main.ts", "--demo", "--offline", "--fresh"]

@@ -35,9 +35,11 @@ const OFFLINE = args.has("offline");
 const DEMO = args.has("demo"); // investor demo: browsers that connect get testnet funds + a tier
 const FRESH = args.has("fresh"); // skip replaying today's command log — clean two-sided maker book
 const SOAK_S = args.has("soak") ? Number(args.get("soak")) : 0;
-const PORT = Number(args.get("port") ?? 8787);
-// browser Origins allowed to connect (local dev + a deployed demo URL via --origins=...)
-const ORIGINS = (args.get("origins") ?? "http://localhost:5173,http://localhost:4173,http://127.0.0.1:5173,null")
+// Port + allowed origins: CLI flag wins, else the env var many hosts inject
+// (Railway/Render/Fly set PORT; ALLOWED_ORIGINS is ours), else local defaults.
+const PORT = Number(args.get("port") ?? process.env.PORT ?? 8787);
+// browser Origins allowed to connect (local dev + a deployed demo URL via --origins= or ALLOWED_ORIGINS)
+const ORIGINS = (args.get("origins") ?? process.env.ALLOWED_ORIGINS ?? "http://localhost:5173,http://localhost:4173,http://127.0.0.1:5173,null")
   .split(",")
   .map((s) => s.trim());
 
