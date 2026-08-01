@@ -6,6 +6,7 @@ import { useSelector } from "react-redux";
 import dataFeed from "./dataFeed";
 import { widgetContainer } from "./helpers";
 import save_load_adapter from "./saveLoadAdapter";
+import PerpifyChart from "../PerpifyChart";
 export const TradingViewChart = ({ ID, res }: { ID: number; res: string }) => {
   const { opened } = useSelector((state: any) => state.wsConnection.binance);
   const selectedSymbol = useSelector((state: any) => state.selectSymbol.selectedSymbol);
@@ -56,9 +57,8 @@ export const TradingViewChart = ({ ID, res }: { ID: number; res: string }) => {
   return (
     <>
       {!hasTV && (
-        <Box bgcolor={"background.primary"} sx={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1, color: "text.secondary" }}>
-          <Box sx={{ fontFamily: "monospace", fontSize: 13, opacity: 0.7 }}>SPX-PERP · price chart</Box>
-          <Box sx={{ fontFamily: "monospace", fontSize: 11, opacity: 0.4 }}>Perpify chart — adoption step 7</Box>
+        <Box bgcolor={"background.primary"} sx={{ height: "100%", width: "100%" }}>
+          <PerpifyChart />
         </Box>
       )}
       {hasTV && !opened && (

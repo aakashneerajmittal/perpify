@@ -38,6 +38,7 @@
     "jest-environment-jsdom": "^29.6.2",
     "jest-slack-reporter": "^0.1.1",
     "jest-websocket-mock": "^2.5.0",
+    "lightweight-charts": "^4.2.3",
     "moment": "^2.29.4",
     "otp-timer": "^1.1.5",
     "posthog-js": "^1.82.3",
