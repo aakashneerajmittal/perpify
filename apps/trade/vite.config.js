@@ -31,6 +31,13 @@ export default defineConfig({
     sourcemap: false, // https://github.com/vitejs/vite/issues/2433
     rollupOptions: { cache: false }
   },
+  // PERPIFY: embed the engine's public URL at build time so a deployed frontend talks to a
+  // real host instead of localhost:8787. Set VITE_PERPIFY_WS (wss://…) + VITE_PERPIFY_ENGINE
+  // (https://…) before `vite build`; unset → empty string → the localhost fallback in Base/index.js.
+  define: {
+    "process.env.VITE_PERPIFY_WS": JSON.stringify(process.env.VITE_PERPIFY_WS || ""),
+    "process.env.VITE_PERPIFY_ENGINE": JSON.stringify(process.env.VITE_PERPIFY_ENGINE || "")
+  },
   plugins: [
     react(),
     svgr(),

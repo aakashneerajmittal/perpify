@@ -1,0 +1,11 @@
+# Perpify engine — TLS terminator for the browser's wss connection.
+# Caddy fetches + renews a Let's Encrypt certificate automatically and proxies the
+# secure WebSocket to the plain-ws engine on :8787.
+#
+#   run: docker run -d --name caddy --network host \
+#          -v $PWD/deploy/Caddyfile:/etc/caddy/Caddyfile -v caddy_data:/data caddy:2
+#
+# Replace the hostname with your engine subdomain (DNS must point at this host first).
+engine.perpify.trade {
+	reverse_proxy 127.0.0.1:8787
+}

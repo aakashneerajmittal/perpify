@@ -1,0 +1,29 @@
+# Perpify matching engine — testnet demo image.
+# Serves the deterministic venue over WebSocket:
+#   /v1/order-and-account-updates?token=<addr>   · orders + fills + account
+#   /v1/ws/order-book                             · aggregated depth
+#   /marketDataStream                             · mark / index / gap coefficient
+# Runs the TypeScript directly via tsx. --offline skips chain calls; --fresh boots a clean
+# two-sided maker book; --demo funds each connecting address $100k.
+#
+# Build (from repo root):  docker build -f Dockerfile.engine -t perpify-engine .
+# Run:                     docker run -e ALLOWED_ORIGINS="https://app.perpify.trade,null" -p 8787:8787 perpify-engine
+FROM node:22-slim
+
+WORKDIR /app/engine
+
+# Install deps. tsx is a devDependency and is required to run, so install everything.
+COPY engine/package.json engine/package-lock.json* ./
+RUN npm install --no-audit --no-fund
+
+# Engine source + the risk data files it reads at boot (repoRoot resolves to /app):
+#   /app/risk/data/spy_daily.csv (required seed) · /app/risk/gap/out/reading-current.json (optional)
+COPY engine/ ./
+COPY risk/ /app/risk/
+
+ENV PORT=8787
+EXPOSE 8787
+
+# ALLOWED_ORIGINS must include the deployed frontend's exact origin (comma-separated; keep `null`
+# so non-browser clients and file:// still connect). PORT overridable for hosts that inject one.
+CMD ["sh", "-c", "npx tsx src/main.ts --demo --offline --fresh --port=${PORT:-8787} --origins=${ALLOWED_ORIGINS:-null}"]
