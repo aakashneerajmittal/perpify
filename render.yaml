@@ -1,0 +1,18 @@
+# Render Blueprint — Perpify engine (one-click deploy).
+# In Render: New → Blueprint → pick the `perpify` repo → Apply. This creates the web
+# service fully configured (Docker build of Dockerfile.engine, free plan, health check,
+# allowed origins). No manual field entry.
+services:
+  - type: web
+    name: perpify-engine
+    runtime: docker
+    dockerfilePath: ./Dockerfile.engine
+    dockerContext: .
+    plan: free
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      # Must match the frontend's exact origin. demo.perpify.trade is the planned demo URL;
+      # add/adjust here (comma-separated) if the frontend is served elsewhere. Keep `null`.
+      - key: ALLOWED_ORIGINS
+        value: https://demo.perpify.trade,null
