@@ -17,6 +17,7 @@ import { FundingRateToolTip, MarkPriceToolTip } from "@/assets/strings/tooltip.s
 import SideMenu from "@/components/Home/SideMenu/SideMenu";
 import PropTypes from "prop-types";
 import BuySellToggle from "@/components/Home/OrderForm/BuySellToggle";
+import GapCoefficient from "./GapCoefficient";
 interface Props {
   showOrderForm: { expand: boolean; side: string };
   setShowOrderForm: () => void;
@@ -157,6 +158,7 @@ const MarketSegment = ({ showOrderForm, setShowOrderForm }: Props) => {
             </Tooltip>
             <Funding contextListner="market" symbol={symbol} />
           </Box>
+          <GapCoefficient />
         </Box>
       </Tabs>
     </Box>
