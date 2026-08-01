@@ -36,7 +36,7 @@ export const TotalProfitAndLoss = ({ variant }: Props) => {
       return Number(accumulator) + Number(data.unRealisedPnl);
     }, 0);
 
-    return { unrelealizedPnl: pnl + pnlForCross, roe: ((pnlForCross + pnl) / totalMarginUsed) * 100 };
+    return { unrelealizedPnl: pnl + pnlForCross, roe: totalMarginUsed > 0 ? ((pnlForCross + pnl) / totalMarginUsed) * 100 : 0 };
   }, [TotalUnRealisedProfitAndLossBasedOnMarkPrice, TotalUnRealisedProfitAndLossForCrossBasedOnMarkPrice]);
 
   const combinedPnlBasedOnLastPrice = useMemo(() => {
@@ -50,7 +50,7 @@ export const TotalProfitAndLoss = ({ variant }: Props) => {
     const pnlForCross = TotalUnRealisedProfitAndLossForCrossBasedOnLTP.reduce((accumulator: string, data: { unRealisedPnl: string }) => {
       return Number(accumulator) + Number(data.unRealisedPnl);
     }, 0);
-    return { unrelealizedPnl: pnl + pnlForCross, roe: ((pnlForCross + pnl) / totalMarginUsed) * 100 };
+    return { unrelealizedPnl: pnl + pnlForCross, roe: totalMarginUsed > 0 ? ((pnlForCross + pnl) / totalMarginUsed) * 100 : 0 };
   }, [TotalUnRealisedProfitAndLossBasedOnLTP, TotalUnRealisedProfitAndLossForCrossBasedOnLTP]);
   const showPNL = useMemo(() => {
     if (TotalUnRealisedProfitAndLossBasedOn.TotalProfitLossBasedOn === "LTP") {

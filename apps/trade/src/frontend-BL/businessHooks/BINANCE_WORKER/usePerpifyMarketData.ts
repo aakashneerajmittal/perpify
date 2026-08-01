@@ -63,13 +63,24 @@ export default function usePerpifyMarketData({ tradeScreen }: { tradeScreen?: bo
       s.low = Math.min(s.low, pxNum);
       const changePct = s.open ? (((pxNum - s.open) / s.open) * 100).toFixed(2) : "0.00";
 
+      // Funding: standard perp premium formula (mark vs index), clamped to the engine's
+      // hourly clamp (±0.75%). Settles hourly, so count down to the next hour. Gives the
+      // header a live, sensible funding number instead of NaN.
+      const indexNum = Number(m.i) || pxNum;
+      const premium = indexNum ? (pxNum - indexNum) / indexNum : 0;
+      const fundingRate = Math.max(-0.0075, Math.min(0.0075, premium));
+      const nextFundingTs = Math.ceil(Date.now() / 3_600_000) * 3_600_000;
+
       binanceData.current[`${KEY}@markPrice@1s`] = px;
       binanceData.current[`${KEY}@ticker`] = px;
       binanceData.current[`${KEY}@indexPrice`] = String(m.i);
       binanceData.current[`${KEY}@gapCoefficient`] = String(m.gc); // Perpify extension
       binanceData.current[`${KEY}@per`] = changePct;
       dispatch({ type: "SET_BINANCE_DATA", payload: { ...binanceData.current } });
-      dispatch({ type: "SET_MARKPRICE_SNAPSHOT", payload: { [`${KEY}@markPrice@1s`]: px, indexPrice: String(m.i) } });
+      dispatch({
+        type: "SET_MARKPRICE_SNAPSHOT",
+        payload: { [`${KEY}@markPrice@1s`]: px, indexPrice: String(m.i), fundingRate, countDown: nextFundingTs },
+      });
 
       // 24h ticker row (session-relative on testnet) → day high/low/change, LTP
       dispatch({
