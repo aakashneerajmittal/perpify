@@ -1,0 +1,23 @@
+# Netlify — Perpify frontend (static build of apps/trade).
+# The engine is NOT hosted here (it's a live WebSocket server); it runs on a separate
+# always-on host, and its public URL is provided to this build via environment variables:
+#   VITE_PERPIFY_WS      = wss://<engine-host>      (WebSocket base)
+#   VITE_PERPIFY_ENGINE  = https://<engine-host>    (HTTP base)
+# Set both in Netlify → Site configuration → Environment variables, then trigger a deploy.
+# Unset → the build falls back to localhost:8787 (local dev only).
+
+[build]
+  base = "apps/trade"
+  command = "npx vite build"
+  publish = "build"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # Silence Netlify's secrets-scanner for our public (non-secret) engine URLs.
+  SECRETS_SCAN_OMIT_KEYS = "VITE_PERPIFY_WS,VITE_PERPIFY_ENGINE"
+
+# Single-page app: serve index.html for client-side routes (so refreshing /trade doesn't 404).
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
