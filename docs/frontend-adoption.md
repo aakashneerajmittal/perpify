@@ -39,9 +39,13 @@ for a testnet wallet, and add the gap-coefficient surface that is Perpify's diff
 5. **Order submit repoint.** Their order form posts `POST /v1/futures/order`. Add a small
    REST intake to the engine mirroring that shape (dispatches a `place_order`), OR adapt the
    submit to our ws `place_order`. REST-on-engine keeps their form unchanged — preferred.
-6. **Strip CEX/India baggage.** Delete KYC, fiat deposit/withdraw, OTP onboarding, rewards,
-   referral, leaderboard, signal/copy-trading, API-key mgmt, multi-symbol watchlist. Route
-   collapses to the single SPX-PERP trade screen. (~25–30k LOC of deletion.)
+6. **Disable non-core features — DO NOT delete (founder directive Jul 31).** Keep every
+   feature in the codebase — News, Rebate, Referral, Onboarding, KYC, fiat, copy-trading,
+   API mgmt, leaderboard, rewards, multi-symbol watchlist. For the testnet phase they are
+   switched OFF via `apps/trade/src/config/perpifyFeatures.js`: hidden from navigation and
+   route-gated behind a `<ComingSoon/>` wrapper, with all code + assets retained. Flip a
+   flag to `true` to bring any feature back — nothing to rebuild. Only the SPX-PERP trade
+   screen (+ its account plumbing) ships live. (No deletion; assets kept.)
 7. **Chart.** Swap the licensed TradingView Charting Library for a free chart
    (lightweight-charts) fed from `/marketDataStream`. Removes the license from the path;
    apply for the TradingView license only if we want their advanced charts in production.
