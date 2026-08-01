@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Perpify — SPX-PERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#080808;--bg2:#0f0f0f;--bg3:#151515;--bg4:#1c1c1c;
+    --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+    --text:#f0ede8;--text2:#8a8a82;--text3:#55554e;
+    --blue:#4f8eff;--blue-dim:rgba(79,142,255,.12);
+    --green:#3ecf8e;--green-dim:rgba(62,207,142,.10);
+    --red:#ff5566;--red-dim:rgba(255,85,102,.10);
+    --amber:#ffb454;--amber-dim:rgba(255,180,84,.12);
+  }
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;font-size:14px;-webkit-font-smoothing:antialiased;overflow:hidden}
+  .mono{font-family:'DM Mono',monospace}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  input{font-family:'DM Mono',monospace;background:var(--bg);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:9px 10px;font-size:14px;width:100%}
+  input:focus{outline:none;border-color:var(--blue)}
+  .tnum{font-variant-numeric:tabular-nums;font-family:'DM Mono',monospace}
+
+  /* NAV */
+  nav{display:flex;align-items:center;gap:22px;height:58px;padding:0 20px;border-bottom:1px solid var(--border);background:rgba(8,8,8,.9)}
+  .logo{font-family:'DM Mono',monospace;font-size:15px;letter-spacing:.14em;color:var(--blue);font-weight:500}
+  .mkt{display:flex;align-items:center;gap:9px;padding:6px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px}
+  .mkt b{font-weight:700;font-size:14px;letter-spacing:.02em}
+  .mkt span{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;letter-spacing:.1em}
+  .navstat{display:flex;flex-direction:column;gap:1px}
+  .navstat .k{font-size:9px;color:var(--text3);font-family:'DM Mono',monospace;letter-spacing:.14em;text-transform:uppercase}
+  .navstat .v{font-size:15px;font-weight:600}
+  .spacer{flex:1}
+
+  /* GAP COEFFICIENT — the star */
+  .gapbadge{display:flex;align-items:center;gap:14px;padding:8px 16px;border-radius:10px;border:1px solid var(--border2);background:var(--bg2);position:relative;transition:all .4s}
+  .gapbadge.raised{border-color:rgba(255,180,84,.5);background:linear-gradient(90deg,rgba(255,180,84,.10),rgba(255,180,84,.03));box-shadow:0 0 24px rgba(255,180,84,.12)}
+  .gapbadge .lbl{font-size:9px;color:var(--text3);font-family:'DM Mono',monospace;letter-spacing:.16em;text-transform:uppercase;line-height:1.5}
+  .gapbadge .lbl b{display:block;color:var(--text2);font-weight:400}
+  .gapbadge.raised .lbl b{color:var(--amber)}
+  .gapval{font-size:30px;font-weight:800;line-height:1;letter-spacing:-.02em}
+  .gapbadge.raised .gapval{color:var(--amber)}
+  .gapsess{font-family:'Instrument Serif',serif;font-style:italic;font-size:14px;color:var(--text2)}
+  .gapbadge.raised .gapsess{color:var(--amber)}
+  @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+  .gapbadge.raised .dot{animation:pulse 1.6s infinite}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block}
+
+  .connect{padding:10px 18px;background:var(--blue);color:#001; font-weight:700;border-radius:8px;font-size:13px;letter-spacing:.02em}
+  .connect:hover{filter:brightness(1.1)}
+  .wallet{display:flex;align-items:center;gap:12px;padding:7px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px}
+  .wallet .addr{font-family:'DM Mono',monospace;font-size:12px;color:var(--text2)}
+  .wallet .bal{font-weight:700;font-size:14px}
+  .wallet .bal span{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace}
+  .connstate{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;letter-spacing:.08em}
+
+  /* LAYOUT */
+  main{display:grid;grid-template-columns:1fr 320px 340px;gap:1px;background:var(--border);height:calc(100vh - 58px)}
+  .col{background:var(--bg);overflow:hidden;display:flex;flex-direction:column}
+  .panel{background:var(--bg);border-bottom:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
+  .phead{display:flex;align-items:center;justify-content:space-between;padding:11px 15px;border-bottom:1px solid var(--border);flex-shrink:0}
+  .phead h3{font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--text3);font-weight:400}
+
+  /* CHART */
+  #chartwrap{flex:1;position:relative;min-height:0}
+  #chart{width:100%;height:100%;display:block}
+  .chartinfo{position:absolute;top:14px;left:16px;pointer-events:none}
+  .chartinfo .px{font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1}
+  .chartinfo .sub{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:4px;letter-spacing:.05em}
+  .banner{padding:8px 15px;background:var(--amber-dim);border-bottom:1px solid rgba(255,180,84,.3);font-size:12px;color:var(--amber);font-family:'DM Mono',monospace;display:none}
+  .banner.show{display:block}
+
+  /* ORDER BOOK */
+  .book{flex:1;display:flex;flex-direction:column;font-family:'DM Mono',monospace;font-size:12px;overflow:hidden}
+  .bookhead{display:grid;grid-template-columns:1fr 1fr 1fr;padding:6px 15px;font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase}
+  .bookhead span:nth-child(2){text-align:right}.bookhead span:nth-child(3){text-align:right}
+  .bookside{flex:1;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+  .bookside.asks{justify-content:flex-start}
+  .brow{display:grid;grid-template-columns:1fr 1fr 1fr;padding:2.5px 15px;position:relative;cursor:pointer}
+  .brow:hover{background:var(--bg3)}
+  .brow .bar{position:absolute;top:0;bottom:0;right:0;opacity:.13}
+  .brow.bid .bar{background:var(--green)}.brow.ask .bar{background:var(--red)}
+  .brow .p{position:relative;z-index:1}.brow.bid .p{color:var(--green)}.brow.ask .p{color:var(--red)}
+  .brow .q,.brow .t{position:relative;z-index:1;text-align:right;color:var(--text2)}
+  .bookmid{display:flex;align-items:center;justify-content:space-between;padding:8px 15px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--bg2)}
+  .bookmid .mark{font-size:17px;font-weight:700}
+  .bookmid .spread{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace}
+
+  /* TICKET */
+  .sidetoggle{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+  .sidebtn{padding:11px;border-radius:8px;font-weight:700;font-size:14px;border:1px solid var(--border2);color:var(--text2);background:var(--bg2);transition:all .15s}
+  .sidebtn.buy.active{background:var(--green);color:#001;border-color:var(--green)}
+  .sidebtn.sell.active{background:var(--red);color:#fff;border-color:var(--red)}
+  .typetabs{display:flex;gap:16px;margin-bottom:12px}
+  .typetab{font-size:12px;color:var(--text3);font-family:'DM Mono',monospace;padding-bottom:5px;border-bottom:1.5px solid transparent}
+  .typetab.active{color:var(--text);border-color:var(--blue)}
+  .field{margin-bottom:11px}
+  .field label{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;letter-spacing:.08em;margin-bottom:5px;text-transform:uppercase}
+  .field label b{color:var(--text2);font-weight:400;cursor:pointer}
+  .ticketbody{padding:15px;overflow-y:auto}
+
+  /* MARGIN BREAKDOWN — the thesis, made visible */
+  .mbreak{background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:13px;margin:4px 0 13px;font-family:'DM Mono',monospace;font-size:12px}
+  .mrow{display:flex;justify-content:space-between;align-items:center;padding:3.5px 0;color:var(--text2)}
+  .mrow .lab{color:var(--text3)}
+  .mrow.hl .lab{color:var(--amber)}.mrow.hl .val{color:var(--amber);font-weight:500}
+  .mrow.tier .lab{color:var(--blue)}.mrow.tier .val{color:var(--blue);font-weight:500}
+  .mrow.total{border-top:1px solid var(--border);margin-top:5px;padding-top:8px;color:var(--text);font-weight:600;font-size:13px}
+  .mrow.total .val{font-size:15px}
+  .mnote{font-size:10px;color:var(--text3);line-height:1.5;margin-top:8px;font-family:'DM Mono',monospace}
+  .mnote.dark{color:var(--amber)}
+  .submit{width:100%;padding:13px;border-radius:8px;font-weight:700;font-size:15px;margin-top:4px;transition:all .15s}
+  .submit.buy{background:var(--green);color:#001}.submit.sell{background:var(--red);color:#fff}
+  .submit:disabled{background:var(--bg3);color:var(--text3);cursor:not-allowed}
+
+  /* POSITION */
+  .posempty{padding:24px 15px;text-align:center;color:var(--text3);font-size:12px;font-family:'DM Mono',monospace}
+  .poscard{margin:12px 15px;border:1px solid var(--border);border-radius:9px;overflow:hidden}
+  .poshead{display:flex;justify-content:space-between;padding:11px 13px;background:var(--bg2);border-bottom:1px solid var(--border)}
+  .possz{font-weight:700}.possz.long{color:var(--green)}.possz.short{color:var(--red)}
+  .posgrid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)}
+  .poscell{background:var(--bg);padding:10px 13px}
+  .poscell .k{font-size:9px;color:var(--text3);font-family:'DM Mono',monospace;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px}
+  .poscell .v{font-size:15px;font-weight:600;font-family:'DM Mono',monospace}
+  .poscell .v.liq{color:var(--amber)}
+  .poscell .v.up{color:var(--green)}.poscell .v.down{color:var(--red)}
+  .closebtn{width:calc(100% - 26px);margin:0 13px 13px;padding:10px;border:1px solid var(--border2);border-radius:7px;color:var(--text2);font-size:13px;font-weight:600;background:var(--bg2)}
+  .closebtn:hover{border-color:var(--red);color:var(--red)}
+
+  /* toast */
+  #toasts{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:100;align-items:center}
+  .toast{padding:10px 18px;border-radius:8px;font-size:13px;font-family:'DM Mono',monospace;border:1px solid var(--border2);background:var(--bg3);animation:rise .3s ease}
+  .toast.ok{border-color:var(--green);color:var(--green)}
+  .toast.err{border-color:var(--red);color:var(--red)}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
+
+  /* overlay */
+  #overlay{position:fixed;inset:0;background:rgba(8,8,8,.94);display:flex;align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(6px)}
+  .card{max-width:440px;text-align:center;padding:40px}
+  .card .lg{font-family:'DM Mono',monospace;font-size:16px;letter-spacing:.14em;color:var(--blue);margin-bottom:20px}
+  .card h1{font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1.08;margin-bottom:14px}
+  .card h1 i{font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;color:var(--blue)}
+  .card p{color:var(--text2);line-height:1.6;margin-bottom:26px;font-size:14px}
+  .card .big{padding:13px 30px;font-size:15px}
+  .card .cfg{margin-top:22px;font-size:11px;color:var(--text3);font-family:'DM Mono',monospace}
+  .card .cfg input{margin-top:7px;text-align:center;font-size:12px}
+  .hide{display:none!important}
+  @media(max-width:1100px){main{grid-template-columns:1fr}.col:nth-child(2),.col:nth-child(1) .panel:first-child{display:none}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">PERPIFY</div>
+  <div class="mkt"><b>SPX-PERP</b><span>S&amp;P 500 · 24/7</span></div>
+  <div class="navstat"><div class="k">Index</div><div class="v tnum" id="nav-index">—</div></div>
+  <div class="gapbadge" id="gapbadge">
+    <div class="lbl">Gap<br>coefficient<b id="gap-state">live · continuous</b></div>
+    <div class="gapval tnum" id="gap-val">1.00</div>
+    <div class="gapsess"><span class="dot" id="gap-dot"></span> <span id="gap-sess">market open</span></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="connstate"><span class="dot" id="conn-dot" style="background:var(--text3)"></span><span id="conn-txt">disconnected</span></div>
+  <div class="wallet hide" id="wallet">
+    <div class="addr" id="w-addr">0x…</div>
+    <div class="bal tnum" id="w-bal">—<span> USDC</span></div>
+  </div>
+</nav>
+
+<main>
+  <div class="col">
+    <div class="banner" id="reduce-banner">⚠ REDUCE-ONLY MODE — oracle confidence below threshold. New positions paused; closes allowed.</div>
+    <div class="panel" style="flex:1">
+      <div id="chartwrap">
+        <canvas id="chart"></canvas>
+        <div class="chartinfo">
+          <div class="px tnum" id="chart-mark">—</div>
+          <div class="sub">SPX-PERP · mark price · <span id="chart-src">testnet feed</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="panel" style="flex:1">
+      <div class="phead"><h3>Order Book</h3><span class="mono" style="font-size:10px;color:var(--text3)" id="book-agg">0.01</span></div>
+      <div class="book">
+        <div class="bookhead"><span>Price</span><span>Size</span><span>Total</span></div>
+        <div class="bookside asks" id="asks"></div>
+        <div class="bookmid"><div class="mark tnum" id="book-mark">—</div><div class="spread" id="book-spread">spread —</div></div>
+        <div class="bookside bids" id="bids"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="panel">
+      <div class="phead"><h3>Place Order</h3><span class="mono" style="font-size:10px;color:var(--blue)" id="tier-chip">tier —</span></div>
+      <div class="ticketbody">
+        <div class="sidetoggle">
+          <button class="sidebtn buy active" id="side-buy">Buy / Long</button>
+          <button class="sidebtn sell" id="side-sell">Sell / Short</button>
+        </div>
+        <div class="typetabs">
+          <div class="typetab active" id="type-market">Market</div>
+          <div class="typetab" id="type-limit">Limit</div>
+        </div>
+        <div class="field" id="price-field" style="display:none">
+          <label>Limit price <b>USDC</b></label>
+          <input class="tnum" id="in-price" inputmode="decimal" />
+        </div>
+        <div class="field">
+          <label>Size <b id="max-lbl">max —</b></label>
+          <input class="tnum" id="in-size" inputmode="decimal" placeholder="0.00" />
+        </div>
+
+        <div class="mbreak" id="mbreak">
+          <div class="mrow"><span class="lab">Notional</span><span class="val tnum" id="m-notional">—</span></div>
+          <div class="mrow"><span class="lab">Base margin (3.0×)</span><span class="val tnum" id="m-base">—</span></div>
+          <div class="mrow hl"><span class="lab">× Gap coefficient</span><span class="val tnum" id="m-gap">×1.00</span></div>
+          <div class="mrow tier"><span class="lab">× Your tier (<span id="m-tiercode">B</span>)</span><span class="val tnum" id="m-tier">×0.90</span></div>
+          <div class="mrow total"><span class="lab">Margin required</span><span class="val tnum" id="m-total">—</span></div>
+          <div class="mnote" id="m-note">Your margin is priced live by the risk engine.</div>
+        </div>
+
+        <button class="submit buy" id="submit" disabled>Connect to trade</button>
+      </div>
+    </div>
+
+    <div class="panel" style="flex:1">
+      <div class="phead"><h3>Your Position</h3></div>
+      <div id="position"><div class="posempty">No open position.<br>Place an order to begin.</div></div>
+    </div>
+  </div>
+</main>
+
+<div id="toasts"></div>
+
+<div id="overlay">
+  <div class="card">
+    <div class="lg">PERPIFY</div>
+    <h1>The venue that <i>knows you.</i></h1>
+    <p>A live testnet perpetual on the S&amp;P 500, settled 24/7. Margin, leverage, and your liquidation price are priced in real time by an AI risk engine — watch them move as the weekend gets priced in.</p>
+    <button class="connect big" id="start">Start trading — testnet</button>
+    <div class="cfg">engine endpoint<input class="mono" id="engine-url" /></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const fmt = (n, d = 2) => (n === null || n === undefined || isNaN(n) ? "—" : Number(n).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }));
+
+// ---------- config ----------
+const params = new URLSearchParams(location.search);
+function defaultEngine() {
+  const q = params.get("engine");
+  if (q) return q;
+  // same-host default (works when served next to a tunnel); else localhost
+  return "ws://localhost:8787";
+}
+const S = {
+  engine: defaultEngine(),
+  addr: null,
+  connected: false,
+  side: "buy",
+  otype: "market",
+  mark: null, index: null, gapCoeff: 1, session: "open", reduceOnly: false,
+  tier: "B", tierMult: 0.9, baseImBps: 3333, baseMmBps: 1667, mmFloorBps: 100, maxLeverage: 3,
+  free: 0, position: null,
+  book: { b: [], a: [] },
+  hist: [],
+  socks: {},
+};
+$("engine-url").value = S.engine;
+
+// ---------- wallet ----------
+function makeBurner() {
+  const b = new Uint8Array(20);
+  crypto.getRandomValues(b);
+  return "0x" + [...b].map((x) => x.toString(16).padStart(2, "0")).join("");
+}
+
+// ---------- connections ----------
+function connect() {
+  S.engine = $("engine-url").value.trim().replace(/\/$/, "");
+  S.addr = makeBurner();
+  S.connected = true;
+  $("overlay").classList.add("hide");
+  $("wallet").classList.remove("hide");
+  $("w-addr").textContent = S.addr.slice(0, 6) + "…" + S.addr.slice(-4);
+  openMarket(); openBook(); openUser();
+  setInterval(ping, 15000);
+  render();
+}
+
+function wsurl(path) { return S.engine + path; }
+
+function reconnect(which, fn) {
+  if (!S.connected) return;
+  setTimeout(() => { try { fn(); } catch (e) {} }, 2000);
+}
+
+function setConn(ok) {
+  $("conn-dot").style.background = ok ? "var(--green)" : "var(--red)";
+  $("conn-txt").textContent = ok ? "connected · " + S.engine.replace(/^wss?:\/\//, "") : "reconnecting…";
+}
+
+function openMarket() {
+  const ws = new WebSocket(wsurl("/marketDataStream?symbol=SPX-PERP"));
+  S.socks.md = ws;
+  ws.onopen = () => setConn(true);
+  ws.onclose = () => { setConn(false); reconnect("md", openMarket); };
+  ws.onmessage = (e) => {
+    const m = JSON.parse(e.data);
+    if (m.type === "pong") return;
+    if (m.e === "markPriceUpdate") {
+      S.mark = +m.p; S.index = +m.i; S.gapCoeff = +m.gc; S.reduceOnly = m.session === "reduce-only";
+      S.hist.push(S.mark); if (S.hist.length > 240) S.hist.shift();
+      render();
+    }
+  };
+}
+function openBook() {
+  const ws = new WebSocket(wsurl("/v1/ws/order-book"));
+  S.socks.ob = ws;
+  ws.onopen = () => ws.send(JSON.stringify({ symbol: "SPX-PERP", limit: 11, decimal: 2, interval: 400 }));
+  ws.onclose = () => reconnect("ob", openBook);
+  ws.onmessage = (e) => {
+    const m = JSON.parse(e.data);
+    if (m.s === "SPX-PERP" && m.b) { S.book = { b: m.b, a: m.a }; renderBook(); }
+  };
+}
+function openUser() {
+  const ws = new WebSocket(wsurl("/v1/order-and-account-updates?token=" + S.addr));
+  S.socks.user = ws;
+  ws.onclose = () => reconnect("user", openUser);
+  ws.onmessage = (e) => {
+    const m = JSON.parse(e.data);
+    if (m.type === "SESSION_INFO") {
+      S.tier = m.tier; S.tierMult = m.tierMult; S.baseImBps = m.baseImBps; S.baseMmBps = m.baseMmBps;
+      S.mmFloorBps = m.mmFloorBps; S.maxLeverage = m.maxLeverage;
+      render();
+    } else if (m.eventType === "ACCOUNT_UPDATE") {
+      const d = m.eventData;
+      if (d.balances && d.balances[0]) S.free = +d.balances[0].walletBalance;
+      S.position = (d.positions && d.positions.length) ? d.positions[0] : null;
+      render();
+    } else if (m.eventType === "ORDER_TRADE_UPDATE") {
+      const d = m.eventData;
+      if (d.status === "FILLED" || d.status === "PARTIALLY_FILLED") {
+        if (+d.l > 0) toast(`Filled ${d.side} ${(+d.z).toFixed(4)} @ ${fmt(+d.ap)}`, "ok");
+      }
+    } else if (m.eventType === "ORDER_UPDATE" && m.eventData.orderStatus === "REJECTED") {
+      toast("Rejected: " + m.eventData.statusRemarks, "err");
+    }
+  };
+}
+function ping() { for (const k in S.socks) { const w = S.socks[k]; if (w && w.readyState === 1) w.send(JSON.stringify({ type: "ping" })); } }
+
+// ---------- actions ----------
+function placeOrder() {
+  const size = +$("in-size").value;
+  if (!(size > 0)) return toast("Enter a size", "err");
+  const w = S.socks.user;
+  if (!w || w.readyState !== 1) return toast("Not connected", "err");
+  let price, tif;
+  if (S.otype === "market") { tif = "IOC"; price = S.mark * (S.side === "buy" ? 1.02 : 0.98); }
+  else { price = +$("in-price").value; if (!(price > 0)) return toast("Enter a limit price", "err"); tif = "GTC"; }
+  w.send(JSON.stringify({ type: "place_order", side: S.side, qty: size, price, tif }));
+  $("in-size").value = "";
+}
+function closePosition() {
+  const w = S.socks.user;
+  if (w && w.readyState === 1) w.send(JSON.stringify({ type: "market_close" }));
+}
+
+// ---------- margin math (mirrors engine/src/margin.ts, shown live) ----------
+function marginPreview(size) {
+  const notional = size * (S.mark || 0);
+  const base = notional * (S.baseImBps / 10000);
+  const withGap = base * S.gapCoeff;
+  const im = withGap * S.tierMult;
+  const byLev = notional / S.maxLeverage;
+  const required = Math.max(im, byLev);
+  return { notional, base, im, required, lev: required > 0 ? notional / required : 0 };
+}
+function liqPrice(pos) {
+  const e = +pos.entryPrice, q = Math.abs(+pos.quantity), iso = +pos.isolatedWallet;
+  const long = +pos.quantity > 0, dir = long ? 1 : -1;
+  const mmF = Math.max((S.baseMmBps / 10000) * S.gapCoeff * S.tierMult, S.mmFloorBps / 10000);
+  const denom = q * (dir - mmF);
+  const lp = denom !== 0 ? (e * q * dir - iso) / denom : 0;
+  return Math.max(0, lp);
+}
+function marginRatio(pos) {
+  const q = Math.abs(+pos.quantity), upnl = +pos.unrealizedProfitAndLoss, iso = +pos.isolatedWallet;
+  const equity = iso + upnl;
+  const mmF = Math.max((S.baseMmBps / 10000) * S.gapCoeff * S.tierMult, S.mmFloorBps / 10000);
+  const mm = q * (S.mark || 0) * mmF;
+  return equity > 0 ? mm / equity : 9.99;
+}
+
+// ---------- render ----------
+function render() {
+  // nav / gap
+  $("nav-index").textContent = fmt(S.index);
+  $("gap-val").textContent = S.gapCoeff.toFixed(2);
+  $("chart-mark").textContent = fmt(S.mark);
+  $("book-mark").textContent = fmt(S.mark);
+  const raised = S.gapCoeff > 1.005;
+  $("gapbadge").classList.toggle("raised", raised);
+  $("gap-state").textContent = raised ? "pricing the dark" : "live · continuous";
+  const sessName = S.session === "weekend" ? "weekend" : S.reduceOnly ? "reduce-only" : "priced live";
+  $("gap-sess").textContent = raised ? "weekend priced" : "market live";
+  $("gap-dot").style.background = raised ? "var(--amber)" : "var(--green)";
+  $("reduce-banner").classList.toggle("show", S.reduceOnly);
+  $("tier-chip").textContent = "tier " + S.tier;
+  drawChart();
+
+  if (!S.connected) return;
+  $("w-bal").innerHTML = fmt(S.free, 0) + "<span> USDC</span>";
+
+  // margin preview
+  const size = +$("in-size").value || 0;
+  const mp = marginPreview(size || 1);
+  $("m-notional").textContent = size ? "$" + fmt(mp.notional) : "—";
+  $("m-base").textContent = size ? "$" + fmt(mp.base) : "—";
+  $("m-gap").textContent = "×" + S.gapCoeff.toFixed(2);
+  $("m-tier").textContent = "×" + S.tierMult.toFixed(2);
+  $("m-tiercode").textContent = S.tier;
+  $("m-total").textContent = size ? "$" + fmt(mp.required) + "  ·  " + mp.lev.toFixed(1) + "×" : "—";
+  $("mbreak").querySelector(".mrow.hl").classList.toggle("hl", true);
+  if (raised) { $("m-note").className = "mnote dark"; $("m-note").textContent = "↑ The weekend is being priced in. You pay " + ((S.gapCoeff - 1) * 100).toFixed(0) + "% more margin than a quiet Tuesday — before the gap, not after."; }
+  else { $("m-note").className = "mnote"; $("m-note").textContent = "Margin priced live: base × gap coefficient × your behavioral tier."; }
+
+  // max size affordable
+  const maxNotional = S.free * S.maxLeverage;
+  const maxSize = S.mark ? maxNotional / S.mark : 0;
+  $("max-lbl").textContent = "max " + maxSize.toFixed(2);
+
+  // submit button
+  const btn = $("submit");
+  btn.className = "submit " + S.side;
+  const canOpen = !(S.reduceOnly && !S.position);
+  btn.disabled = !S.connected || !canOpen;
+  btn.textContent = !canOpen ? "Reduce-only mode" : (S.side === "buy" ? "Buy / Long SPX-PERP" : "Sell / Short SPX-PERP");
+
+  renderPosition();
+}
+
+function renderBook() {
+  const rows = (side, arr) => arr.map((l) =>
+    `<div class="brow ${side}"><div class="bar" style="width:${Math.min(100, +l.p)}%"></div><span class="p">${fmt(+l.P)}</span><span class="q">${(+l.Q).toFixed(3)}</span><span class="t">${(+l.V).toFixed(2)}</span></div>`
+  ).join("");
+  $("asks").innerHTML = rows("ask", [...S.book.a].reverse());
+  $("bids").innerHTML = rows("bid", S.book.b);
+  const bestBid = S.book.b[0] ? +S.book.b[0].P : null;
+  const bestAsk = S.book.a[0] ? +S.book.a[0].P : null;
+  if (bestBid && bestAsk) {
+    const sp = bestAsk - bestBid, bps = (sp / ((bestBid + bestAsk) / 2)) * 10000;
+    $("book-spread").textContent = "spread " + sp.toFixed(2) + " · " + bps.toFixed(1) + "bps";
+  }
+}
+
+function renderPosition() {
+  const el = $("position");
+  if (!S.position) { el.innerHTML = `<div class="posempty">No open position.<br>Place an order to begin.</div>`; return; }
+  const p = S.position, q = +p.quantity, long = q > 0;
+  const upnl = +p.unrealizedProfitAndLoss;
+  const lp = liqPrice(p), mr = marginRatio(p);
+  el.innerHTML = `
+    <div class="poscard">
+      <div class="poshead">
+        <div class="possz ${long ? "long" : "short"}">${long ? "LONG" : "SHORT"} ${Math.abs(q).toFixed(4)}</div>
+        <div class="tnum" style="color:var(--text2)">entry ${fmt(+p.entryPrice)}</div>
+      </div>
+      <div class="posgrid">
+        <div class="poscell"><div class="k">Unrealized PnL</div><div class="v tnum ${upnl >= 0 ? "up" : "down"}">${upnl >= 0 ? "+" : ""}${fmt(upnl)}</div></div>
+        <div class="poscell"><div class="k">Margin (isolated)</div><div class="v tnum">${fmt(+p.isolatedWallet)}</div></div>
+        <div class="poscell"><div class="k">Liquidation ▸ live</div><div class="v tnum liq">${fmt(lp)}</div></div>
+        <div class="poscell"><div class="k">Margin ratio</div><div class="v tnum">${(mr * 100).toFixed(1)}%</div></div>
+      </div>
+    </div>
+    <button class="closebtn" onclick="closePosition()">Close position (market)</button>`;
+}
+
+// ---------- chart ----------
+let cctx, cW, cH;
+function initChart() {
+  const cv = $("chart"), wrap = $("chartwrap");
+  const dpr = window.devicePixelRatio || 1;
+  cW = wrap.clientWidth; cH = wrap.clientHeight;
+  cv.width = cW * dpr; cv.height = cH * dpr;
+  cctx = cv.getContext("2d"); cctx.scale(dpr, dpr);
+}
+function drawChart() {
+  if (!cctx) return;
+  const h = S.hist;
+  cctx.clearRect(0, 0, cW, cH);
+  if (h.length < 2) return;
+  const lo = Math.min(...h), hi = Math.max(...h), pad = (hi - lo) * 0.15 || 1;
+  const min = lo - pad, max = hi + pad, range = max - min;
+  const x = (i) => (i / (h.length - 1)) * cW;
+  const y = (v) => cH - ((v - min) / range) * (cH - 40) - 20;
+  // gradient fill
+  const g = cctx.createLinearGradient(0, 0, 0, cH);
+  const raised = S.gapCoeff > 1.005;
+  g.addColorStop(0, raised ? "rgba(255,180,84,.16)" : "rgba(79,142,255,.16)");
+  g.addColorStop(1, "rgba(79,142,255,0)");
+  cctx.beginPath(); cctx.moveTo(0, cH);
+  h.forEach((v, i) => cctx.lineTo(x(i), y(v)));
+  cctx.lineTo(cW, cH); cctx.closePath(); cctx.fillStyle = g; cctx.fill();
+  // line
+  cctx.beginPath(); h.forEach((v, i) => (i ? cctx.lineTo(x(i), y(v)) : cctx.moveTo(x(i), y(v))));
+  cctx.strokeStyle = raised ? "#ffb454" : "#4f8eff"; cctx.lineWidth = 1.8; cctx.stroke();
+  // last dot
+  cctx.beginPath(); cctx.arc(x(h.length - 1), y(h[h.length - 1]), 3, 0, 7); cctx.fillStyle = raised ? "#ffb454" : "#4f8eff"; cctx.fill();
+}
+
+// ---------- toast ----------
+function toast(msg, kind) {
+  const t = document.createElement("div");
+  t.className = "toast " + (kind || "");
+  t.textContent = msg;
+  $("toasts").appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+// ---------- wire up ----------
+$("start").onclick = connect;
+$("side-buy").onclick = () => { S.side = "buy"; $("side-buy").classList.add("active"); $("side-sell").classList.remove("active"); render(); };
+$("side-sell").onclick = () => { S.side = "sell"; $("side-sell").classList.add("active"); $("side-buy").classList.remove("active"); render(); };
+$("type-market").onclick = () => { S.otype = "market"; $("type-market").classList.add("active"); $("type-limit").classList.remove("active"); $("price-field").style.display = "none"; render(); };
+$("type-limit").onclick = () => { S.otype = "limit"; $("type-limit").classList.add("active"); $("type-market").classList.remove("active"); $("price-field").style.display = "block"; if (!$("in-price").value && S.mark) $("in-price").value = S.mark.toFixed(2); render(); };
+$("in-size").oninput = render;
+$("submit").onclick = placeOrder;
+$("max-lbl").onclick = () => { const mx = S.mark ? (S.free * S.maxLeverage) / S.mark : 0; $("in-size").value = (mx * 0.98).toFixed(2); render(); };
+window.closePosition = closePosition;
+window.addEventListener("resize", () => { initChart(); drawChart(); });
+initChart(); render();
+</script>
+</body>
+</html>

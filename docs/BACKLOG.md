@@ -14,8 +14,8 @@ acted on, unless it blocks the current item. An item is done only when its done-
 | 7 | ✅ DONE Jul 29 | ~~Cofounder reuse permission~~ — written yes received (WhatsApp) | Hardening: screenshot → email-to-self for the data room |
 | 8 | Claude | Maker bot (quotes around index, spread widens with gap coefficient) + taker bots | Live book on Sepolia sustained through a full weekend, unattended |
 | 9 | Both | **M1 milestone demo**: scripted session on Sepolia — deposit → trade → weekend coefficient rises → gap prints → liquidation with signed explainer on-chain → conservation + replay checks | Aakash watches it run end-to-end; replay byte-identical. **M1 complete.** |
-| 10 | Aakash (15 min) | TradingView Charting Library license application (Claude supplies exact steps) | Application submitted (approval arrives async, needed by M2 chart work) |
-| 11 | Claude | M2 start — fresh frontend shell (wallet-connect) + first Density harvest: live book + order ticket against our engine | Aakash connects his wallet in a browser and sees the live book |
+| 10 | Optional now | TradingView license — NO LONGER on the critical path (UI ships a custom canvas chart). Apply only if you want their advanced charts in production later. | n/a for demo |
+| 11 | ✅ BUILT Jul 31 (pulled forward) | ~~M2 frontend~~ — self-contained trading UI (`apps/web/index.html`): live book, order ticket with live margin breakdown, positions with live liquidation price; engine gained ws order intake + demo auto-funding; proven end-to-end headless (fund → trade → position). **Awaiting: Aakash opens it himself + optional public deploy for investors.** | Aakash trades in his own browser |
 | 12 | Claude | Tier v0 wired in and visible: two wallets, same trade, different margin, factors shown | Aakash reproduces it himself in the UI |
 | 13 | Claude | Public dashboard v0: live gap coefficient + venue state (the future gaps.perpify.trade) | Page loads publicly with live readings |
 | 14 | Aakash (30 min) | Write the private list of 20 traders you know (future closed-testnet cohort) | List exists (nobody contacted yet) |

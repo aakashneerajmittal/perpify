@@ -32,8 +32,13 @@ const args = new Map(
   }),
 );
 const OFFLINE = args.has("offline");
+const DEMO = args.has("demo"); // investor demo: browsers that connect get testnet funds + a tier
 const SOAK_S = args.has("soak") ? Number(args.get("soak")) : 0;
 const PORT = Number(args.get("port") ?? 8787);
+// browser Origins allowed to connect (local dev + a deployed demo URL via --origins=...)
+const ORIGINS = (args.get("origins") ?? "http://localhost:5173,http://localhost:4173,http://127.0.0.1:5173,null")
+  .split(",")
+  .map((s) => s.trim());
 
 const MAKER_ADDR = "0x3a4ke00000000000000000000000000000000009";
 const TAKERS = [
@@ -132,9 +137,19 @@ async function main() {
     for (const t of takers) t.fund(50_000);
   }
 
-  const server = new WireServer(bus, { port: PORT, bookIntervalMs: 500, priceIntervalMs: 1000 });
+  const server = new WireServer(bus, {
+    port: PORT,
+    bookIntervalMs: 500,
+    priceIntervalMs: 1000,
+    dispatch, // browser orders go through the persisting wrapper → logged + replayable
+    allowedOrigins: ORIGINS,
+    demo: DEMO ? { fundUsd: 100_000, tier: "B", tierMult: 0.9 } : undefined,
+  });
   const boundPort = await server.listen();
-  console.log(`[boot] ws endpoints live on :${boundPort} (order-and-account-updates · order-book · marketDataStream)`);
+  console.log(
+    `[boot] ws endpoints live on :${boundPort} (order-and-account-updates · order-book · marketDataStream)` +
+      (DEMO ? " · DEMO mode: browsers auto-funded $100k, tier B" : ""),
+  );
 
   const timers: NodeJS.Timeout[] = [];
   const every = (ms: number, fn: () => void) => {

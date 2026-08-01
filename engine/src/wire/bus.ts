@@ -136,6 +136,33 @@ export class EngineBus {
     return [toPositionMonitoring(a.position, this.state.markPx8, this.state.params, coeffs)];
   }
 
+  /** current account state as an ACCOUNT_UPDATE (pushed on connect so the UI paints immediately) */
+  accountSnapshot(owner: string): WireMessage {
+    const a = getOrCreateAccount(this.state, owner.toLowerCase());
+    return toAccountUpdate(a, this.state.markPx8, "SNAPSHOT", 0n);
+  }
+
+  /** static params + this trader's live tier — lets the UI render the margin breakdown
+   *  (IM = notional × baseIM × gapCoefficient × tierMult) without guessing */
+  traderInfo(owner: string) {
+    const a = this.state.accounts.get(owner.toLowerCase());
+    const tier = a?.tier?.tier ?? "C";
+    const tierMult = a?.tier ? Number(a.tier.tierMult6) / 1e6 : 1.0;
+    const p = this.state.params;
+    return {
+      type: "SESSION_INFO",
+      market: p.market,
+      baseImBps: p.baseImBps,
+      baseMmBps: p.baseMmBps,
+      mmFloorBps: p.mmFloorBps,
+      takerFeeBps: p.takerFeeBps,
+      maxLeverage: p.maxLeverageByTier[tier],
+      tier,
+      tierMult,
+      gapCoefficient: Number(this.state.gapCoeff6) / 1e6,
+    };
+  }
+
   /** testnet auth stub: the query token IS the wallet address (documented; real
    *  wallet-signature auth ships with the frontend in M2) */
   resolveToken(token: string): string | null {
@@ -144,5 +171,10 @@ export class EngineBus {
 
   ensureAccount(owner: string): void {
     getOrCreateAccount(this.state, owner.toLowerCase());
+  }
+
+  hasBalance(owner: string): boolean {
+    const a = this.state.accounts.get(owner.toLowerCase());
+    return !!a && (a.free > 0n || a.reserved > 0n || a.position !== null);
   }
 }
