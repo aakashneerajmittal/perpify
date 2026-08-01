@@ -149,6 +149,10 @@ export class EngineBus {
     const a = this.state.accounts.get(owner.toLowerCase());
     const tier = a?.tier?.tier ?? "C";
     const tierMult = a?.tier ? Number(a.tier.tierMult6) / 1e6 : 1.0;
+    // Explainability: the named behavioral factors that produced this tier, plus the
+    // model version — surfaced in the UI so the tier is product-truth, not a badge.
+    const factors = a?.tier?.factors ?? [];
+    const modelVersion = a?.tier?.modelVersion ?? "tier-v0.1-demo";
     const p = this.state.params;
     return {
       type: "SESSION_INFO",
@@ -160,6 +164,8 @@ export class EngineBus {
       maxLeverage: p.maxLeverageByTier[tier],
       tier,
       tierMult,
+      factors,
+      modelVersion,
       gapCoefficient: Number(this.state.gapCoeff6) / 1e6,
     };
   }

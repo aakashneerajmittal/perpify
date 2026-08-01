@@ -329,6 +329,14 @@ const densitySocketMiddleware = () => {
       PongRecived = true;
       ApiPollingPongRecived = true;
     }
+    // PERPIFY: SESSION_INFO carries the trader's behavioral tier, tierMult (margin
+    // multiplier), tier-gated maxLeverage, base margin bps, gap coefficient and the
+    // named explainability factors. It uses a top-level `type` (not eventType), so
+    // handle it before the eventType switch and store it for the tier UI.
+    if (JSON.parse(event.data).type === "SESSION_INFO") {
+      store.dispatch({ type: "SESSION_INFO_UPDATE", payload: JSON.parse(event.data) });
+      return;
+    }
     const payload = JSON.parse(event.data).eventData;
     const eventType = JSON.parse(event.data).eventType;
 

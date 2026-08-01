@@ -16,8 +16,65 @@
 import { createServer, type Server } from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
 import type { EngineBus } from "./bus.js";
-import type { Command, EngineEvent, Side, Tif } from "../types.js";
+import type { Command, EngineEvent, Side, Tif, TierCode } from "../types.js";
 import { px8 as toPx8, qty8 as toQty8, usd6 } from "../fixed.js";
+
+/**
+ * Provisional behavioral tier for the testnet demo, derived deterministically from
+ * the wallet address. Stands in for the behavioral inference engine (which reads a
+ * wallet's on-chain history) until real history exists: every wallet gets a stable
+ * A–E tier, so two different wallets genuinely pay different margin for the same
+ * trade (IM = notional × baseIM × gapCoeff × tierMult) and see different leverage
+ * caps — the "the venue knows you" demo. Distribution skews to B/C like a real book.
+ */
+export function demoTierForAddress(addr: string): {
+  tier: TierCode;
+  tierMult: number;
+  factors: { name: string; contribution: number }[];
+} {
+  const h = addr.toLowerCase().replace(/^0x/, "");
+  let acc = 0;
+  for (let i = 0; i < h.length; i++) acc = (acc * 31 + (parseInt(h[i], 16) || 0)) >>> 0;
+  const bucket = acc % 100;
+  if (bucket < 12)
+    return {
+      tier: "A",
+      tierMult: 0.75,
+      factors: [
+        { name: "drawdown-discipline", contribution: 0.42 },
+        { name: "sizing-vs-balance", contribution: 0.33 },
+        { name: "tenure", contribution: 0.25 },
+      ],
+    };
+  if (bucket < 42)
+    return {
+      tier: "B",
+      tierMult: 0.9,
+      factors: [
+        { name: "consistent-sizing", contribution: 0.55 },
+        { name: "low-drawdown-response", contribution: 0.45 },
+      ],
+    };
+  if (bucket < 72)
+    return { tier: "C", tierMult: 1.0, factors: [{ name: "provisional-baseline", contribution: 1.0 }] };
+  if (bucket < 90)
+    return {
+      tier: "D",
+      tierMult: 1.2,
+      factors: [
+        { name: "elevated-volatility-response", contribution: 0.6 },
+        { name: "sizing-variance", contribution: 0.4 },
+      ],
+    };
+  return {
+    tier: "E",
+    tierMult: 1.45,
+    factors: [
+      { name: "prior-liquidations", contribution: 0.68 },
+      { name: "oversizing", contribution: 0.32 },
+    ],
+  };
+}
 
 export interface DemoConfig {
   fundUsd: number; // testnet collateral credited to a new trader on first connect
@@ -158,16 +215,19 @@ export class WireServer {
       if (!owner) return void ws.close(4001, "bad token");
       this.bus.ensureAccount(owner);
 
-      // investor-demo: first-time trader gets testnet collateral + a behavioral tier
+      // investor-demo: first-time trader gets testnet collateral + a provisional
+      // behavioral tier derived from their address (so different wallets pay
+      // different margin — see demoTierForAddress).
       if (this.opts.demo && !this.bus.hasBalance(owner)) {
         const d = this.opts.demo;
+        const prov = demoTierForAddress(owner);
         this.dispatch({
           kind: "TierUpdate",
           reading: {
             wallet: owner,
-            tier: d.tier,
-            tierMult: d.tierMult,
-            factors: [{ name: "demo-provisional", contribution: 1 }],
+            tier: prov.tier,
+            tierMult: prov.tierMult,
+            factors: prov.factors,
             modelVersion: "tier-v0.1-demo",
             signature: "0xdemo",
           },

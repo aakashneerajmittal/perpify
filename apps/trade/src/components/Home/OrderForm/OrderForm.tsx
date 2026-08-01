@@ -14,6 +14,7 @@ import LeverageContanier from "./LeverageContainer";
 import LockedOutScreen from "./LockedOutScreen";
 import SignalTradingSwicth from "./SignalTradingSwicth";
 import CustomDivider from "../../UI/Divider/CustomDivider";
+import TierCard from "@/components/Tier/TierCard";
 
 interface OrderFormProps {
   Side: string;
@@ -22,6 +23,7 @@ function OrderForm({ Side }: OrderFormProps) {
   return (
     <OrderFormNewWrapper>
       <Box sx={[ORDERfORM]}>
+        <TierCard />
         <Box
           sx={{
             p: "0px 8px 0px 8px",
