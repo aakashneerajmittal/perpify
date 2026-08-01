@@ -9,6 +9,8 @@ import { Box, Tooltip, Typography } from "@mui/material";
 import CustomDivider from "../../UI/Divider/CustomDivider";
 import { useCheckLoginStatus } from "@/frontend-BL/services/ThirdPartyServices/SuperTokens/SuperTokenHelper";
 import { connectWallet } from "@/config/perpifySession";
+import ConnectButton from "@/components/Wallet/ConnectButton";
+import { useConnectModal } from "@/components/Wallet/WalletProvider";
 import { useNavigate } from "react-router-dom";
 import OrderConfirmedModal from "../../CustomModals/OrderConfirmedModal";
 import GenerateSignalConfirmation from "./GenerateSignalConfirmation";
@@ -21,6 +23,7 @@ import { recordCleverTapEvent } from "@/utils/recordCleverTapEvent";
 
 const OrderformSubmit = () => {
   const { isLoggedIn } = useCheckLoginStatus();
+  const { open: openConnectModal } = useConnectModal();
   const navigate = useNavigate();
   const [orderConfirm, setOrderConfirm] = useState(false);
   const [showGenerateConfirm, setShowGenerateConfirm] = useState(false);
@@ -142,12 +145,12 @@ const OrderformSubmit = () => {
         )}
         {!isLoggedIn && (
           <Box p={2}>
-            {" "}
-            <CustomButton onClick={() => handleLogin()} label={"Login to Trade"} />
-            <Typography mt={1} component={"p"} textAlign={"center"} variant="Medium_12">
-              New to Perpify?
+            <ConnectButton fullWidth label={"Connect Wallet to Trade"} />
+            <Typography mt={1.25} component={"p"} textAlign={"center"} variant="Medium_12" sx={{ color: "text.primary" }}>
+              No wallet?
               <Typography
                 ml={1}
+                component={"span"}
                 variant="Medium_12"
                 color={"text.main"}
                 sx={{
@@ -155,9 +158,9 @@ const OrderformSubmit = () => {
                   borderBottom: "1px solid",
                   borderColor: "text.main"
                 }}
-                onClick={() => handleSignUp()}
+                onClick={() => openConnectModal()}
               >
-                Sign Up
+                Use a demo wallet
               </Typography>
             </Typography>
           </Box>

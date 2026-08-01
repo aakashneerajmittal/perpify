@@ -7,6 +7,7 @@ import { CssBaseline } from "@mui/material";
 import theme from "./assets/Theme/index";
 import "./App.css";
 import SuperTokensMain from "BL/services/ThirdPartyServices/SuperTokens/SuperTokens";
+import { WalletProvider } from "./components/Wallet/WalletProvider";
 
 import useCheckLowEndDevice from "./frontend-BL/businessHooks/UTILS/useCheckLowEndDevice";
 import { useDispatch } from "react-redux";
@@ -49,7 +50,9 @@ function App() {
         <ThemeProvider theme={theme}>
           <CssBaseline />
           <SuperTokensMain />
-          <AppWrapper />
+          <WalletProvider>
+            <AppWrapper />
+          </WalletProvider>
         </ThemeProvider>
       </StyledEngineProvider>
     </>

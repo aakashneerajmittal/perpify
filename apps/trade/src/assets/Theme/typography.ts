@@ -7,7 +7,18 @@ const FONT_FAMILY = {
   Bold: "Neurial-Bold"
 };
 
+// PERPIFY brand faces for direct use in sx/className:
+//   MONO  — prices, sizes, balances, PnL, mono kickers/labels (tabular, "terminal")
+//   SERIF — italic accents (taglines, empty states)
+//   DISPLAY — Syne, the brand display face (headings, big numbers)
+export const MONO_FAMILY = "'DM Mono', ui-monospace, 'SF Mono', Menlo, monospace";
+export const SERIF_FAMILY = "'Instrument Serif', Georgia, serif";
+export const DISPLAY_FAMILY = "'Syne', system-ui, -apple-system, sans-serif";
+
 export const typography = {
+  // Top-level default so any un-variant'd MUI text renders in the brand face
+  // (previously fell back to Roboto).
+  fontFamily: "'Syne', system-ui, -apple-system, 'Segoe UI', sans-serif",
   light_14: {
     fontFamily: FONT_FAMILY.light,
     fontSize: pxToRem(14)

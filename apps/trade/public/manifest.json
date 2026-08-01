@@ -1,6 +1,6 @@
 {
-  "short_name": "Most advanced blockchain derivatives ecosystem",
-  "name": "Density exchange",
+  "short_name": "Perpify",
+  "name": "Perpify — AI-priced 24/7 perpetuals",
   "icons": [
     {
       "src": "favicon.svg",
@@ -20,6 +20,6 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#080808",
+  "background_color": "#080808"
 }

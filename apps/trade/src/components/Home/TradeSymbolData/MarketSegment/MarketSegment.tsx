@@ -18,6 +18,7 @@ import SideMenu from "@/components/Home/SideMenu/SideMenu";
 import PropTypes from "prop-types";
 import BuySellToggle from "@/components/Home/OrderForm/BuySellToggle";
 import GapCoefficient from "./GapCoefficient";
+import ConnectButton from "@/components/Wallet/ConnectButton";
 interface Props {
   showOrderForm: { expand: boolean; side: string };
   setShowOrderForm: () => void;
@@ -176,10 +177,15 @@ const MarketSegment = ({ showOrderForm, setShowOrderForm }: Props) => {
       }}
     >
       <SideMenu />
-      {marketSegmentData()}
+      <Box sx={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center" }}>{marketSegmentData()}</Box>
       {isLargeScreen && (
-        <Box className="productTour__step2">
+        <Box className="productTour__step2" sx={{ flexShrink: 0 }}>
           <BuySellToggle showOrderForm={showOrderForm} setShowOrderForm={setShowOrderForm} Side={"BUY"} />
+        </Box>
+      )}
+      {isLargeScreen && (
+        <Box sx={{ flexShrink: 0, pr: 0.5 }}>
+          <ConnectButton />
         </Box>
       )}
     </Box>

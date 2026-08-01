@@ -7,6 +7,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import { Logo } from "@/components/UI/Logo";
 import { useNavigate } from "react-router-dom";
 import NavigationBar from "./NavigationBar";
+import ConnectButton from "@/components/Wallet/ConnectButton";
 
 export default function Topbar() {
   const [state, setState] = React.useState(false);
@@ -27,9 +28,12 @@ export default function Topbar() {
             <Logo withName={false} style={{ width: "34px", height: "34px" }} />
           </Box>
 
-          <IconButton size="small" edge="start" color="inherit" aria-label="menu">
-            <MenuIcon onClick={() => setState(true)} />
-          </IconButton>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <ConnectButton />
+            <IconButton size="small" edge="start" color="inherit" aria-label="menu">
+              <MenuIcon onClick={() => setState(true)} />
+            </IconButton>
+          </Box>
         </Toolbar>
       </AppBar>
       <NavigationBar state={state} setState={setState} />

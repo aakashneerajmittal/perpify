@@ -52,16 +52,16 @@ const palette: {
     main: DENSITY_BACKGROUND.default,
     tint4: DENSITY_MAIN.tint4,
     success: {
-      primary: "#29B57E",
-      secondary: "linear-gradient(173.87deg, #29B57E -234.51%, rgba(41, 181, 126, 0) 253.9%)"
+      primary: "#3ECF8E",
+      secondary: "linear-gradient(173.87deg, #3ECF8E -234.51%, rgba(62, 207, 142, 0) 253.9%)"
     },
     error: {
-      primary: "#FF6554",
-      secondary: "linear-gradient(173.87deg, #FF6554 -234.51%, rgba(255, 101, 84, 0) 253.9%)"
+      primary: "#FF5555",
+      secondary: "linear-gradient(173.87deg, #FF5555 -234.51%, rgba(255, 85, 85, 0) 253.9%)"
     }
   },
   borderColor: {
-    primary: NeutralDark.grey3
+    primary: "#1F1F1F"
   },
   borderRadius: {
     primary: "8px",
