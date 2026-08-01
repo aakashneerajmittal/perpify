@@ -20,7 +20,7 @@ const lastTradedPrice: React.FC<lastTradedPriceProps> = ({ arrow, symbolPricePre
   if (titleTag && snapltp) {
     titleTag.innerHTML = `${
       convertToPrecisionValueForPrice(snapltp, symbolPricePrecision) + " | "
-    }${symbol?.toUpperCase()} | Buy, Sell & Trade Crypto Futures of Bitcoin, Ethereum and other cryptocurrencies with up to 25x leverage on India's most trusted and secure Trading platform`;
+    }${symbol?.toUpperCase()} · Perpify — 24/7 perpetual futures on the S&P 500, AI-priced`;
   }
 
   const getLastPriceColor = useMemo(() => {
