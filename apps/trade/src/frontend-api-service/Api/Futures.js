@@ -1,4 +1,5 @@
 /* eslint-disable no-unused-vars */
+import { perpifyWsSend, getPerpifyMark } from "../perpifyWsBridge";
 import {
   POSITION_RISK,
   CHANGE_PASSWORD,
@@ -266,11 +267,32 @@ export const getMetaDataApi = () => {
 };
 
 export const createOrder = (payload) => {
-  const url = PLACE_ORDER.url;
-  return axiosWithApiServer({
-    url,
-    method: PLACE_ORDER.reqType,
-    body: JSON.stringify(payload)
+  // PERPIFY testnet: route over the account WS (used by the position exit modal and any
+  // other API-layer order caller). Market = marketable IOC that crosses the book using the
+  // live mark as reference; Limit = GTC. Resolves like the old REST call so callers'
+  // `.then(res => res.status === 200)` paths keep working; fills/close come back over the WS.
+  const side = payload.side === "SELL" || payload.side === "sell" ? "sell" : "buy";
+  const isMarket = payload.type === "MARKET" || payload.type === 0;
+  const ref = Number(payload.price) || Number(payload.lastTradedPrice) || getPerpifyMark();
+  const price = isMarket ? (side === "buy" ? ref * 1.05 : ref * 0.95) : Number(payload.price);
+  const tif = isMarket ? "IOC" : "GTC";
+  const id = `ui-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
+  const wire = {
+    type: "place_order",
+    id,
+    symbol: payload.symbol,
+    side,
+    qty: Number(payload.quantity),
+    price: Number((price || 0).toFixed(2)),
+    tif,
+    reduceOnly: !!payload.reduceOnly
+  };
+  if (!(wire.qty > 0) || !(wire.price > 0) || !perpifyWsSend(wire)) {
+    return Promise.reject({ response: { data: { details: "Order could not be sent — check size and that you're connected." } } });
+  }
+  return Promise.resolve({
+    status: 200,
+    data: { order: { ID: id, orderId: id, symbol: payload.symbol, side: payload.side, type: payload.type, price: wire.price, origQty: payload.quantity, reduceOnly: wire.reduceOnly } }
   });
 };
 
@@ -288,11 +310,11 @@ export const createOrderLimit = (symbol, side, type, quantity, price) => {
 };
 
 export const cancelOrderApi = (symbol, orderId) => {
-  const url = Format(CANCEL_ORDER.url);
-  return axiosWithApiServer({
-    url: `${url}/${symbol}/${orderId}`,
-    method: CANCEL_ORDER.reqType
-  });
+  // PERPIFY testnet: cancel over the account WS.
+  if (!perpifyWsSend({ type: "cancel", orderId: String(orderId) })) {
+    return Promise.reject({ response: { data: { details: "Cancel could not be sent — not connected." } } });
+  }
+  return Promise.resolve({ status: 200, data: { orderId } });
 };
 
 export const addRemoveMarginApi = (payload) => {

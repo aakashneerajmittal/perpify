@@ -258,48 +258,19 @@ export const getTradeIdData = (tradeID) => {
     });
   return tradeIdData;
 };
-// export const CLOSEPOSITON = (symbol) => (dispatch) => {
+// PERPIFY testnet: close the whole position via the engine's market_close over the account
+// WS (reduce-only IOC that crosses the book). The resulting fill + ACCOUNT_UPDATE flow back
+// on the same socket and clear the position / return the margin. No REST close endpoint.
 export const CLOSEPOSITON = (symbol, callback) => (dispatch) => {
-  posthog.capture("close_position_button_click", {
-    symbol,
-    event_time: new Date().toUTCString()
-  });
-  closePositionApi({ symbol })
-    .then((res) => {
-      callback();
-      recordCleverTapEvent("CLOSE_POSITION_SUCCESS", {
-        symbol
-      });
-      dispatch(
-        showSnackBar({
-          src: "CREATE_ORDER_SUCCESS",
-          message: "Your order has been closed successfully",
-          type: "success"
-        })
-      );
-      dispatch({
-        type: DENSITY_WS_SUBSCRIBE_CLOSE_ORDER,
-        payload: {
-          data: [res?.data],
-          type: "MARKET",
-          eventType: "CLOSE_ORDER"
-        }
-      });
+  dispatch({ type: "PERPIFY_MARKET_CLOSE", payload: { symbol } });
+  if (callback) callback();
+  dispatch(
+    showSnackBar({
+      src: "CREATE_ORDER_SUCCESS",
+      message: "Position close sent",
+      type: "success"
     })
-    .catch((error) => {
-      callback();
-      recordCleverTapEvent("CLOSE_POSITION_FAILED", {
-        symbol,
-        error: error.response.data.details
-      });
-      dispatch(
-        showSnackBar({
-          src: "CREATE_ORDER_FAILED",
-          message: error.response.data.details,
-          type: "failure"
-        })
-      );
-    });
+  );
 };
 // TODO: Modify this function
 export const createNewOrder = (symbol, side, type, reduceOnly, quantity) => (dispatch) => {

@@ -36,6 +36,7 @@ import { fetchFutureAccountDetails, applyPerpifyAccountBalances } from "../../ac
 import { fetchAccountPositionInfo } from "../../actions/User/AccountInfo.ac";
 import { posthog } from "posthog-js";
 import { mergeArraysWithoutCommonElements } from "./DensityWebSocketHelper";
+import { setPerpifySocket } from "../../../../frontend-api-service/perpifyWsBridge";
 
 const densitySocketMiddleware = () => {
   let socket = null;
@@ -395,6 +396,7 @@ const densitySocketMiddleware = () => {
         if (socketConnectionCount === 1) {
           getWebSocketUrl().then((url) => {
             socket = new WebSocket(url);
+            setPerpifySocket(socket); // expose to API-layer order/cancel helpers
             // const webWorker = new CreateWebWorker();
             // socket = webWorker?.worker;
 
@@ -444,6 +446,7 @@ const densitySocketMiddleware = () => {
           PongRecived = false;
         }
         socket = null;
+        setPerpifySocket(null);
         break;
       case DENSITY_WS_SUBSCRIBE_CREATE_ORDER: {
         if (payload?.type === "MARKET") {

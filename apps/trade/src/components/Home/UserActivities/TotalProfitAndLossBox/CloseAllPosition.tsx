@@ -18,62 +18,18 @@ export const CloseAllPosition = () => {
   const [closeAllPosition, setCloseAllPosition] = useState(false);
   const dispatch = useDispatch<any>();
   const CloseAllPositionButton = () => {
+    // PERPIFY testnet: single market (SPX-PERP) → market_close over the account WS closes it.
     setCloseAllPositionApiResponseStatus(true);
-    closeAllActivePositions()
-      .then((response: { status: number; data: { errors: any[]; success: string | any[] } }) => {
-        if (response.status === 200) {
-          setCloseAllPositionApiResponseStatus(false);
-          let closeAllErr: any = [];
-          if (response?.data?.errors && response?.data?.errors?.length > 0) {
-            response.data?.errors.map((err) => {
-              closeAllErr?.push(err.message);
-              dispatch(
-                showSnackBar({
-                  src: DENSITY_WS_SUBSCRIBE_CLOSE_ORDER + "FAIL",
-                  message: err.message,
-                  type: "failure"
-                })
-              );
-            });
-            recordCleverTapEvent("CLOSE_ALL_POSITION_FAILED", {
-              error: JSON.stringify(closeAllErr)
-            });
-          }
-
-          if (response?.data?.success.length > 0) {
-            setCloseAllPosition(false);
-            recordCleverTapEvent("CLOSE_ALL_POSITION_SUCCESS", {});
-            dispatch(
-              showSnackBar({
-                src: "close all position",
-                message: "All order has been cancelled successfully",
-                type: "success"
-              })
-            );
-            dispatch({
-              type: DENSITY_WS_SUBSCRIBE_CLOSE_ORDER,
-              payload: {
-                data: response?.data?.success,
-                type: "MARKET",
-                eventType: "CLOSE_ORDER"
-              }
-            });
-          }
-        }
+    dispatch({ type: "PERPIFY_MARKET_CLOSE", payload: {} });
+    setCloseAllPosition(false);
+    setCloseAllPositionApiResponseStatus(false);
+    dispatch(
+      showSnackBar({
+        src: "close all position",
+        message: "Position close sent",
+        type: "success"
       })
-      .catch((error: { response: { data: { details: any } } }) => {
-        setCloseAllPositionApiResponseStatus(false);
-        recordCleverTapEvent("CLOSE_ALL_POSITION_FAILED", {
-          error: error.response.data.details
-        });
-        dispatch(
-          showSnackBar({
-            src: "CREATE_ORDER_FAILED",
-            message: error.response.data.details,
-            type: "failure"
-          })
-        );
-      });
+    );
   };
 
   const handleCloseAllPostion = () => {

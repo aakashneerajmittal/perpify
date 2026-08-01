@@ -13,6 +13,7 @@ import { useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { BASE_URL } from "@/frontend-api-service/Base";
 import SPX_PERP_SYMBOL from "@/config/perpifySymbol";
+import { setPerpifyMark } from "@/frontend-api-service/perpifyWsBridge";
 
 const SYMBOL = "SPX-PERP";
 const KEY = SYMBOL.toLowerCase(); // "spx-perp" — the header reads `${selectedSymbol}@markPrice@1s`
@@ -57,6 +58,7 @@ export default function usePerpifyMarketData({ tradeScreen }: { tradeScreen?: bo
       if (m?.e !== "markPriceUpdate") return;
       const pxNum = Number(m.p);
       const px = String(m.p);
+      setPerpifyMark(pxNum); // feed the API-layer bridge (market-order reference price)
       const s = stats.current;
       if (s.open === undefined) s.open = pxNum;
       s.high = Math.max(s.high, pxNum);
