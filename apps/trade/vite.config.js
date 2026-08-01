@@ -44,6 +44,8 @@ export default defineConfig({
     tsconfigPaths(),
     viteCommonjs(),
     ...(process.env.PERPIFY_HTTPS ? [mkcert()] : []),
-    EnvironmentPlugin(["VITE_BUILD_TYPE", "REACT_APP_PUBLIC_POSTHOG_KEY", "REACT_APP_PUBLIC_POSTHOG_URL"])
+    // Object form (with defaults) so the build never throws when these are unset — e.g. on
+    // Netlify/CI. VITE_BUILD_TYPE "local" selects the Perpify-engine wiring; PostHog stays off.
+    EnvironmentPlugin({ VITE_BUILD_TYPE: "local", REACT_APP_PUBLIC_POSTHOG_KEY: "disabled", REACT_APP_PUBLIC_POSTHOG_URL: "" })
   ]
 });

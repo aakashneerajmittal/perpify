@@ -15,4 +15,4 @@ services:
       # Must match the frontend's exact origin. demo.perpify.trade is the planned demo URL;
       # add/adjust here (comma-separated) if the frontend is served elsewhere. Keep `null`.
       - key: ALLOWED_ORIGINS
-        value: https://demo.perpify.trade,null
+        value: https://demo.perpify.trade,https://perpify-trade.netlify.app,null
