@@ -5,7 +5,8 @@ import MarketSegment from "@/components/Home/TradeSymbolData/MarketSegment/Marke
 import { UserActivities } from "@/components/Home/UserActivities";
 import { Box, useMediaQuery } from "@mui/material";
 import MobileTradeScreen from "../MobileView/TradeScreen/MobileTradeScreen";
-import useHandleBinanceSocketSubs from "@/frontend-BL/businessHooks/BINANCE_WORKER/useHandleBinanceSocketSubs";
+// PERPIFY: market data now comes from the Perpify engine, not Binance.
+import usePerpifyMarketData from "@/frontend-BL/businessHooks/BINANCE_WORKER/usePerpifyMarketData";
 import { useNavigate } from "react-router-dom";
 import TradeSymbolData from "@/components/Home/TradeSymbolData/TradeSymbolData";
 import Loader from "@/helpers/Loader";
@@ -19,7 +20,7 @@ function TradeScreen() {
   useEffect(() => {
     dispatch({ type: "RESUME_RENDERING" });
   }, []);
-  useHandleBinanceSocketSubs({ tradeScreen: true });
+  usePerpifyMarketData({ tradeScreen: true });
   const navigate = useNavigate();
   useEffect(() => {
     const showOrderForm = JSON.parse(localStorage.getItem("showOrderForm"));
