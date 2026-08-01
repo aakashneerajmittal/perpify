@@ -39,9 +39,13 @@ export const getSupportChat = () => {
     enableFreshChat(supertokensMetadata.current.restoreId, profileDetails);
   }
 
-  window.fcWidget.on("widget:closed", function (resp) {
-    toggleIsSupportChatVisible({ target: { checked: false } });
-  });
+  // PERPIFY: Freshchat is not loaded on the testnet (its script was removed from index.html).
+  // Guard so its absence doesn't crash the SideBar / trade screen.
+  if (typeof window !== "undefined" && window.fcWidget && typeof window.fcWidget.on === "function") {
+    window.fcWidget.on("widget:closed", function (resp) {
+      toggleIsSupportChatVisible({ target: { checked: false } });
+    });
+  }
 
   return {
     isSupportChatVisible,
