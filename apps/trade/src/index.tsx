@@ -1,6 +1,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import ErrorBoundary from "./components/ErrorBoundary";
 import { Provider } from "react-redux";
 import * as configureStore from "BL/redux/store/configureStore";
 import posthog from "posthog-js";
@@ -23,9 +24,11 @@ const root = createRoot(container); // No need for non-null assertion operator i
 const store = configureStore.default;
 try { clevertap.init("4WZ-9ZZ-7W7Z"); } catch (e) { /* analytics off */ }
 root.render(
-  <Provider store={store}>
-    <PostHogProvider client={posthog}>
-      <App />
-    </PostHogProvider>
-  </Provider>
+  <ErrorBoundary>
+    <Provider store={store}>
+      <PostHogProvider client={posthog}>
+        <App />
+      </PostHogProvider>
+    </Provider>
+  </ErrorBoundary>
 );

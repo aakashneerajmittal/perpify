@@ -19,7 +19,27 @@
 
 <body>
   <noscript>You need to enable JavaScript to run Perpify.</noscript>
-  <div id="root"></div>
+  <div id="root">
+    <!-- Boot fallback: shown until React mounts and replaces this. If the app never
+         mounts (e.g. a stale/broken cached bundle), the timeout below offers a reload
+         so the user never faces a blank page. -->
+    <div id="perpify-boot" style="min-height:100vh;background:#080808;color:#888880;display:grid;place-items:center;font-family:system-ui,-apple-system,sans-serif">
+      <div style="text-align:center">
+        <div style="color:#4F8EFF;font-weight:700;letter-spacing:0.16em;font-size:14px">PERPIFY</div>
+        <div id="perpify-boot-msg" style="margin-top:12px;font-size:13px">Loading the venue…</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      setTimeout(function () {
+        var m = document.getElementById("perpify-boot-msg");
+        if (m && document.getElementById("perpify-boot")) {
+          m.innerHTML = 'Taking longer than usual — <a href="javascript:location.reload(true)" style="color:#4F8EFF;text-decoration:underline">reload</a>.';
+        }
+      }, 12000);
+    })();
+  </script>
   <script type="module" src="./src/index.tsx"></script>
 </body>
 
