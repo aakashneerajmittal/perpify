@@ -18,6 +18,7 @@ import { WebSocketServer, type WebSocket } from "ws";
 import type { EngineBus } from "./bus.js";
 import type { Command, EngineEvent, Side, Tif, TierCode } from "../types.js";
 import { px8 as toPx8, qty8 as toQty8, usd6 } from "../fixed.js";
+import { computeGapReading } from "../risk/gapCoefficient.js";
 
 /**
  * Provisional behavioral tier for the testnet demo, derived deterministically from
@@ -98,6 +99,9 @@ export class WireServer {
   private dispatch: (cmd: Command) => EngineEvent[];
   private clientOrderSeq = 0;
   private nonces = new Map<string, number>();
+  /** demo: when true, hold the gap coefficient at its weekend-elevated value so the
+   *  "prices the dark" story is demonstrable off-hours. main.ts's refresh respects it. */
+  demoWeekend = false;
 
   constructor(
     public bus: EngineBus,
@@ -222,6 +226,32 @@ export class WireServer {
       if (!(idx > 0)) return;
       const shocked = Math.round(idx * (isLong ? 0.7 : 1.3)); // ±30% gap
       this.dispatch({ kind: "OracleTick", market: "SPX-PERP", indexPx: BigInt(shocked), source: "testnet-feed" });
+      return;
+    }
+
+    if (m?.type === "demo_weekend") {
+      // DEMO: toggle the gap coefficient between its live value and the weekend-start
+      // elevated value (extended|normal, full 65.5h dark → 1.1627) so "prices the dark"
+      // is demonstrable any time. Margin, maker spread, and the coefficient display all
+      // move. main.ts's per-minute refresh skips while this override is on.
+      this.demoWeekend = !this.demoWeekend;
+      const g = computeGapReading(new Date());
+      const reading = this.demoWeekend
+        ? { gapCoefficient: 1.162711, session: "weekend" as const, hoursDark: 65.5 }
+        : { gapCoefficient: g.gapCoefficient, session: g.session, hoursDark: g.hoursDarkRemaining };
+      this.dispatch({
+        kind: "RiskReading",
+        reading: {
+          kind: "gap",
+          market: "SPX-PERP",
+          gapCoefficient: reading.gapCoefficient,
+          session: reading.session,
+          hoursDark: reading.hoursDark,
+          expectedGapStd: 0,
+          modelVersion: "gap-v0.1",
+          signature: "0xdemo-weekend",
+        },
+      });
       return;
     }
   }

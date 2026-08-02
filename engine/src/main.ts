@@ -22,6 +22,7 @@ import { TakerBot } from "./bots/taker.js";
 import { ChainClient } from "./chain.js";
 import { checkConservation, stateRoot } from "./state.js";
 import { px8 as toPx8 } from "./fixed.js";
+import { computeGapReading } from "./risk/gapCoefficient.js";
 import type { Command } from "./types.js";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -183,14 +184,29 @@ async function main() {
   // funding hourly; risk refresh every 15 min. The publisher is LOCAL computation
   // (no chain), so it runs in offline mode too — this is what makes the coefficient
   // rise into the weekend whether or not we're posting to chain.
+  // PERPIFY: gap coefficient computed live in-process from the real US-equity market
+  // clock (risk/gap/model.py ported to TS in ./risk/gapCoefficient) — no Python needed
+  // in the container, and it glides with the actual session ("prices the dark").
   const refreshReading = () => {
-    const r = spawnSync("python3", [join(repoRoot, "risk", "gap", "publish.py")], { timeout: 120_000 });
-    if (r.status !== 0) console.error("[risk] publish.py failed; holding last reading", r.stderr?.toString().slice(0, 200));
-    applyRiskReading();
+    if (server.demoWeekend) return; // hold the demo weekend override
+    const g = computeGapReading(new Date());
+    dispatch({
+      kind: "RiskReading",
+      reading: {
+        kind: "gap",
+        market: "SPX-PERP",
+        gapCoefficient: g.gapCoefficient,
+        session: g.session,
+        hoursDark: g.hoursDarkRemaining,
+        expectedGapStd: 0,
+        modelVersion: g.modelVersion,
+        signature: "0xservice",
+      },
+    });
   };
   refreshReading(); // fresh at boot
   every(3_600_000, () => dispatch({ kind: "FundingTick", market: "SPX-PERP" }));
-  every(900_000, refreshReading);
+  every(60_000, refreshReading); // re-sign the glide every minute
 
   // daily epoch settlement in live mode
   if (chain) {
