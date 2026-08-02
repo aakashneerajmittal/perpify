@@ -95,9 +95,12 @@ export interface WireServerOpts {
 }
 
 const MARKET_SET = new Set<string>(MARKET_IDS);
-/** map an arbitrary client symbol string to a known market (defaults to the flagship) */
+/** map an arbitrary client symbol string to a known market (case-insensitive; defaults to
+ *  the flagship). Clients may send "nvda-perp" or "NVDA-PERP" — both resolve to "NVDA-PERP". */
 function resolveMarket(sym: unknown): MarketId {
-  return typeof sym === "string" && MARKET_SET.has(sym) ? (sym as MarketId) : "SPX-PERP";
+  if (typeof sym !== "string") return "SPX-PERP";
+  const up = sym.toUpperCase();
+  return MARKET_SET.has(up) ? (up as MarketId) : "SPX-PERP";
 }
 
 export class WireServer {

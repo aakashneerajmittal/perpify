@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { apply } from "../src/core.js";
 import { px8, qty8, usd6 } from "../src/fixed.js";
-import { checkConservation, createEngine } from "../src/state.js";
-import type { EngineState, MarketId, Side, Tif } from "../src/types.js";
+import { checkConservation, createEngine, type EngineState } from "../src/state.js";
+import type { MarketId, Side, Tif } from "../src/types.js";
 import { ALICE, BOB, findEvents, posOf, resetIds } from "./helpers.js";
 
 beforeEach(() => resetIds());
