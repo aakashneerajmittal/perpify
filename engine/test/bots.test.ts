@@ -3,7 +3,7 @@ import { EngineBus } from "../src/wire/bus.js";
 import { MakerBot, DEFAULT_MAKER } from "../src/bots/maker.js";
 import { TakerBot } from "../src/bots/taker.js";
 import { checkConservation } from "../src/state.js";
-import { deposit, gapReading, resetIds, tick } from "./helpers.js";
+import { deposit, gapReading, posOf, resetIds, tick } from "./helpers.js";
 
 const MM = "0x3a4ke00000000000000000000000000000000009";
 const TK = "0x7a4e100000000000000000000000000000000011";
@@ -13,7 +13,7 @@ beforeEach(() => resetIds());
 function setup(): { bus: EngineBus; maker: MakerBot } {
   const bus = new EngineBus();
   bus.dispatch(tick(5000));
-  const maker = new MakerBot(bus, { owner: MM, ...DEFAULT_MAKER });
+  const maker = new MakerBot(bus, { owner: MM, market: "SPX-PERP", ...DEFAULT_MAKER });
   maker.fund(1_000_000);
   return { bus, maker };
 }
@@ -22,7 +22,7 @@ describe("maker bot", () => {
   it("quotes a full ladder around index", () => {
     const { bus, maker } = setup();
     maker.requote();
-    const book = bus.bookSnapshot(10, 2);
+    const book = bus.bookSnapshot("SPX-PERP",10, 2);
     expect(book.b.length).toBe(DEFAULT_MAKER.levels);
     expect(book.a.length).toBe(DEFAULT_MAKER.levels);
     expect(Number(book.b[0]!.P)).toBeLessThan(5000);
@@ -32,12 +32,12 @@ describe("maker bot", () => {
   it("THE THESIS ON THE BOOK: spread widens exactly with the gap coefficient", () => {
     const { bus, maker } = setup();
     maker.requote();
-    const calm = bus.bookSnapshot(1, 2);
+    const calm = bus.bookSnapshot("SPX-PERP",1, 2);
     const calmSpread = Number(calm.a[0]!.P) - Number(calm.b[0]!.P);
 
     bus.dispatch(gapReading(1.5, "weekend"));
     maker.requote();
-    const dark = bus.bookSnapshot(1, 2);
+    const dark = bus.bookSnapshot("SPX-PERP",1, 2);
     const darkSpread = Number(dark.a[0]!.P) - Number(dark.b[0]!.P);
 
     expect(maker.quotedHalfSpreadBps()).toBeCloseTo(DEFAULT_MAKER.baseSpreadBps * 1.5, 6);
@@ -48,7 +48,7 @@ describe("maker bot", () => {
   it("requote cancels stale quotes — book never accumulates", () => {
     const { bus, maker } = setup();
     for (let i = 0; i < 5; i++) maker.requote();
-    const book = bus.bookSnapshot(20, 2);
+    const book = bus.bookSnapshot("SPX-PERP",20, 2);
     expect(book.b.length).toBe(DEFAULT_MAKER.levels);
     expect(book.a.length).toBe(DEFAULT_MAKER.levels);
     expect(checkConservation(bus.state).holds).toBe(true);
@@ -60,6 +60,7 @@ describe("maker + taker ecosystem", () => {
     const { bus, maker } = setup();
     const taker = new TakerBot(bus, {
       owner: TK,
+      market: "SPX-PERP",
       seed: 7,
       maxQty: 0.5,
       aggressionBps: 30,
@@ -80,8 +81,6 @@ describe("maker + taker ecosystem", () => {
       expect(c.holds, `step ${i}: drift ${c.driftAbs}`).toBe(true);
     }
     expect(trades).toBeGreaterThan(5);
-    const makerAcct = bus.state.accounts.get(MM)!;
-    const takerAcct = bus.state.accounts.get(TK)!;
-    expect(makerAcct.position !== null || takerAcct.position !== null).toBe(true);
+    expect(posOf(bus.state, MM) !== null || posOf(bus.state, TK) !== null).toBe(true);
   });
 });

@@ -1,12 +1,19 @@
 /**
  * Engine state, canonical serialization, state roots, and the hash-chained event log.
  *
+ * Multi-market (V2): the venue runs several independent markets (SPX-PERP + single-stock
+ * perps) in ONE deterministic state machine. Each market has its own order book, oracle
+ * index/mark, and gap coefficient; each account has ONE cross-collateral balance and at
+ * most one isolated position PER market. Widening from a single market to a registry is a
+ * data-shape change — the accounting laws below are unchanged.
+ *
  * The conservation law (tested continuously):
  *   deposits − withdrawals == Σfree + Σreserved + Σisolated + fees + ΣunrealizedPnL(mark)
- * Cash alone is NOT conserved in a perp venue (a closer realizes PnL while the
- * counterparty's loss is still unrealized) — cash + open uPnL is. The law only stays
- * exact if open interest stays balanced, which is why the liquidation backstop makes
- * the insurance fund a real account that INHERITS positions instead of vaporizing them.
+ * summed over EVERY position in EVERY market (each valued at its own market's mark). Cash
+ * alone is NOT conserved in a perp venue (a closer realizes PnL while the counterparty's
+ * loss is still unrealized) — cash + open uPnL is. The law only stays exact if open
+ * interest stays balanced per market, which is why the liquidation backstop makes the
+ * insurance fund a real account that INHERITS positions instead of vaporizing them.
  * Getting this law right, and asserting it after every command, is most of what
  * "trust the engine" means.
  */
@@ -15,22 +22,27 @@ import { createHash } from "node:crypto";
 import { createBook, type Book } from "./book.js";
 import { toCoeff6 } from "./fixed.js";
 import { unrealizedPnl } from "./margin.js";
-import type { Account, Address, EngineEvent, EngineParams, Hex, SequencerPlan } from "./types.js";
+import type { Account, Address, EngineEvent, EngineParams, Hex, MarketId, SequencerPlan } from "./types.js";
 
 /** the insurance fund is an ordinary account — its free balance + position equity is the fund */
 export const INSURANCE_ACCOUNT: Address = "0xinsurancefund";
 
-export interface EngineState {
+/** everything specific to one market — its own book, oracle, mark, and risk coefficient */
+export interface MarketState {
   params: EngineParams;
-  seq: number;
   book: Book;
-  accounts: Map<Address, Account>;
   indexPx8: bigint; // 0n until first oracle tick
-  markPx8: bigint; // last trade price (snapped to index if >5% stale-drift)
+  markPx8: bigint; // last trade price (snapped to index if >0.5% stale-drift)
   gapCoeff6: bigint;
   gapModelVersion: string;
   confidence: number;
   reduceOnly: boolean;
+}
+
+export interface EngineState {
+  markets: Map<MarketId, MarketState>;
+  seq: number;
+  accounts: Map<Address, Account>;
   feePool6: bigint;
   totalDeposited6: bigint;
   totalWithdrawn6: bigint;
@@ -52,18 +64,41 @@ export const DEFAULT_PARAMS: EngineParams = {
   oiCapUsd6: 1_000_000_000_000n, // $1M (usd6)
 };
 
-export function createEngine(params: EngineParams = DEFAULT_PARAMS, insuranceSeed6 = 0n): EngineState {
-  const s: EngineState = {
+/** The venue's markets: the S&P 500 index perp + the 5 largest US companies by market cap. */
+export const MARKET_IDS: MarketId[] = ["SPX-PERP", "NVDA-PERP", "AAPL-PERP", "MSFT-PERP", "GOOGL-PERP", "AMZN-PERP"];
+
+/** per-market params — identical risk config today, but a real knob for per-symbol tuning */
+export function paramsForMarket(market: MarketId): EngineParams {
+  return { ...DEFAULT_PARAMS, market };
+}
+
+function createMarket(params: EngineParams): MarketState {
+  return {
     params,
-    seq: 0,
     book: createBook(),
-    accounts: new Map(),
     indexPx8: 0n,
     markPx8: 0n,
     gapCoeff6: toCoeff6(1.0),
     gapModelVersion: "gap-v0.0-unset",
     confidence: 1.0,
     reduceOnly: false,
+  };
+}
+
+/**
+ * Build a fresh engine. `marketParams` defaults to the full 6-market set; pass a subset
+ * (e.g. just SPX-PERP) for focused tests. `insuranceSeed6` seeds the insurance fund.
+ */
+export function createEngine(
+  marketParams: EngineParams[] = MARKET_IDS.map(paramsForMarket),
+  insuranceSeed6 = 0n,
+): EngineState {
+  const markets = new Map<MarketId, MarketState>();
+  for (const p of marketParams) markets.set(p.market, createMarket(p));
+  const s: EngineState = {
+    markets,
+    seq: 0,
+    accounts: new Map(),
     feePool6: 0n,
     totalDeposited6: 0n,
     totalWithdrawn6: 0n,
@@ -80,10 +115,17 @@ export function createEngine(params: EngineParams = DEFAULT_PARAMS, insuranceSee
   return s;
 }
 
+/** market accessor — throws on an unknown id (a programming error, never a user input path) */
+export function marketState(s: EngineState, market: MarketId): MarketState {
+  const m = s.markets.get(market);
+  if (!m) throw new Error(`unknown market ${market}`);
+  return m;
+}
+
 export function getOrCreateAccount(s: EngineState, owner: Address): Account {
   let a = s.accounts.get(owner);
   if (!a) {
-    a = { owner, free: 0n, reserved: 0n, position: null, tier: null, lastNonce: -1 };
+    a = { owner, free: 0n, reserved: 0n, positions: new Map(), tier: null, lastNonce: -1 };
     s.accounts.set(owner, a);
   }
   return a;
@@ -113,15 +155,18 @@ export function sha256Hex(s: string): Hex {
   return "0x" + createHash("sha256").update(s).digest("hex");
 }
 
-/** Merkle-less v0 state root: hash of canonical account+fund state. Same log in → same root out. */
+/** Merkle-less v0 state root: hash of canonical account+fund state + every market's mark.
+ *  Same log in → same root out (accounts carry per-market positions; marks pinned here). */
 export function stateRoot(s: EngineState): Hex {
+  const marks: Record<string, string> = {};
+  for (const [id, m] of [...s.markets.entries()].sort(([a], [b]) => (a < b ? -1 : 1))) marks[id] = m.markPx8.toString();
   return sha256Hex(
     canonicalJson({
       accounts: s.accounts,
       fees: s.feePool6,
       deposited: s.totalDeposited6,
       withdrawn: s.totalWithdrawn6,
-      mark: s.markPx8,
+      marks,
       seq: s.seq,
     }),
   );
@@ -142,7 +187,8 @@ export interface ConservationReport {
 }
 
 /**
- * deposits − withdrawals == Σfree + Σreserved + Σisolated + fees + ΣuPnL(mark).
+ * deposits − withdrawals == Σfree + Σreserved + Σisolated + fees + ΣuPnL(mark),
+ * summed over every position in every market at that market's own mark.
  * Integer division in fills/funding can leave dust; tolerance is a few units of 1e-6 USD
  * per event, asserted tightly in tests.
  */
@@ -151,9 +197,9 @@ export function checkConservation(s: EngineState, tolerancePerEvent6 = 2n): Cons
   let upnl = 0n;
   for (const a of s.accounts.values()) {
     cash += a.free + a.reserved;
-    if (a.position) {
-      cash += a.position.isolatedCollateral;
-      upnl += unrealizedPnl(a.position, s.markPx8);
+    for (const pos of a.positions.values()) {
+      cash += pos.isolatedCollateral;
+      upnl += unrealizedPnl(pos, marketState(s, pos.market).markPx8);
     }
   }
   const lhs = s.totalDeposited6 - s.totalWithdrawn6;

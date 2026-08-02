@@ -1,43 +1,50 @@
 /**
  * usePerpifyMarketData — repoints the trade screen's market data from Binance to the
- * Perpify engine. Replaces useHandleBinanceSocketSubs. It connects to:
- *   /marketDataStream   → live SPX-PERP mark/index/gap-coefficient
- *   /v1/ws/order-book   → aggregated depth
+ * Perpify engine, for EVERY market the venue runs (SPX-PERP + the single-stock perps).
+ * It connects to:
+ *   /marketDataStream?symbol=<S>  → that market's live mark/index/gap-coefficient (one socket
+ *                                   per market, so the header + symbol picker have live prices
+ *                                   for all markets and switching is instant)
+ *   /v1/ws/order-book             → aggregated depth for the SELECTED market (re-subscribed
+ *                                   whenever the user switches markets)
  * and dispatches into the SAME Redux shapes the existing header/order-book components read
- * (SET_BINANCE_DATA keyed by `${sym}@markPrice@1s` / `@ticker`, SET_ASKS/SET_BIDS as
- * [[price,qty]] with a matching symbol), so the UI populates with real engine data.
- *
- * Single market for V1: everything is keyed to SPX-PERP.
+ * (SET_BINANCE_DATA keyed by `${sym}@markPrice@1s` / `@ticker` / `@gapCoefficient`, SET_ASKS/
+ * SET_BIDS as [[price,qty]] with the message's symbol), so the UI populates with real engine
+ * data for whichever market is selected.
  */
 import { useEffect, useRef } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { BASE_URL } from "@/frontend-api-service/Base";
-import SPX_PERP_SYMBOL from "@/config/perpifySymbol";
+import { PERPIFY_MARKETS, PERPIFY_SYMBOLS } from "@/config/perpifySymbol";
 import { setPerpifyMark } from "@/frontend-api-service/perpifyWsBridge";
 
-const SYMBOL = "SPX-PERP";
-const KEY = SYMBOL.toLowerCase(); // "spx-perp" — the header reads `${selectedSymbol}@markPrice@1s`
+const DEFAULT_SYMBOL = "SPX-PERP";
 
 export default function usePerpifyMarketData({ tradeScreen }: { tradeScreen?: boolean } = {}) {
   const dispatch = useDispatch();
-  const binanceData = useRef<Record<string, string>>({});
-  const stats = useRef<{ open?: number; high: number; low: number }>({ high: -Infinity, low: Infinity });
+  const selectedSymbol = useSelector((state: any) => state?.selectSymbol?.selectedSymbol) || DEFAULT_SYMBOL;
+  const selectedRef = useRef<string>(selectedSymbol);
+  selectedRef.current = selectedSymbol;
 
+  const binanceData = useRef<Record<string, string>>({});
+  const stats = useRef<Record<string, { open?: number; high: number; low: number }>>({});
+  const bookWsRef = useRef<WebSocket | null>(null);
+
+  // ---- market data: one stream per market, plus the shared order-book socket ----
   useEffect(() => {
-    // 1) declare the market + its metadata (precision/tick/step), mark the socket "open"
-    dispatch({ type: "SET_TRADABLE_SYMBOL_LIST_SUCCESS", payload: { tradablesymbolList: [SPX_PERP_SYMBOL] } });
-    dispatch({ type: "SET_SELECTED_SYMBOL_SUCCESS", payload: { selectedSymbol: SYMBOL } });
-    dispatch({ type: "SET_ORDER_BOOK_LOADING", payload: SYMBOL }); // sets OrderBook.symbol = SPX-PERP
+    // 1) declare every market + its metadata (precision/tick/step), seed a default selection
+    dispatch({ type: "SET_TRADABLE_SYMBOL_LIST_SUCCESS", payload: { tradablesymbolList: PERPIFY_SYMBOLS } });
+    if (!selectedRef.current) selectedRef.current = DEFAULT_SYMBOL;
+    dispatch({ type: "SET_SELECTED_SYMBOL_SUCCESS", payload: { selectedSymbol: selectedRef.current } });
+    dispatch({ type: "SET_ORDER_BOOK_LOADING", payload: selectedRef.current });
+    // Default leverage + isolated margin type for EVERY market's order-form preview and
+    // position rows (normally seeded from REST calls the engine doesn't serve). Without these
+    // the margin preview is NaN and PositionRow crashes on marginType.toLowerCase().
+    for (const s of PERPIFY_SYMBOLS) {
+      dispatch({ type: "SET_LEVERAGE_POS_RISK", payload: { sym: s.symbol, leverage: 10 } });
+      dispatch({ type: "SET_MARGIN_TYPE", payload: { sym: s.symbol, marginType: "ISOLATED" } });
+    }
     dispatch({ type: "BINANCE_WS_OPENED", payload: { connecting: false, opened: true } });
-    // Default leverage for the order form's margin/cost preview (normally seeded from a REST
-    // leverage-bracket call the engine doesn't serve). Without an entry here leverageFromServer
-    // is undefined → NaN margin → "Max Buying Power --" and a permanently disabled order button.
-    dispatch({ type: "SET_LEVERAGE_POS_RISK", payload: { sym: SYMBOL, leverage: 10 } });
-    // Seed the margin type (engine V1 is isolated-only). A market fill's ORDER_TRADE_UPDATE
-    // arrives before the position's ACCOUNT_UPDATE, so createNewPosition needs this entry present
-    // up front — otherwise the new position's marginType is undefined and PositionRow crashes on
-    // marginType.toLowerCase().
-    dispatch({ type: "SET_MARGIN_TYPE", payload: { sym: SYMBOL, marginType: "ISOLATED" } });
 
     const wsBase = BASE_URL().binanceWsBase.replace(/\/marketDataStream$/, ""); // → ws://<engine>
     let closed = false;
@@ -53,75 +60,104 @@ export default function usePerpifyMarketData({ tradeScreen }: { tradeScreen?: bo
       ws.onerror = () => { try { ws.close(); } catch {} };
     };
 
-    // 2) mark/index/gap coefficient → header price + ticker + 24h stats
-    open("/marketDataStream", (m) => {
-      if (m?.e !== "markPriceUpdate") return;
+    const handleMark = (sym: string, m: any) => {
+      const key = sym.toLowerCase();
       const pxNum = Number(m.p);
       const px = String(m.p);
-      setPerpifyMark(pxNum); // feed the API-layer bridge (market-order reference price)
-      const s = stats.current;
-      if (s.open === undefined) s.open = pxNum;
-      s.high = Math.max(s.high, pxNum);
-      s.low = Math.min(s.low, pxNum);
-      const changePct = s.open ? (((pxNum - s.open) / s.open) * 100).toFixed(2) : "0.00";
+      if (!(pxNum > 0)) return;
+      const st = (stats.current[key] ??= { high: -Infinity, low: Infinity });
+      if (st.open === undefined) st.open = pxNum;
+      st.high = Math.max(st.high, pxNum);
+      st.low = Math.min(st.low, pxNum);
+      const changePct = st.open ? (((pxNum - st.open) / st.open) * 100).toFixed(2) : "0.00";
 
-      // Funding: standard perp premium formula (mark vs index), clamped to the engine's
-      // hourly clamp (±0.75%). Settles hourly, so count down to the next hour. Gives the
-      // header a live, sensible funding number instead of NaN.
-      const indexNum = Number(m.i) || pxNum;
-      const premium = indexNum ? (pxNum - indexNum) / indexNum : 0;
-      const fundingRate = Math.max(-0.0075, Math.min(0.0075, premium));
-      const nextFundingTs = Math.ceil(Date.now() / 3_600_000) * 3_600_000;
-
-      binanceData.current[`${KEY}@markPrice@1s`] = px;
-      binanceData.current[`${KEY}@ticker`] = px;
-      binanceData.current[`${KEY}@indexPrice`] = String(m.i);
-      binanceData.current[`${KEY}@gapCoefficient`] = String(m.gc); // Perpify extension
-      binanceData.current[`${KEY}@per`] = changePct;
+      // keyed market-data map — powers the header for the selected symbol AND the live prices
+      // in the symbol picker for every symbol
+      binanceData.current[`${key}@markPrice@1s`] = px;
+      binanceData.current[`${key}@ticker`] = px;
+      binanceData.current[`${key}@indexPrice`] = String(m.i);
+      binanceData.current[`${key}@gapCoefficient`] = String(m.gc); // Perpify extension
+      binanceData.current[`${key}@per`] = changePct;
       dispatch({ type: "SET_BINANCE_DATA", payload: { ...binanceData.current } });
-      dispatch({
-        type: "SET_MARKPRICE_SNAPSHOT",
-        payload: { [`${KEY}@markPrice@1s`]: px, indexPrice: String(m.i), fundingRate, countDown: nextFundingTs },
-      });
 
-      // 24h ticker row (session-relative on testnet) → day high/low/change, LTP
+      // 24h ticker row per symbol (session-relative on testnet)
       dispatch({
         type: "SET_ALL_TICKER_DATA",
         payload: {
-          symbol: SYMBOL,
+          symbol: sym,
           percentage: changePct,
           lp: px,
           vol: "0",
-          open: String(s.open),
-          high: String(s.high),
-          low: String(s.low),
+          open: String(st.open),
+          high: String(st.high),
+          low: String(st.low),
           numberofTrades: 0,
           previousLTP: px,
-          priceChange: s.open ? (pxNum - s.open).toFixed(2) : "0",
-          colorIndicator: pxNum >= (s.open ?? pxNum) ? 1 : 0,
+          priceChange: st.open ? (pxNum - st.open).toFixed(2) : "0",
+          colorIndicator: pxNum >= (st.open ?? pxNum) ? 1 : 0,
           markPrice: px,
           indexPrice: String(m.i),
         },
       });
-    });
 
-    // 3) aggregated book → SET_ASKS / SET_BIDS ([[price, qty]] with matching symbol)
+      // index/funding snapshot + market-order reference price: only for the SELECTED market
+      if (sym === selectedRef.current) {
+        setPerpifyMark(pxNum);
+        const indexNum = Number(m.i) || pxNum;
+        const premium = indexNum ? (pxNum - indexNum) / indexNum : 0;
+        const fundingRate = Math.max(-0.0075, Math.min(0.0075, premium));
+        const nextFundingTs = Math.ceil(Date.now() / 3_600_000) * 3_600_000;
+        dispatch({
+          type: "SET_MARKPRICE_SNAPSHOT",
+          payload: { [`${key}@markPrice@1s`]: px, indexPrice: String(m.i), fundingRate, countDown: nextFundingTs },
+        });
+      }
+    };
+
+    // 2) one market-data socket per market
+    for (const meta of PERPIFY_MARKETS) {
+      const sym = meta.symbol;
+      open(`/marketDataStream?symbol=${encodeURIComponent(sym)}`, (m) => {
+        if (m?.e !== "markPriceUpdate") return;
+        handleMark(sym, m);
+      });
+    }
+
+    // 3) one order-book socket, subscribed to the currently-selected market (re-subscribed
+    //    by the effect below when the user switches). The engine tags each snapshot with its
+    //    symbol (`m.s`), so we dispatch against that.
     open(
       "/v1/ws/order-book",
       (m) => {
-        if (m?.s !== SYMBOL || !m.b) return;
+        if (!m?.s || !m.b) return;
         const asks = (m.a || []).map((l: any) => [String(l.P), String(l.Q)]);
         const bids = (m.b || []).map((l: any) => [String(l.P), String(l.Q)]);
-        if (asks.length) dispatch({ type: "SET_ASKS", payload: { s: SYMBOL, a: asks } });
-        if (bids.length) dispatch({ type: "SET_BIDS", payload: { s: SYMBOL, b: bids } });
+        if (asks.length) dispatch({ type: "SET_ASKS", payload: { s: m.s, a: asks } });
+        if (bids.length) dispatch({ type: "SET_BIDS", payload: { s: m.s, b: bids } });
         dispatch({ type: "SET_ORDER_BOOK_BINANCE", payload: { asks, bids } });
       },
-      (ws) => ws.send(JSON.stringify({ symbol: SYMBOL, limit: 12, decimal: 2, interval: 400 })),
+      (ws) => {
+        bookWsRef.current = ws;
+        ws.send(JSON.stringify({ symbol: selectedRef.current, limit: 12, decimal: 2, interval: 400 }));
+      },
     );
 
     return () => {
       closed = true;
       for (const ws of sockets) { try { ws.close(); } catch {} }
+      bookWsRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ---- re-point the order book when the selected market changes ----
+  useEffect(() => {
+    if (!selectedSymbol) return;
+    dispatch({ type: "SET_ORDER_BOOK_LOADING", payload: selectedSymbol });
+    const ws = bookWsRef.current;
+    if (ws && ws.readyState === 1) {
+      ws.send(JSON.stringify({ symbol: selectedSymbol, limit: 12, decimal: 2, interval: 400 }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSymbol]);
 }

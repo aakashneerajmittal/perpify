@@ -3,10 +3,13 @@
  * Seeded PRNG (reproducible runs); randomness lives HERE, never in the core.
  */
 import { px8 as toPx8, qty8 as toQty8, usd6 } from "../fixed.js";
+import { marketState } from "../state.js";
+import type { MarketId } from "../types.js";
 import type { BotBus } from "./maker.js";
 
 export interface TakerConfig {
   owner: string;
+  market: MarketId; // which market this taker trades
   seed: number;
   maxQty: number; // per order, contracts
   aggressionBps: number; // how far through the touch they'll pay
@@ -42,21 +45,23 @@ export class TakerBot {
 
   step(): void {
     const s = this.bus.state;
-    if (s.indexPx8 === 0n) return;
-    const index = Number(s.indexPx8) / 1e8;
+    const mkt = marketState(s, this.cfg.market);
+    if (mkt.indexPx8 === 0n) return;
+    const index = Number(mkt.indexPx8) / 1e8;
     const side = this.rng() < this.cfg.longBias ? "buy" : "sell";
     const qty = Math.max(0.05, Math.round(this.rng() * this.cfg.maxQty * 100) / 100);
     const px = index * (1 + ((side === "buy" ? 1 : -1) * this.cfg.aggressionBps) / 10_000);
 
     // occasionally reduce instead of add — keeps positions from drifting to caps
     const acct = s.accounts.get(this.cfg.owner.toLowerCase());
-    const reduceOnly = !!acct?.position && acct.position.side !== side && this.rng() < 0.5;
+    const pos = acct?.positions.get(this.cfg.market);
+    const reduceOnly = !!pos && pos.side !== side && this.rng() < 0.5;
 
     this.bus.dispatch({
       kind: "PlaceOrder",
       order: {
-        id: `tk-${this.cfg.owner.slice(2, 6)}-${this.seq++}`,
-        market: "SPX-PERP",
+        id: `tk-${this.cfg.market}-${this.cfg.owner.slice(2, 6)}-${this.seq++}`,
+        market: this.cfg.market,
         owner: this.cfg.owner,
         side,
         price: toPx8(Math.round(px * 100) / 100),

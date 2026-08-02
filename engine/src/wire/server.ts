@@ -1,23 +1,25 @@
 /**
- * Density-dialect websocket endpoints, served off one EngineBus:
+ * Density-dialect websocket endpoints, served off one multi-market EngineBus:
  *
- *   /v1/order-and-account-updates?token=<addr>  — per-user stream + ORDER INTAKE
+ *   /v1/order-and-account-updates?token=<addr>  — per-user stream + ORDER INTAKE (all markets)
  *   /v1/ws/order-book                           — client sends {symbol,limit,decimal,interval}
- *   /marketDataStream?symbol=SPX-PERP           — mark/index/gap-coefficient push
+ *   /marketDataStream?symbol=<MARKET>           — that market's mark/index/gap-coefficient push
  *
- * The user socket is bidirectional: the client places/cancels orders on the same
- * authenticated connection its fills arrive on. On connect it receives SESSION_INFO
- * (static params + this trader's tier) and an ACCOUNT_UPDATE snapshot, so the UI paints
- * immediately. Order commands flow through the injected `dispatch` (the venue's
- * persisting wrapper) so every trade is logged and replayable.
+ * The user socket is bidirectional and market-agnostic: the client places/cancels orders on
+ * ANY market over the one authenticated connection its fills arrive on. Each order/cancel/
+ * close message names its `symbol`; the server routes it to that market. The account is
+ * cross-collateralized (one balance), so on connect the trader is funded ONCE and can trade
+ * every market. Book and market-data streams are per-symbol (the client re-subscribes when it
+ * switches markets).
  *
  * Heartbeat: {type:"ping"} → {type:"pong"}. Origin policy: explicit allowlist.
  */
 import { createServer, type Server } from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
 import type { EngineBus } from "./bus.js";
-import type { Command, EngineEvent, Side, Tif, TierCode } from "../types.js";
+import type { Command, MarketId, Side, Tif, TierCode } from "../types.js";
 import { px8 as toPx8, qty8 as toQty8, usd6 } from "../fixed.js";
+import { MARKET_IDS } from "../state.js";
 import { computeGapReading } from "../risk/gapCoefficient.js";
 
 /**
@@ -35,7 +37,7 @@ export function demoTierForAddress(addr: string): {
 } {
   const h = addr.toLowerCase().replace(/^0x/, "");
   let acc = 0;
-  for (let i = 0; i < h.length; i++) acc = (acc * 31 + (parseInt(h[i], 16) || 0)) >>> 0;
+  for (let i = 0; i < h.length; i++) acc = (acc * 31 + (parseInt(h[i]!, 16) || 0)) >>> 0;
   const bucket = acc % 100;
   if (bucket < 12)
     return {
@@ -88,20 +90,26 @@ export interface WireServerOpts {
   allowedOrigins?: string[]; // browser Origins allowed; non-browser clients (no Origin) always ok
   bookIntervalMs?: number;
   priceIntervalMs?: number;
-  dispatch?: (cmd: Command) => EngineEvent[]; // persisting wrapper; defaults to bus.dispatch
+  dispatch?: (cmd: Command) => import("../types.js").EngineEvent[]; // persisting wrapper; defaults to bus.dispatch
   demo?: DemoConfig; // when set, auto-fund + tier new traders (investor demo)
+}
+
+const MARKET_SET = new Set<string>(MARKET_IDS);
+/** map an arbitrary client symbol string to a known market (defaults to the flagship) */
+function resolveMarket(sym: unknown): MarketId {
+  return typeof sym === "string" && MARKET_SET.has(sym) ? (sym as MarketId) : "SPX-PERP";
 }
 
 export class WireServer {
   http: Server;
   wss: WebSocketServer;
   private timers: NodeJS.Timeout[] = [];
-  private dispatch: (cmd: Command) => EngineEvent[];
+  private dispatch: (cmd: Command) => import("../types.js").EngineEvent[];
   private clientOrderSeq = 0;
   private nonces = new Map<string, number>();
-  /** demo: when true, hold the gap coefficient at its weekend-elevated value so the
-   *  "prices the dark" story is demonstrable off-hours. main.ts's refresh respects it. */
-  demoWeekend = false;
+  /** demo: markets currently pinned to their weekend-elevated gap coefficient so the
+   *  "prices the dark" story is demonstrable off-hours. main.ts's refresh skips these. */
+  demoWeekendMarkets = new Set<MarketId>();
 
   constructor(
     public bus: EngineBus,
@@ -113,7 +121,7 @@ export class WireServer {
     // the engine URL directly. WebSocket upgrades are handled separately below.
     this.http = createServer((req, res) => {
       res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
-      res.end(JSON.stringify({ service: "perpify-engine", ok: true, market: "SPX-PERP", ts: this.bus.state.seq }));
+      res.end(JSON.stringify({ service: "perpify-engine", ok: true, markets: MARKET_IDS, ts: this.bus.state.seq }));
     });
     this.wss = new WebSocketServer({ noServer: true });
 
@@ -147,6 +155,15 @@ export class WireServer {
     if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(obj));
   }
 
+  /** find which market holds a resting order (fallback when a cancel omits its symbol) */
+  private marketOfOrder(orderId: string): MarketId | null {
+    for (const id of MARKET_IDS) {
+      const mkt = this.bus.state.markets.get(id);
+      if (mkt?.book.byId.has(orderId)) return id;
+    }
+    return null;
+  }
+
   private handleUserMessage(owner: string, ws: WebSocket, raw: unknown): void {
     let m: any;
     try {
@@ -157,6 +174,7 @@ export class WireServer {
     if (m?.type === "ping") return void this.send(ws, { type: "pong" });
 
     if (m?.type === "place_order") {
+      const market = resolveMarket(m.symbol);
       const side: Side = m.side === "sell" ? "sell" : "buy";
       const tif: Tif = m.tif === "IOC" ? "IOC" : m.tif === "POST_ONLY" ? "POST_ONLY" : "GTC";
       const qty = Number(m.qty);
@@ -166,7 +184,7 @@ export class WireServer {
         kind: "PlaceOrder",
         order: {
           id: m.id || `ui-${owner.slice(2, 8)}-${this.clientOrderSeq++}`,
-          market: "SPX-PERP",
+          market,
           owner,
           side,
           price: toPx8(price),
@@ -183,67 +201,82 @@ export class WireServer {
     }
 
     if (m?.type === "cancel") {
-      this.dispatch({ kind: "CancelOrder", market: "SPX-PERP", orderId: String(m.orderId), owner });
+      const market = m.symbol ? resolveMarket(m.symbol) : this.marketOfOrder(String(m.orderId));
+      if (!market) return; // order not resting anywhere — nothing to cancel
+      this.dispatch({ kind: "CancelOrder", market, orderId: String(m.orderId), owner });
       return;
     }
 
     if (m?.type === "market_close") {
-      // close entire position via an IOC reduce-only through the book
+      // close one market's position (symbol given) or every open position (close-all)
       const a = this.bus.state.accounts.get(owner);
-      if (!a?.position) return;
-      const closeSide: Side = a.position.side === "buy" ? "sell" : "buy";
-      const px = Number(this.bus.state.indexPx8) / 1e8;
-      const cmd: Command = {
-        kind: "PlaceOrder",
-        order: {
-          id: `uiclose-${owner.slice(2, 8)}-${this.clientOrderSeq++}`,
-          market: "SPX-PERP",
-          owner,
-          side: closeSide,
-          price: toPx8(px * (closeSide === "buy" ? 1.05 : 0.95)), // cross the book
-          qty: a.position.qty,
-          tif: "IOC",
-          reduceOnly: true,
-          nonce: this.nextNonce(owner),
-          expiry: 0,
-          signature: "0xui-testnet",
-        },
-      };
-      this.dispatch(cmd);
+      if (!a || a.positions.size === 0) return;
+      const markets: MarketId[] = m.symbol ? [resolveMarket(m.symbol)] : [...a.positions.keys()];
+      for (const market of markets) {
+        const pos = a.positions.get(market);
+        if (!pos) continue;
+        const mkt = this.bus.state.markets.get(market);
+        if (!mkt) continue;
+        const closeSide: Side = pos.side === "buy" ? "sell" : "buy";
+        const px = Number(mkt.indexPx8) / 1e8;
+        this.dispatch({
+          kind: "PlaceOrder",
+          order: {
+            id: `uiclose-${owner.slice(2, 8)}-${this.clientOrderSeq++}`,
+            market,
+            owner,
+            side: closeSide,
+            price: toPx8(px * (closeSide === "buy" ? 1.05 : 0.95)), // cross the book
+            qty: pos.qty,
+            tif: "IOC",
+            reduceOnly: true,
+            nonce: this.nextNonce(owner),
+            expiry: 0,
+            signature: "0xui-testnet",
+          },
+        });
+      }
       return;
     }
 
     if (m?.type === "demo_gap") {
-      // DEMO: simulate a severe reopen gap adverse to the sender's position, big enough
-      // to breach maintenance margin across all tiers. The OracleTick handler snaps the
-      // mark and runs the liquidation scan → PositionLiquidated → signed explainer pushed
-      // to the client. The next 1s price tick resumes the normal feed. Testnet-only theatre
-      // for the "watch the reopen clear, see who's liquidated and why" demo.
+      // DEMO: simulate a severe reopen gap adverse to the sender's position in the named
+      // market (default: the market they hold, else the flagship), big enough to breach
+      // maintenance margin across all tiers. The OracleTick handler snaps the mark and runs
+      // the liquidation scan → PositionLiquidated → signed explainer. The next price tick
+      // resumes the normal feed. Testnet-only theatre for the reopen demo.
       const a = this.bus.state.accounts.get(owner);
-      if (!a?.position) return;
-      const isLong = a.position.side === "buy";
-      const idx = Number(this.bus.state.indexPx8);
+      if (!a || a.positions.size === 0) return;
+      const market: MarketId = m.symbol && a.positions.has(resolveMarket(m.symbol)) ? resolveMarket(m.symbol) : [...a.positions.keys()][0]!;
+      const pos = a.positions.get(market);
+      const mkt = this.bus.state.markets.get(market);
+      if (!pos || !mkt) return;
+      const isLong = pos.side === "buy";
+      const idx = Number(mkt.indexPx8);
       if (!(idx > 0)) return;
       const shocked = Math.round(idx * (isLong ? 0.7 : 1.3)); // ±30% gap
-      this.dispatch({ kind: "OracleTick", market: "SPX-PERP", indexPx: BigInt(shocked), source: "testnet-feed" });
+      this.dispatch({ kind: "OracleTick", market, indexPx: BigInt(shocked), source: "testnet-feed" });
       return;
     }
 
     if (m?.type === "demo_weekend") {
-      // DEMO: toggle the gap coefficient between its live value and the weekend-start
-      // elevated value (extended|normal, full 65.5h dark → 1.1627) so "prices the dark"
-      // is demonstrable any time. Margin, maker spread, and the coefficient display all
-      // move. main.ts's per-minute refresh skips while this override is on.
-      this.demoWeekend = !this.demoWeekend;
+      // DEMO: toggle a market's gap coefficient between its live value and the weekend-start
+      // elevated value (extended|normal, full 65.5h dark → 1.1627) so "prices the dark" is
+      // demonstrable any time. Margin, maker spread, and the coefficient display all move.
+      // main.ts's per-minute refresh skips markets held here.
+      const market = resolveMarket(m.symbol);
+      const on = !this.demoWeekendMarkets.has(market);
+      if (on) this.demoWeekendMarkets.add(market);
+      else this.demoWeekendMarkets.delete(market);
       const g = computeGapReading(new Date());
-      const reading = this.demoWeekend
+      const reading = on
         ? { gapCoefficient: 1.162711, session: "weekend" as const, hoursDark: 65.5 }
         : { gapCoefficient: g.gapCoefficient, session: g.session, hoursDark: g.hoursDarkRemaining };
       this.dispatch({
         kind: "RiskReading",
         reading: {
           kind: "gap",
-          market: "SPX-PERP",
+          market,
           gapCoefficient: reading.gapCoefficient,
           session: reading.session,
           hoursDark: reading.hoursDark,
@@ -262,9 +295,9 @@ export class WireServer {
       if (!owner) return void ws.close(4001, "bad token");
       this.bus.ensureAccount(owner);
 
-      // investor-demo: first-time trader gets testnet collateral + a provisional
-      // behavioral tier derived from their address (so different wallets pay
-      // different margin — see demoTierForAddress).
+      // investor-demo: first-time trader gets ONE cross-collateral testnet balance + a
+      // provisional behavioral tier derived from their address (so different wallets pay
+      // different margin — see demoTierForAddress). Funded once; trades every market.
       if (this.opts.demo && !this.bus.hasBalance(owner)) {
         const d = this.opts.demo;
         const prov = demoTierForAddress(owner);
@@ -286,7 +319,8 @@ export class WireServer {
       ws.on("close", unsub);
       ws.on("message", (raw) => this.handleUserMessage(owner, ws, raw));
 
-      // paint immediately
+      // paint immediately: flagship session info (tier/leverage are account-wide) + the
+      // full cross-account snapshot (balance + every open position across markets)
       this.send(ws, this.bus.traderInfo(owner));
       this.send(ws, this.bus.accountSnapshot(owner));
       return;
@@ -298,11 +332,12 @@ export class WireServer {
         try {
           const req = JSON.parse(String(raw));
           if (req?.type === "ping") return void this.send(ws, { type: "pong" });
+          const market = resolveMarket(req.symbol);
           const limit = Number(req.limit ?? 20);
           const decimal = Number(req.decimal ?? 2);
           const interval = Math.max(100, Number(req.interval ?? this.opts.bookIntervalMs ?? 500));
           if (timer) clearInterval(timer);
-          const push = () => this.send(ws, this.bus.bookSnapshot(limit, decimal));
+          const push = () => this.send(ws, this.bus.bookSnapshot(market, limit, decimal));
           push();
           timer = setInterval(push, interval);
           this.timers.push(timer);
@@ -314,7 +349,8 @@ export class WireServer {
       return;
     }
 
-    // /marketDataStream — mark/index/gap-coefficient push
+    // /marketDataStream?symbol=<MARKET> — that market's mark/index/gap-coefficient push
+    const market = resolveMarket(url.searchParams.get("symbol"));
     const interval = this.opts.priceIntervalMs ?? 1000;
     ws.on("message", (raw) => {
       try {
@@ -323,16 +359,19 @@ export class WireServer {
         /* ignore */
       }
     });
-    const push = () =>
+    const push = () => {
+      const mkt = this.bus.state.markets.get(market);
+      if (!mkt) return;
       this.send(ws, {
         e: "markPriceUpdate",
-        s: "SPX-PERP",
-        p: (Number(this.bus.state.markPx8) / 1e8).toFixed(8),
-        i: (Number(this.bus.state.indexPx8) / 1e8).toFixed(8),
-        gc: (Number(this.bus.state.gapCoeff6) / 1e6).toFixed(6),
-        session: this.bus.state.reduceOnly ? "reduce-only" : "live",
+        s: market,
+        p: (Number(mkt.markPx8) / 1e8).toFixed(8),
+        i: (Number(mkt.indexPx8) / 1e8).toFixed(8),
+        gc: (Number(mkt.gapCoeff6) / 1e6).toFixed(6),
+        session: mkt.reduceOnly ? "reduce-only" : "live",
         E: this.bus.state.seq,
       });
+    };
     push();
     const t = setInterval(push, interval);
     this.timers.push(t);

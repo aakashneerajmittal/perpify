@@ -48,7 +48,7 @@ export interface GapReading {
 }
 
 function coefficient(darkType: DarkType, regime: string, dTotal: number, dRemaining: number): number {
-  const base = RMS[`${darkType}|${regime}`] / RMS_REF;
+  const base = (RMS[`${darkType}|${regime}`] ?? RMS_REF) / RMS_REF;
   const dRem = Math.max(0, Math.min(dRemaining, dTotal));
   if (dRem <= 0 || dTotal <= 0) return COEFF_FLOOR;
   const glide = Math.pow(dRem / dTotal, ALPHA);
@@ -68,10 +68,10 @@ function etParts(now: Date): { dow: number; hour: number } {
   const m: Record<string, string> = {};
   for (const p of parts) m[p.type] = p.value;
   const dows = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const dow = dows.indexOf(m.weekday);
-  let hh = parseInt(m.hour, 10);
+  const dow = dows.indexOf(m.weekday ?? "");
+  let hh = parseInt(m.hour ?? "0", 10);
   if (hh === 24) hh = 0;
-  const hour = hh + parseInt(m.minute, 10) / 60 + parseInt(m.second, 10) / 3600;
+  const hour = hh + parseInt(m.minute ?? "0", 10) / 60 + parseInt(m.second ?? "0", 10) / 3600;
   return { dow, hour };
 }
 
@@ -87,7 +87,7 @@ export function computeGapReading(now: Date, regime = "normal"): GapReading {
   const closeEnds = [1, 2, 3, 4, 5].map((d) => d * 24 + CLOSE_HOUR); // Mon..Fri 16:00
 
   // is the market open right now?
-  const openIdx = openStarts.findIndex((o, i) => w >= o && w < closeEnds[i]);
+  const openIdx = openStarts.findIndex((o, i) => w >= o && w < closeEnds[i]!);
   const isOpen = openIdx >= 0;
 
   // next open (this week or next) and last close (this week or prior)
@@ -102,7 +102,7 @@ export function computeGapReading(now: Date, regime = "normal"): GapReading {
   if (isOpen) {
     // 1.0 during the session, ramping in the last PRECLOSE_RAMP_HOURS toward the
     // upcoming dark period's opening coefficient.
-    const closeAt = closeEnds[openIdx];
+    const closeAt = closeEnds[openIdx]!;
     const hrsToClose = closeAt - w;
     if (hrsToClose <= PRECLOSE_RAMP_HOURS) {
       // upcoming dark period after THIS close

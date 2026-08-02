@@ -1,7 +1,14 @@
 import { apply } from "../src/core.js";
 import { px8, qty8, usd6 } from "../src/fixed.js";
-import type { EngineState } from "../src/state.js";
-import type { Command, EngineEvent, Order, Side, Tif } from "../src/types.js";
+import { marketState, type EngineState } from "../src/state.js";
+import type { Command, EngineEvent, MarketId, Order, Position, Side, Tif } from "../src/types.js";
+
+/** a trader's position in one market (default SPX-PERP) — multi-market test accessor */
+export const posOf = (s: EngineState, owner: string, market: MarketId = "SPX-PERP"): Position | null =>
+  s.accounts.get(owner)?.positions.get(market) ?? null;
+
+/** one market's order book (default SPX-PERP) */
+export const bookOf = (s: EngineState, market: MarketId = "SPX-PERP") => marketState(s, market).book;
 
 export const ALICE = "0xaaaa000000000000000000000000000000000001";
 export const BOB = "0xbbbb000000000000000000000000000000000002";

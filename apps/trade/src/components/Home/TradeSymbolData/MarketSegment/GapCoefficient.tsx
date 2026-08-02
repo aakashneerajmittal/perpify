@@ -14,7 +14,8 @@ import { useCheckLoginStatus } from "@/frontend-BL/services/ThirdPartyServices/S
 
 const GapCoefficient = () => {
   const { isLoggedIn } = useCheckLoginStatus();
-  const gapRaw = useSelector((state: any) => state?.BinanceStreamData?.binanceData?.["spx-perp@gapCoefficient"]);
+  const selectedSymbol = useSelector((state: any) => state?.selectSymbol?.selectedSymbol) || "SPX-PERP";
+  const gapRaw = useSelector((state: any) => state?.BinanceStreamData?.binanceData?.[`${selectedSymbol.toLowerCase()}@gapCoefficient`]);
   const gap = Number(gapRaw);
   const has = Number.isFinite(gap) && gap > 0;
   const raised = has && gap > 1.005;
@@ -44,7 +45,7 @@ const GapCoefficient = () => {
           <Box
             onClick={(e) => {
               e.stopPropagation();
-              perpifyWsSend({ type: "demo_weekend" });
+              perpifyWsSend({ type: "demo_weekend", symbol: selectedSymbol });
             }}
             sx={{
               cursor: "pointer",

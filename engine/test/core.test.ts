@@ -9,6 +9,7 @@ import {
   BOB,
   CAROL,
   DAVE,
+  bookOf,
   confidenceReading,
   deposit,
   findEvents,
@@ -17,6 +18,7 @@ import {
   lcg,
   mkOrderCmd,
   nextNonce,
+  posOf,
   resetIds,
   run,
   tick,
@@ -45,15 +47,13 @@ describe("engine core: trading loop", () => {
     const evs2 = run(s, log, mkOrderCmd(BOB, "buy", 5000, 1, { tif: "IOC" }));
     expect(findEvents(evs2, "TradeExecuted").length).toBe(1);
 
-    const alice = s.accounts.get(ALICE)!;
-    const bob = s.accounts.get(BOB)!;
-    expect(alice.position?.side).toBe("sell");
-    expect(bob.position?.side).toBe("buy");
-    expect(alice.position?.qty).toBe(qty8(1));
+    expect(posOf(s, ALICE)?.side).toBe("sell");
+    expect(posOf(s, BOB)?.side).toBe("buy");
+    expect(posOf(s, ALICE)?.qty).toBe(qty8(1));
 
     const c = checkConservation(s);
     expect(c.holds, `drift=${c.driftAbs}`).toBe(true);
-    checkBookInvariants(s.book);
+    checkBookInvariants(bookOf(s));
   });
 
   it("tier A reserves less collateral than tier E for the identical order", () => {
@@ -105,7 +105,7 @@ describe("engine core: trading loop", () => {
     expect(liq[0]!.explainer.owner).toBe(BOB);
     expect(liq[0]!.explainer.avgFillPx).toBe(px8(3940));
     expect(liq[0]!.explainer.queueRank).toBe(null);
-    expect(s.accounts.get(BOB)!.position).toBe(null);
+    expect(posOf(s, BOB)).toBe(null);
     expect(insuranceFundBalance(s) > usd6(10_000)).toBe(true); // penalty collected
 
     const c = checkConservation(s);
@@ -126,9 +126,8 @@ describe("engine core: trading loop", () => {
     const evs = run(s, log, tick(3900));
     expect(findEvents(evs, "BackstopFill").length).toBe(1);
     expect(findEvents(evs, "PositionLiquidated").length).toBe(1);
-    const ins = s.accounts.get(INSURANCE_ACCOUNT)!;
-    expect(ins.position?.side).toBe("buy"); // fund inherited the long
-    expect(ins.position?.qty).toBe(qty8(1));
+    expect(posOf(s, INSURANCE_ACCOUNT)?.side).toBe("buy"); // fund inherited the long
+    expect(posOf(s, INSURANCE_ACCOUNT)?.qty).toBe(qty8(1));
 
     // the law must keep holding as the mark moves — this is why the fund inherits
     for (const p of [3700, 3800, 4100]) {
@@ -263,12 +262,12 @@ describe("fuzz: conservation law under random command streams", () => {
         const reduceOnly = tif === "IOC" && rng() < 0.25;
         cmd = mkOrderCmd(owner, side, price, qty, { tif, reduceOnly, id: `fz${oid++}` });
       } else if (r < 0.5) {
-        const ids = [...s.book.byId.keys()].sort();
+        const ids = [...bookOf(s).byId.keys()].sort();
         if (ids.length === 0) {
           cmd = tick(index);
         } else {
           const id = ids[Math.floor(rng() * ids.length)]!;
-          const owner = s.book.byId.get(id)!.owner;
+          const owner = bookOf(s).byId.get(id)!.owner;
           cmd = { kind: "CancelOrder", market: "SPX-PERP", orderId: id, owner };
         }
       } else if (r < 0.72) {
@@ -289,7 +288,7 @@ describe("fuzz: conservation law under random command streams", () => {
 
       const c = checkConservation(s);
       expect(c.holds, `cmd #${i} ${cmd.kind}: drift=${c.driftAbs} lhs=${c.lhs} rhs=${c.rhs}`).toBe(true);
-      checkBookInvariants(s.book);
+      checkBookInvariants(bookOf(s));
       for (const [owner, acct] of s.accounts) {
         if (owner === INSURANCE_ACCOUNT) continue;
         expect(acct.free >= 0n, `negative free for ${owner} after #${i}`).toBe(true);

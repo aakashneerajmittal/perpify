@@ -19,7 +19,16 @@ export type Qty8 = bigint;
 export type Address = string; // 0x… lowercased at intake
 export type Hex = string;
 
-export type MarketId = "SPX-PERP"; // V1: exactly one market. Widening is a playbook decision, not a code change.
+// Perpify testnet markets: the S&P 500 index perp (flagship) + the five largest US
+// companies by market cap as single-stock perps. All share one collateral balance;
+// each is an independent order book / oracle / position (isolated margin per market).
+export type MarketId =
+  | "SPX-PERP"
+  | "NVDA-PERP"
+  | "AAPL-PERP"
+  | "MSFT-PERP"
+  | "GOOGL-PERP"
+  | "AMZN-PERP";
 
 export type Side = "buy" | "sell";
 export type Tif = "GTC" | "IOC" | "POST_ONLY";
@@ -121,11 +130,13 @@ export interface Position {
 
 export interface Account {
   owner: Address;
-  /** withdrawable collateral (off-chain mirror of vault balance; reconciled at epoch) */
+  /** withdrawable collateral (off-chain mirror of vault balance; reconciled at epoch).
+   *  ONE balance cross-collateralizes every market's isolated positions. */
   free: Usd6;
   /** collateral reserved for resting orders; released on cancel, moved to isolated on fill */
   reserved: Usd6;
-  position: Position | null; // V1: one market → at most one position
+  /** at most one isolated position per market, keyed by MarketId (multi-market V2) */
+  positions: Map<MarketId, Position>;
   tier: (TierReading & { tierMult6: bigint }) | null;
   lastNonce: number;
 }
@@ -187,7 +198,7 @@ export type EngineEvent =
   | { kind: "DepositApplied"; owner: Address; amount: Usd6; l1TxHash: Hex; seq: number }
   | { kind: "WithdrawApplied"; owner: Address; amount: Usd6; seq: number }
   | { kind: "OrderAccepted"; order: Order }
-  | { kind: "OrderRejected"; orderId: string; owner: Address; reason: string; seq: number }
+  | { kind: "OrderRejected"; orderId: string; owner: Address; market: MarketId; reason: string; seq: number }
   | { kind: "OrderCanceled"; orderId: string; owner: Address; reason: "user" | "self-trade-prevention" | "liquidation" | "expired"; seq: number }
   | { kind: "TradeExecuted"; trade: Trade }
   | {

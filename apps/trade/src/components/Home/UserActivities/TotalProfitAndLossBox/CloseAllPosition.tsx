@@ -15,6 +15,7 @@ import { recordCleverTapEvent } from "@/utils/recordCleverTapEvent";
 export const CloseAllPosition = () => {
   const postHog = usePostHog();
   const openPositions = useSelector((state: any) => state.positionsDirectory.currentPositions);
+  const selectedSymbol = useSelector((state: any) => state?.selectSymbol?.selectedSymbol) || "SPX-PERP";
 
   const [closeAllPositionApiResponseStatus, setCloseAllPositionApiResponseStatus] = useState(false);
 
@@ -47,9 +48,11 @@ export const CloseAllPosition = () => {
   };
 
   const handleSimulateGap = () => {
-    // DEMO: ask the engine to simulate a severe reopen gap → liquidates this position →
-    // signed explainer modal. Shows the thesis (dark-period risk) live.
-    const ok = perpifyWsSend({ type: "demo_gap" });
+    // DEMO: ask the engine to simulate a severe reopen gap on the selected market →
+    // liquidates that position → signed explainer modal. Shows the thesis (dark-period
+    // risk) live. If you hold no position in the selected market, the engine falls back
+    // to a market you do hold.
+    const ok = perpifyWsSend({ type: "demo_gap", symbol: selectedSymbol });
     dispatch(
       showSnackBar({
         src: "demo gap",

@@ -8,12 +8,14 @@
  * charting_library (the guard in TradingViewChart.tsx already prefers it when present).
  */
 import React, { useEffect, useRef } from "react";
+import { useSelector } from "react-redux";
 import { createChart, ColorType, LineStyle } from "lightweight-charts";
 import { BASE_URL } from "@/frontend-api-service/Base";
 
 export default function PerpifyChart() {
   const containerRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const selectedSymbol = useSelector((s: any) => s?.selectSymbol?.selectedSymbol) || "SPX-PERP";
 
   useEffect(() => {
     const el = containerRef.current;
@@ -45,7 +47,8 @@ export default function PerpifyChart() {
     // engine market-data stream (repointed in Base/index.js → ws://<engine>/marketDataStream)
     let closed = false;
     const connect = () => {
-      const url = BASE_URL().binanceWsBase; // = `${WS}/marketDataStream`
+      const base = BASE_URL().binanceWsBase.replace(/\/marketDataStream.*$/, "");
+      const url = `${base}/marketDataStream?symbol=${encodeURIComponent(selectedSymbol)}`; // the selected market's tape
       let ws: WebSocket;
       try {
         ws = new WebSocket(url);
@@ -84,13 +87,16 @@ export default function PerpifyChart() {
       try { wsRef.current?.close(); } catch (e) {}
       chart.remove();
     };
-  }, []);
+    // recreate the chart (and its price scale) when the market changes — SPX ≈ 6,000 and a
+    // stock ≈ 200 can't share an axis, so a clean chart per symbol is correct.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSymbol]);
 
   return (
     <div style={{ position: "relative", height: "100%", width: "100%" }}>
       <div ref={containerRef} style={{ height: "100%", width: "100%" }} />
       <div style={{ position: "absolute", top: 8, left: 12, fontFamily: "DM Mono, monospace", fontSize: 11, color: "#55554e", pointerEvents: "none" }}>
-        SPX-PERP · live mark · Perpify
+        {selectedSymbol} · live mark · Perpify
       </div>
     </div>
   );

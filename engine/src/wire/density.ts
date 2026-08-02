@@ -11,14 +11,14 @@
  */
 import type { Book } from "../book.js";
 import { mmRequired, positionEquity, positionNotional, unrealizedPnl, type RiskCoeffs } from "../margin.js";
-import type { Account, EngineParams, Position, Trade } from "../types.js";
+import type { Account, EngineParams, MarketId, Position, Trade } from "../types.js";
 
 const f8 = (v: bigint): string => (Number(v) / 1e8).toFixed(8);
 const f6 = (v: bigint): string => (Number(v) / 1e6).toFixed(6);
 
 export interface WireMessage {
-  eventType: "ORDER_TRADE_UPDATE" | "ACCOUNT_UPDATE" | "ORDER_UPDATE" | "ACCOUNT_FROZE";
-  orderID: string;
+  eventType: "ORDER_TRADE_UPDATE" | "ACCOUNT_UPDATE" | "ORDER_UPDATE" | "ACCOUNT_FROZE" | "LIQUIDATION_EXPLAINER";
+  orderID?: string;
   eventData: unknown;
 }
 
@@ -26,6 +26,7 @@ export interface WireMessage {
 
 export interface OrderMeta {
   owner: string;
+  market: MarketId; // which market this order/trade belongs to → the wire `s` symbol
   side: "buy" | "sell";
   tif: string;
   qty: bigint;
@@ -43,8 +44,9 @@ export function toOrderTradeUpdate(orderId: string, meta: OrderMeta, fill: Trade
     orderID: orderId,
     eventData: {
       // Binance-style single-letter fields — the shape the Density frontend actually reads
-      // (positionsHandler/checkFor* consume s, c, i, S, X, x, L, l, ot, p).
-      s: "SPX-PERP", // symbol
+      // (positionsHandler/checkFor* consume s, c, i, S, X, x, L, l, ot, p). `s` routes the
+      // fill/position to the right market in the UI, so it must be the order's real symbol.
+      s: meta.market, // symbol
       c: orderId, // client order id (the engine order id IS the client id for UI orders)
       i: orderId, // order id
       S: side, // BUY / SELL
@@ -68,7 +70,7 @@ export function toOrderTradeUpdate(orderId: string, meta: OrderMeta, fill: Trade
       rp: "0.000000", // realized pnl per fill lands with the intake API (M2)
       ps: "BOTH", // position side (one-way V1)
       // verbose aliases (kept for any consumer using long names)
-      symbol: "SPX-PERP",
+      symbol: meta.market,
       brokerOrderID: orderId, // engine IS the venue: no external broker id
       side,
       orderType,
@@ -79,7 +81,13 @@ export function toOrderTradeUpdate(orderId: string, meta: OrderMeta, fill: Trade
   };
 }
 
-export function toOrderRejected(orderId: string, owner: string, reason: string, meta?: Partial<OrderMeta>): WireMessage {
+export function toOrderRejected(
+  orderId: string,
+  owner: string,
+  reason: string,
+  market: MarketId,
+  meta?: Partial<OrderMeta>,
+): WireMessage {
   return {
     eventType: "ORDER_UPDATE",
     orderID: orderId,
@@ -89,7 +97,7 @@ export function toOrderRejected(orderId: string, owner: string, reason: string, 
       orderStatus: "REJECTED",
       statusRemarks: reason,
       orderQuantity: meta?.qty !== undefined ? f8(meta.qty) : "0.00000000",
-      symbol: "SPX-PERP",
+      symbol: market,
       orderSide: (meta?.side ?? "buy").toUpperCase(),
     },
   };
@@ -97,22 +105,29 @@ export function toOrderRejected(orderId: string, owner: string, reason: string, 
 
 // ---------- ACCOUNT_UPDATE ----------
 
-export function toAccountUpdate(account: Account, markPx8: bigint, eventReason: string, balanceChange6: bigint): WireMessage {
-  const positions = [];
-  const pos = account.position;
-  if (pos) {
-    const signedQty = pos.side === "buy" ? pos.qty : -pos.qty;
-    positions.push({
-      symbol: pos.market,
-      quantity: (Number(signedQty) / 1e8).toFixed(8),
-      entryPrice: f8(pos.entryPx),
-      accumulatedRealized: "0.000000", // per-position lifetime realized lands in M2 ledger views
-      unrealizedProfitAndLoss: f6(unrealizedPnl(pos, markPx8)),
-      marginType: "isolated",
-      isolatedWallet: f6(pos.isolatedCollateral),
-      positionSide: "BOTH",
+export function toAccountUpdate(
+  account: Account,
+  markOf: (market: MarketId) => bigint,
+  eventReason: string,
+  balanceChange6: bigint,
+): WireMessage {
+  // one entry per open position, each valued at its own market's mark. Stable order
+  // (sorted by symbol) so the stream is deterministic across runs.
+  const positions = [...account.positions.values()]
+    .sort((a, b) => (a.market < b.market ? -1 : a.market > b.market ? 1 : 0))
+    .map((pos) => {
+      const signedQty = pos.side === "buy" ? pos.qty : -pos.qty;
+      return {
+        symbol: pos.market,
+        quantity: (Number(signedQty) / 1e8).toFixed(8),
+        entryPrice: f8(pos.entryPx),
+        accumulatedRealized: "0.000000", // per-position lifetime realized lands in M2 ledger views
+        unrealizedProfitAndLoss: f6(unrealizedPnl(pos, markOf(pos.market))),
+        marginType: "isolated",
+        isolatedWallet: f6(pos.isolatedCollateral),
+        positionSide: "BOTH",
+      };
     });
-  }
   return {
     eventType: "ACCOUNT_UPDATE",
     orderID: "",
@@ -145,7 +160,7 @@ export interface BookWire {
   a: { P: string; Q: string; V: string; p: string }[];
 }
 
-export function toBookWire(book: Book, opts: { limit: number; decimal: number }): BookWire {
+export function toBookWire(book: Book, symbol: MarketId, opts: { limit: number; decimal: number }): BookWire {
   const { limit, decimal } = opts;
   const scale = 10 ** decimal;
 
@@ -179,7 +194,7 @@ export function toBookWire(book: Book, opts: { limit: number; decimal: number })
   const askTotal = a.reduce((acc, x) => acc + Number(x.Q), 0);
   const total = bidTotal + askTotal;
   return {
-    s: "SPX-PERP",
+    s: symbol,
     bp: total > 0 ? ((bidTotal / total) * 100).toFixed(2) : "50.00",
     ap: total > 0 ? ((askTotal / total) * 100).toFixed(2) : "50.00",
     hp: 8,

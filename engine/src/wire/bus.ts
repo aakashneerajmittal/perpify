@@ -3,8 +3,8 @@
  * wire messages, fanned out per owner. The core stays pure; ALL wire concerns live here.
  */
 import { apply } from "../core.js";
-import { createEngine, getOrCreateAccount, type EngineState } from "../state.js";
-import type { Command, EngineEvent, EngineParams } from "../types.js";
+import { createEngine, getOrCreateAccount, marketState, type EngineState } from "../state.js";
+import type { Command, EngineEvent, EngineParams, MarketId } from "../types.js";
 import {
   toAccountUpdate,
   toBookWire,
@@ -24,7 +24,7 @@ export class EngineBus {
   private orderMeta = new Map<string, OrderMeta>();
   private listeners = new Map<string, Set<OwnerListener>>(); // owner -> listeners
 
-  constructor(params?: EngineParams, insuranceSeed6?: bigint) {
+  constructor(params?: EngineParams[], insuranceSeed6?: bigint) {
     this.state = createEngine(params, insuranceSeed6);
   }
 
@@ -52,6 +52,7 @@ export class EngineBus {
         case "OrderAccepted": {
           this.orderMeta.set(ev.order.id, {
             owner: ev.order.owner,
+            market: ev.order.market,
             side: ev.order.side,
             tif: ev.order.tif,
             qty: ev.order.qty,
@@ -62,7 +63,7 @@ export class EngineBus {
           break;
         }
         case "OrderRejected": {
-          this.emitTo(ev.owner, toOrderRejected(ev.orderId, ev.owner, ev.reason, this.orderMeta.get(ev.orderId)));
+          this.emitTo(ev.owner, toOrderRejected(ev.orderId, ev.owner, ev.reason, ev.market, this.orderMeta.get(ev.orderId)));
           break;
         }
         case "OrderCanceled": {
@@ -136,40 +137,49 @@ export class EngineBus {
         : cmd.kind === "FundingTick"
           ? "FUNDING_FEE"
           : "ORDER";
+    const markOf = (m: MarketId) => marketState(this.state, m).markPx8;
     for (const owner of touched) {
       const a = this.state.accounts.get(owner.toLowerCase());
       if (!a) continue;
       const change = a.free - (balBefore.get(owner.toLowerCase()) ?? 0n);
-      this.emitTo(owner, toAccountUpdate(a, this.state.markPx8, reason, change));
+      this.emitTo(owner, toAccountUpdate(a, markOf, reason, change));
     }
 
     return events;
   }
 
-  bookSnapshot(limit = 20, decimal = 2): BookWire {
-    return toBookWire(this.state.book, { limit, decimal });
+  bookSnapshot(market: MarketId, limit = 20, decimal = 2): BookWire {
+    return toBookWire(marketState(this.state, market).book, market, { limit, decimal });
   }
 
+  /** live risk row per open position (one per market the trader holds) */
   positionMonitoring(owner: string): PositionMonitoringWire[] {
     const a = this.state.accounts.get(owner.toLowerCase());
-    if (!a?.position) return [];
-    const coeffs = {
-      gapCoeff6: this.state.gapCoeff6,
-      tierMult6: a.tier ? a.tier.tierMult6 : 1_000_000n,
-      tier: a.tier ? a.tier.tier : ("C" as const),
-    };
-    return [toPositionMonitoring(a.position, this.state.markPx8, this.state.params, coeffs)];
+    if (!a) return [];
+    const out: PositionMonitoringWire[] = [];
+    for (const pos of a.positions.values()) {
+      const mkt = marketState(this.state, pos.market);
+      const coeffs = {
+        gapCoeff6: mkt.gapCoeff6,
+        tierMult6: a.tier ? a.tier.tierMult6 : 1_000_000n,
+        tier: a.tier ? a.tier.tier : ("C" as const),
+      };
+      out.push(toPositionMonitoring(pos, mkt.markPx8, mkt.params, coeffs));
+    }
+    return out;
   }
 
   /** current account state as an ACCOUNT_UPDATE (pushed on connect so the UI paints immediately) */
   accountSnapshot(owner: string): WireMessage {
     const a = getOrCreateAccount(this.state, owner.toLowerCase());
-    return toAccountUpdate(a, this.state.markPx8, "SNAPSHOT", 0n);
+    const markOf = (m: MarketId) => marketState(this.state, m).markPx8;
+    return toAccountUpdate(a, markOf, "SNAPSHOT", 0n);
   }
 
-  /** static params + this trader's live tier — lets the UI render the margin breakdown
-   *  (IM = notional × baseIM × gapCoefficient × tierMult) without guessing */
-  traderInfo(owner: string) {
+  /** static params + this trader's live tier for one market — lets the UI render the margin
+   *  breakdown (IM = notional × baseIM × gapCoefficient × tierMult) without guessing. Tier and
+   *  leverage are account-wide; gapCoefficient is the requested market's live value. */
+  traderInfo(owner: string, market: MarketId = "SPX-PERP") {
     const a = this.state.accounts.get(owner.toLowerCase());
     const tier = a?.tier?.tier ?? "C";
     const tierMult = a?.tier ? Number(a.tier.tierMult6) / 1e6 : 1.0;
@@ -177,10 +187,11 @@ export class EngineBus {
     // model version — surfaced in the UI so the tier is product-truth, not a badge.
     const factors = a?.tier?.factors ?? [];
     const modelVersion = a?.tier?.modelVersion ?? "tier-v0.1-demo";
-    const p = this.state.params;
+    const mkt = marketState(this.state, market);
+    const p = mkt.params;
     return {
       type: "SESSION_INFO",
-      market: p.market,
+      market,
       baseImBps: p.baseImBps,
       baseMmBps: p.baseMmBps,
       mmFloorBps: p.mmFloorBps,
@@ -190,7 +201,7 @@ export class EngineBus {
       tierMult,
       factors,
       modelVersion,
-      gapCoefficient: Number(this.state.gapCoeff6) / 1e6,
+      gapCoefficient: Number(mkt.gapCoeff6) / 1e6,
     };
   }
 
@@ -206,6 +217,6 @@ export class EngineBus {
 
   hasBalance(owner: string): boolean {
     const a = this.state.accounts.get(owner.toLowerCase());
-    return !!a && (a.free > 0n || a.reserved > 0n || a.position !== null);
+    return !!a && (a.free > 0n || a.reserved > 0n || a.positions.size > 0);
   }
 }

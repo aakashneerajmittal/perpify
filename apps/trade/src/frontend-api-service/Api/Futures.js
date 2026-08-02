@@ -310,8 +310,9 @@ export const createOrderLimit = (symbol, side, type, quantity, price) => {
 };
 
 export const cancelOrderApi = (symbol, orderId) => {
-  // PERPIFY testnet: cancel over the account WS.
-  if (!perpifyWsSend({ type: "cancel", orderId: String(orderId) })) {
+  // PERPIFY testnet: cancel over the account WS. Pass the symbol so the engine cancels in
+  // the right market's book (it also falls back to locating the order by id if omitted).
+  if (!perpifyWsSend({ type: "cancel", orderId: String(orderId), symbol })) {
     return Promise.reject({ response: { data: { details: "Cancel could not be sent — not connected." } } });
   }
   return Promise.resolve({ status: 200, data: { orderId } });

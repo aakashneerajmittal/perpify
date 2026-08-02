@@ -19,7 +19,7 @@ const MAKER = "0x3a4ke00000000000000000000000000000000009"; // PVault quoting bo
 const PARAMS: EngineParams = { ...DEFAULT_PARAMS, maxLeverageByTier: { A: 4, B: 3, C: 3, D: 3, E: 3 } };
 
 const log: Command[] = [];
-const s = createEngine(PARAMS, usd6(50_000));
+const s = createEngine([PARAMS], usd6(50_000));
 let oid = 0;
 const nonces = new Map<string, number>();
 
@@ -112,7 +112,7 @@ for (const l of liqs) {
   console.log(`    inputsHash ${ex.inputsHash.slice(0, 18)}… — anyone can replay inputs → model → same decision`);
 }
 if (liqs.length === 0) console.log("  (no liquidation — story bug, checks below will fail)");
-const alicePos = s.accounts.get(ALICE)!.position;
+const alicePos = s.accounts.get(ALICE)!.positions.get("SPX-PERP") ?? null;
 console.log(`  alice: ${alicePos ? "STILL EXPOSED (bug!)" : "flat, untouched — she was charged for the risk and chose not to carry it"}`);
 
 hr();
@@ -123,7 +123,7 @@ console.log(`  Σcash + fees + ΣuPnL     : ${fmtUsd(c.rhs)}`);
 console.log(`  drift                    : ${c.driftAbs.toString()} micro-USD → law ${c.holds ? "HOLDS" : "BROKEN"}`);
 console.log(`  insurance fund           : ${fmtUsd(insuranceFundBalance(s))} (collected eddie's liquidation penalty)`);
 
-const s2 = replay(log, PARAMS, usd6(50_000));
+const s2 = replay(log, [PARAMS], usd6(50_000));
 const same = stateRoot(s2) === stateRoot(s) && s2.eventHead === s.eventHead;
 console.log(`  replay of ${log.length} commands → state root ${same ? "IDENTICAL" : "MISMATCH"}`);
 console.log(`  state root: ${stateRoot(s).slice(0, 34)}…`);

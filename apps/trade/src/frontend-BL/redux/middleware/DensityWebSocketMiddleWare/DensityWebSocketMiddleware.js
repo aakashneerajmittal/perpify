@@ -381,8 +381,11 @@ const densitySocketMiddleware = () => {
 
       case WS_MESSAGESS.ACCOUNT_UPDATE:
         // PERPIFY: engine streams the full balance here (no REST account endpoint on testnet).
-        // positions[] is empty right after funding — guard before the position handler reads it.
-        if (payload?.positions?.[0]) accountUpdateHandler(payload.positions[0], store);
+        // positions[] carries EVERY open position across markets (empty right after funding),
+        // so refresh each one's margin/isolated-wallet — not just the first.
+        if (Array.isArray(payload?.positions)) {
+          for (const p of payload.positions) accountUpdateHandler(p, store);
+        }
         store.dispatch(applyPerpifyAccountBalances(payload));
         break;
       case "LIQUIDATION_EXPLAINER":
@@ -486,11 +489,12 @@ const densitySocketMiddleware = () => {
         break;
       }
       case "PERPIFY_CANCEL_ORDER": {
-        if (socket && socket.readyState === 1) socket.send(JSON.stringify({ type: "cancel", orderId: payload?.orderId }));
+        if (socket && socket.readyState === 1) socket.send(JSON.stringify({ type: "cancel", orderId: payload?.orderId, symbol: payload?.symbol }));
         break;
       }
       case "PERPIFY_MARKET_CLOSE": {
-        if (socket && socket.readyState === 1) socket.send(JSON.stringify({ type: "market_close" }));
+        // symbol present → close that market's position; absent → close every open position
+        if (socket && socket.readyState === 1) socket.send(JSON.stringify({ type: "market_close", symbol: payload?.symbol }));
         break;
       }
       default:

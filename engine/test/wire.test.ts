@@ -82,7 +82,7 @@ describe("Density wire mappers via the bus", () => {
     bus.dispatch(mkOrderCmd(ALICE, "buy", 4998.5, 1, { id: "b3" }));
     bus.dispatch(mkOrderCmd(ALICE, "sell", 5001.0, 2, { id: "s1" }));
 
-    const wire = bus.bookSnapshot(20, 1);
+    const wire = bus.bookSnapshot("SPX-PERP", 20, 1);
     expect(wire.s).toBe("SPX-PERP");
     expect(wire.d).toBe(1);
     expect(wire.b[0]!.P).toBe("4999.9");
