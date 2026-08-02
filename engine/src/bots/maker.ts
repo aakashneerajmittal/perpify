@@ -26,11 +26,11 @@ export interface MakerConfig {
 }
 
 export const DEFAULT_MAKER: Omit<MakerConfig, "owner"> = {
-  levels: 3,
-  levelQty: 0.5,
+  levels: 8, // deeper ladder so demo market orders fill reliably (was 3 × 0.5 = 1.5/side)
+  levelQty: 3, // ~24 contracts (~$178k) of depth per side
   baseSpreadBps: 5,
   levelStepBps: 4,
-  inventorySkewBpsPerContract: 2,
+  inventorySkewBpsPerContract: 1,
   requoteMs: 2000,
 };
 

@@ -15,6 +15,7 @@ export interface SessionInfoState {
   maxLeverage: number | null;
   baseImBps: number | null;
   baseMmBps: number | null;
+  mmFloorBps: number | null;
   takerFeeBps: number | null;
   gapCoefficient: number | null;
   factors: TierFactor[];
@@ -28,6 +29,7 @@ const initial: SessionInfoState = {
   maxLeverage: null,
   baseImBps: null,
   baseMmBps: null,
+  mmFloorBps: null,
   takerFeeBps: null,
   gapCoefficient: null,
   factors: [],
@@ -46,6 +48,7 @@ export default function sessionInfo(state: SessionInfoState = initial, action: a
         maxLeverage: typeof p.maxLeverage === "number" ? p.maxLeverage : state.maxLeverage,
         baseImBps: typeof p.baseImBps === "number" ? p.baseImBps : state.baseImBps,
         baseMmBps: typeof p.baseMmBps === "number" ? p.baseMmBps : state.baseMmBps,
+        mmFloorBps: typeof p.mmFloorBps === "number" ? p.mmFloorBps : state.mmFloorBps,
         takerFeeBps: typeof p.takerFeeBps === "number" ? p.takerFeeBps : state.takerFeeBps,
         gapCoefficient: typeof p.gapCoefficient === "number" ? p.gapCoefficient : state.gapCoefficient,
         factors: Array.isArray(p.factors) ? p.factors : state.factors,

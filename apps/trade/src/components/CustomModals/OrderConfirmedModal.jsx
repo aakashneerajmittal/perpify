@@ -12,6 +12,9 @@ function OrderConfirmedModal({ isOpen, setOrderConfirm, orderDetails, createOrde
   const [DontShowMeAgain, setDontShowMeAgain] = useState(false);
   const selectedSymbol = useSelector((state) => state.selectSymbol.selectedSymbol).toUpperCase();
   const leverage = useSelector((state) => state.positionsDirectory.leverage.find((data) => data.sym === selectedSymbol?.toUpperCase()));
+  // PERPIFY: cap the displayed leverage at the tier-gated engine max (SESSION_INFO).
+  const engineMaxLev = useSelector((state) => Number(state.sessionInfo?.maxLeverage) || 0);
+  const shownLeverage = engineMaxLev ? Math.min(Number(leverage?.leverage) || engineMaxLev, engineMaxLev) : leverage?.leverage;
   const handleSubmit = (event) => {
     DontShowMeAgain && window.localStorage.setItem("doNotShowAgainOrderConfirmModal", true);
 
@@ -102,7 +105,7 @@ function OrderConfirmedModal({ isOpen, setOrderConfirm, orderDetails, createOrde
                 Leverage
               </Typography>
               <Typography variant="Medium_14">
-                {leverage?.leverage}
+                {shownLeverage}
                 <Typography variant="Medium_14">{" x"}</Typography>
               </Typography>
             </Grid>

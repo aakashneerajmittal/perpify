@@ -18,6 +18,9 @@ export const useLiquidationPrice = ({ symbol }) => {
   }, [activeCrossedPositions]);
   const crossWalletBalance = useSelector((state) => state.futures.accountInfo.totalCrossWalletBalance);
   const activeCrossedPositionsPnLData = useSelector((state) => state.positionsDirectory.unRealizedPnLForCross);
+  // PERPIFY: live margin params from the engine (SESSION_INFO). Density's leverageBracket
+  // is empty on testnet, so we compute the isolated liq price from these instead.
+  const sessionInfo = useSelector((state) => state.sessionInfo);
   const { setDecimalPrecision, symbolPricePrecision } = SymbolPrecisionHelper({
     symbol
   });
@@ -41,6 +44,26 @@ export const useLiquidationPrice = ({ symbol }) => {
   }, [leverageBracketData, getPositionSize]);
 
   const liquidationPrice = useMemo(() => {
+    // PERPIFY: isolated liq price from the engine's live margin params (SESSION_INFO):
+    //   mmF = max(baseMm × gapCoeff × tierMult, mmFloor);  P = (e·q·dir − iso) / (q·(dir − mmF))
+    const e = Number(getEntryPrice);
+    const q = Math.abs(Number(getPositionAmount));
+    const iso = Number(getIsolatedWallet?.isolatedWallet);
+    if (sessionInfo && typeof sessionInfo.baseMmBps === "number" && q > 0 && e > 0 && Number.isFinite(iso)) {
+      const dir = currentPositionData?.side === "BUY" || Number(getPositionAmount) > 0 ? 1 : -1;
+      const gap = Number(sessionInfo.gapCoefficient) || 1;
+      const tierMult = Number(sessionInfo.tierMult) || 1;
+      const mmF = Math.max((sessionInfo.baseMmBps / 10000) * gap * tierMult, (Number(sessionInfo.mmFloorBps) || 0) / 10000);
+      const denom = q * (dir - mmF);
+      if (denom !== 0) {
+        const liqPx = (e * q * dir - iso) / denom;
+        dispatch({
+          type: UPDATE_LIQUIDATION_PRICE,
+          payload: { sym: symbol, liquidationPrice: setDecimalPrecision(String(Math.max(0, liqPx)), symbolPricePrecision) }
+        });
+        return liqPx <= 0 ? "--" : setDecimalPrecision(String(liqPx), symbolPricePrecision);
+      }
+    }
     if (
       currentPositionData?.marginType?.toUpperCase() === "ISOLATED" &&
       MarginRatioHelpers?.mmr !== 0 &&
@@ -91,7 +114,7 @@ export const useLiquidationPrice = ({ symbol }) => {
       const liqPrice = liquidationPrice > 0 ? fallbackForNaN(liquidationPrice) : "--";
       return liqPrice;
     }
-  }, [MarginRatioHelpers, activeCrossedPositionsPnLData, getPositionAmount, symbol, currentPositionData]);
+  }, [MarginRatioHelpers, activeCrossedPositionsPnLData, getPositionAmount, symbol, currentPositionData, sessionInfo, getIsolatedWallet]);
 
   function fallbackForNaN(number) {
     if (isNaN(number)) {
