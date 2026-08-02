@@ -82,6 +82,10 @@ export const CloseAllPosition = () => {
             letterSpacing: "0.04em",
             whiteSpace: "nowrap",
             transition: "background 0.15s",
+            // the order-form panel overlaps this footer region — lift above it so the
+            // click actually lands on the button (not the panel behind it).
+            position: "relative",
+            zIndex: 1300,
             "&:hover": { background: "rgba(235,182,47,0.16)" }
           }}
         >
