@@ -101,7 +101,12 @@ const placeStrategyOrders = (orderDetails, dispatch, navigationCallback, setShow
 // as ORDER_TRADE_UPDATE / ACCOUNT_UPDATE. TP/SL bracket and stop-trigger orders are not on
 // testnet yet, so they're declined cleanly rather than silently dropped.
 export const PERPIFY_PLACE_ORDER = "PERPIFY_PLACE_ORDER";
+export const PERPIFY_PLACE_TRIGGER = "PERPIFY_PLACE_TRIGGER";
 
+// PERPIFY testnet order types: 0 market, 1 limit, 2 stop-market (trigger), 3 stop-limit.
+// Market/Limit fill against the book now; Stop types arm an engine trigger that fires when
+// the mark crosses. TP/SL brackets arm reduce-only triggers that close the position on cross.
+// triggerAbove = target >= reference works for every case (buy/sell, TP/SL, entry stops).
 const placePerpifyOrder = (params, dispatch, setShowLoader, setOrderConfirm, navigationCallback, setOrderStatus, setOrderErrors) => {
   const fail = (message) => {
     setOrderStatus("failed");
@@ -111,72 +116,71 @@ const placePerpifyOrder = (params, dispatch, setShowLoader, setOrderConfirm, nav
     dispatch(showSnackBar({ src: ORDER_CREATION_FAIL, message, type: "failure" }));
   };
 
-  if (params.type !== 0 && params.type !== 1) {
-    return fail("Stop & trigger orders are coming soon on the Perpify testnet.");
-  }
-
   const side = params.side === "BUY" ? "buy" : "sell";
+  const closeSide = side === "buy" ? "sell" : "buy";
   const qty = Number(params.quantity);
-  const ref = Number(params.lastTradedPrice) || Number(params.price) || 0;
+  const ref = Number(params.lastTradedPrice) || Number(params.price) || Number(params.stopPrice) || 0;
+  if (!(qty > 0)) return fail("Enter a valid size.");
 
-  let price;
-  let tif;
-  if (params.type === 0) {
-    if (!(ref > 0)) return fail("No market price yet — try again in a moment.");
-    price = side === "buy" ? ref * 1.05 : ref * 0.95; // cross the book (5% slippage cap)
-    tif = "IOC";
+  const baseId = `ui-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
+  const armTrigger = (suffix, tside, triggerPx, reduceOnly, limitPx) =>
+    dispatch({
+      type: PERPIFY_PLACE_TRIGGER,
+      payload: {
+        type: "place_trigger",
+        id: baseId + suffix,
+        symbol: params.symbol,
+        side: tside,
+        qty,
+        triggerPx: Number(Number(triggerPx).toFixed(2)),
+        triggerAbove: Number(triggerPx) >= ref,
+        limitPx: limitPx ? Number(Number(limitPx).toFixed(2)) : 0,
+        reduceOnly
+      }
+    });
+
+  if (params.type === 2 || params.type === 3) {
+    // stop-market / stop-limit ENTRY → arm a trigger that fires when the mark reaches stopPrice
+    const stopPx = Number(params.stopPrice);
+    if (!(stopPx > 0)) return fail("Enter a valid trigger price.");
+    if (params.type === 3 && !(Number(params.price) > 0)) return fail("Enter a valid limit price.");
+    armTrigger("", side, stopPx, !!params.reduceOnly, params.type === 3 ? params.price : 0);
   } else {
-    price = Number(params.price);
-    tif = "GTC";
+    // market (0) / limit (1) main order — fills against the book
+    let price;
+    let tif;
+    if (params.type === 0) {
+      if (!(ref > 0)) return fail("No market price yet — try again in a moment.");
+      price = side === "buy" ? ref * 1.05 : ref * 0.95; // cross the book (5% slippage cap)
+      tif = "IOC";
+    } else {
+      price = Number(params.price);
+      tif = "GTC";
+    }
+    if (!(price > 0)) return fail("Enter a valid price.");
+    dispatch({
+      type: PERPIFY_PLACE_ORDER,
+      payload: { type: "place_order", id: baseId, symbol: params.symbol, side, qty, price: Number(price.toFixed(2)), tif, reduceOnly: !!params.reduceOnly }
+    });
   }
 
-  if (!(qty > 0) || !(price > 0)) return fail("Enter a valid size and price.");
+  // TP / SL brackets: reduce-only closes armed alongside the entry
+  if (params.takeProfitEnabled && Number(params.takeProfit) > 0) armTrigger("-tp", closeSide, params.takeProfit, true, 0);
+  if (params.stopLossEnabled && Number(params.stopLoss) > 0) armTrigger("-sl", closeSide, params.stopLoss, true, 0);
 
-  const clientId = `ui-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
-  dispatch({
-    type: PERPIFY_PLACE_ORDER,
-    payload: {
-      type: "place_order",
-      id: clientId,
-      symbol: params.symbol,
-      side,
-      qty,
-      price: Number(price.toFixed(2)),
-      tif,
-      reduceOnly: !!params.reduceOnly
-    }
-  });
-
-  // Optimistic: the fill / open-order / balance updates arrive over the account WS.
+  // Optimistic: fills / open-order / balance updates arrive over the account WS.
   setShowLoader(false);
   setOrderConfirm(false);
   setOrderStatus("success");
   navigationCallback(params.type);
-  dispatch(
-    showSnackBar({
-      src: ORDER_CREATION_SUCESS,
-      message: params.type === 0 ? "Market order sent" : "Limit order placed",
-      type: "success"
-    })
-  );
+  const label = params.type === 0 ? "Market order sent" : params.type === 1 ? "Limit order placed" : "Stop order armed";
+  const bracket = params.takeProfitEnabled || params.stopLossEnabled ? " · TP/SL armed" : "";
+  dispatch(showSnackBar({ src: ORDER_CREATION_SUCESS, message: label + bracket, type: "success" }));
 };
 
 export const createOrder = (params, dispatch, setShowLoader, setOrderConfirm, navigationCallback, setOrderStatus, setOrderErrors) => {
   setShowLoader(true);
-  if (params.takeProfitEnabled || params.stopLossEnabled) {
-    // Bracket (TP/SL / OCO) orders need the engine's conditional-order support (M2).
-    setOrderStatus("failed");
-    setShowLoader(false);
-    setOrderConfirm(false);
-    dispatch(
-      showSnackBar({
-        src: ORDER_CREATION_FAIL,
-        message: "Take-profit / stop-loss brackets are coming soon on the Perpify testnet.",
-        type: "failure"
-      })
-    );
-    return;
-  }
+  // TP/SL brackets + stop orders are supported via the engine's conditional-order triggers.
   placePerpifyOrder(params, dispatch, setShowLoader, setOrderConfirm, navigationCallback, setOrderStatus, setOrderErrors);
 };
 

@@ -497,6 +497,15 @@ const densitySocketMiddleware = () => {
         if (socket && socket.readyState === 1) socket.send(JSON.stringify({ type: "market_close", symbol: payload?.symbol }));
         break;
       }
+      case "PERPIFY_PLACE_TRIGGER": {
+        // conditional order (TP/SL/stop) — payload is already the {type:"place_trigger",...} wire msg
+        if (socket && socket.readyState === 1) socket.send(JSON.stringify(payload));
+        break;
+      }
+      case "PERPIFY_CANCEL_TRIGGER": {
+        if (socket && socket.readyState === 1) socket.send(JSON.stringify({ type: "cancel_trigger", triggerId: payload?.triggerId, symbol: payload?.symbol }));
+        break;
+      }
       default:
         return next(action);
     }
