@@ -64,6 +64,7 @@ export const applyPerpifyAccountBalances = (eventData) => (dispatch) => {
   const free = Number(bal.walletBalance) || 0;
   const iso = positions.reduce((s, p) => s + (Number(p?.isolatedWallet) || 0), 0);
   const upnl = positions.reduce((s, p) => s + (Number(p?.unrealizedProfitAndLoss) || 0), 0);
+  const realized = Number(eventData?.accumulatedRealized || 0); // lifetime realized PnL ledger
   dispatch({
     type: "FUTURES_ACCOUNT_INFO_FETCH_SUCCESS",
     payload: {
@@ -73,6 +74,7 @@ export const applyPerpifyAccountBalances = (eventData) => (dispatch) => {
       availableBalance: free.toFixed(6),
       maxWithdrawAmount: free.toFixed(6),
       totalUnrealizedProfit: upnl.toFixed(6),
+      totalRealizedProfit: realized.toFixed(6),
       totalMarginBalance: (free + iso + upnl).toFixed(6),
       assets: [{ asset: "USDC", walletBalance: free.toFixed(6), availableBalance: free.toFixed(6), marginBalance: (free + upnl).toFixed(6) }]
     }

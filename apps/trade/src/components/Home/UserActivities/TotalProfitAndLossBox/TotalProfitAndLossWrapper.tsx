@@ -3,6 +3,7 @@ import { Box, Checkbox, FormControlLabel, Grid } from "@mui/material";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { CloseAllPosition } from "./CloseAllPosition";
 import { TotalProfitAndLoss } from "./TotalProfitAndLoss";
+import RealizedPnl from "./RealizedPnl";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useDispatch, useSelector } from "react-redux";
 import { SET_SHOW_PROFIT_LOSS_BASED_ON } from "@/frontend-BL/redux/constants/Constants";
@@ -122,6 +123,7 @@ const TotalProfitAndLossWrapper = () => {
         </Box>
 
         <TotalProfitAndLoss variant="Bold_16" />
+        <RealizedPnl />
       </Grid>
       <Grid className="productTour__step8" xs={4}>
         <CloseAllPosition />
