@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Perpify — Trader Passport</title>
+  <meta property="og:title" content="Perpify Trader Passport" />
+  <meta property="og:description" content="Perpify prices your history, not a static table. Reveal your provisional behavioral tier and enter the testnet." />
+  <style>
+    :root { --bg:#080808; --panel:#0e0e0e; --line:rgba(255,255,255,0.08); --txt:#F0EDE8; --mut:#8a8a82; --dim:#55554f; --blue:#4F8EFF; --amber:#ffb454; --green:#26a69a; --red:#ef5350; --mono:'DM Mono',ui-monospace,'SF Mono',Menlo,monospace; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:radial-gradient(1200px 600px at 50% -10%, rgba(79,142,255,0.10), transparent 60%), var(--bg); color:var(--txt); font-family:'Syne',system-ui,-apple-system,sans-serif; min-height:100vh; }
+    .wrap { max-width:640px; margin:0 auto; padding:44px 20px 80px; }
+    .tag { font-family:var(--mono); font-size:11px; letter-spacing:0.18em; color:var(--blue); text-transform:uppercase; text-align:center; }
+    h1 { font-size:30px; font-weight:800; letter-spacing:-0.02em; margin:10px 0 6px; text-align:center; }
+    .sub { color:var(--mut); font-size:14.5px; max-width:520px; margin:0 auto; text-align:center; line-height:1.5; }
+
+    .connect { margin:30px auto 0; max-width:460px; display:flex; flex-direction:column; gap:12px; }
+    .btn { font-family:'Syne',sans-serif; font-weight:700; font-size:14.5px; border:none; border-radius:11px; padding:14px 18px; cursor:pointer; transition:transform .08s, filter .2s; }
+    .btn:active { transform:translateY(1px); }
+    .btn.primary { background:var(--blue); color:#03060d; }
+    .btn.primary:hover { filter:brightness(1.08); }
+    .btn.ghost { background:transparent; color:var(--txt); border:1px solid var(--line); }
+    .btn.ghost:hover { border-color:var(--blue); }
+    .orline { display:flex; align-items:center; gap:12px; color:var(--dim); font-size:11px; font-family:var(--mono); letter-spacing:0.1em; }
+    .orline::before,.orline::after { content:""; flex:1; height:1px; background:var(--line); }
+    .addrrow { display:flex; gap:8px; }
+    .addrrow input { flex:1; background:var(--panel); border:1px solid var(--line); border-radius:11px; color:var(--txt); font-family:var(--mono); font-size:13px; padding:13px 14px; outline:none; }
+    .addrrow input:focus { border-color:var(--blue); }
+    .err { color:var(--red); font-size:12px; font-family:var(--mono); min-height:16px; text-align:center; }
+
+    /* passport card */
+    .passport { display:none; margin-top:8px; }
+    .card { position:relative; background:linear-gradient(160deg, #101216 0%, #0b0b0d 60%); border:1px solid var(--line); border-radius:18px; padding:26px 24px 22px; overflow:hidden; }
+    .card::before { content:""; position:absolute; inset:0; background:radial-gradient(500px 220px at 100% 0%, rgba(79,142,255,0.14), transparent 55%); pointer-events:none; }
+    .pp-head { display:flex; justify-content:space-between; align-items:flex-start; }
+    .pp-brand { font-family:var(--mono); font-size:10.5px; letter-spacing:0.2em; color:var(--blue); text-transform:uppercase; }
+    .pp-brand b { display:block; font-family:'Syne',sans-serif; font-size:15px; letter-spacing:-0.01em; color:var(--txt); margin-top:3px; }
+    .pp-seal { font-family:var(--mono); font-size:9px; letter-spacing:0.12em; color:var(--dim); text-align:right; text-transform:uppercase; }
+    .tierwrap { display:flex; align-items:center; gap:18px; margin:22px 0 6px; }
+    .tierbadge { width:88px; height:88px; border-radius:20px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:48px; flex-shrink:0; letter-spacing:-0.02em; }
+    .tiermeta .lbl { font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--dim); }
+    .tiermeta .mult { font-family:var(--mono); font-size:26px; margin-top:2px; }
+    .tiermeta .multsub { font-size:12px; color:var(--mut); margin-top:2px; }
+    .factors { margin-top:20px; }
+    .factors .h { font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--dim); margin-bottom:10px; }
+    .frow { margin-bottom:11px; }
+    .frow .ft { display:flex; justify-content:space-between; font-size:12.5px; color:var(--txt); margin-bottom:4px; }
+    .frow .ft span:last-child { font-family:var(--mono); color:var(--mut); }
+    .bar { height:6px; background:rgba(255,255,255,0.06); border-radius:6px; overflow:hidden; }
+    .bar > i { display:block; height:100%; background:linear-gradient(90deg, var(--blue), #7db0ff); border-radius:6px; }
+    .pp-foot { display:flex; justify-content:space-between; align-items:center; margin-top:22px; padding-top:16px; border-top:1px solid var(--line); }
+    .pp-foot .addr { font-family:var(--mono); font-size:12px; color:var(--mut); }
+    .pp-foot .ver { font-family:var(--mono); font-size:9.5px; color:var(--dim); letter-spacing:0.08em; text-align:right; }
+    .note { color:var(--dim); font-size:11.5px; text-align:center; margin-top:14px; line-height:1.5; }
+    .cta { display:flex; gap:10px; margin-top:18px; }
+    .cta .btn { flex:1; }
+    .toast { position:fixed; left:50%; bottom:28px; transform:translateX(-50%) translateY(20px); background:var(--panel); border:1px solid var(--line); color:var(--txt); font-size:13px; padding:11px 18px; border-radius:10px; opacity:0; transition:opacity .25s, transform .25s; pointer-events:none; }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    .foot { margin-top:36px; color:var(--dim); font-size:11.5px; font-family:var(--mono); text-align:center; }
+    a { color:var(--blue); text-decoration:none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="tag">Perpify · Testnet · Behavioral Tiers</div>
+    <h1>Your Trader Passport</h1>
+    <div class="sub">Perpify prices <em>your history</em>, not a static margin table. Reveal your provisional behavioral tier — then enter the testnet, where live trading refines it into a real on-chain reputation.</div>
+
+    <div class="connect" id="connect">
+      <button class="btn primary" id="connectBtn">Connect wallet</button>
+      <div class="orline">or paste an address</div>
+      <div class="addrrow">
+        <input id="addrInput" placeholder="0x…" spellcheck="false" autocomplete="off" />
+        <button class="btn ghost" id="revealBtn">Reveal</button>
+      </div>
+      <div class="err" id="err"></div>
+    </div>
+
+    <div class="passport" id="passport">
+      <div class="card" id="card">
+        <div class="pp-head">
+          <div class="pp-brand">Perpify<b>Trader Passport</b></div>
+          <div class="pp-seal">Testnet V1<br/>Gap-priced venue</div>
+        </div>
+        <div class="tierwrap">
+          <div class="tierbadge" id="badge">–</div>
+          <div class="tiermeta">
+            <div class="lbl">Margin multiplier</div>
+            <div class="mult" id="mult">–</div>
+            <div class="multsub" id="multsub">the venue prices your history, not a static table</div>
+          </div>
+        </div>
+        <div class="factors">
+          <div class="h">Contributing factors</div>
+          <div id="factors"></div>
+        </div>
+        <div class="pp-foot">
+          <div class="addr" id="ppAddr">0x…</div>
+          <div class="ver" id="ppVer">tier-v0.2 · provisional</div>
+        </div>
+      </div>
+      <div class="note" id="note"></div>
+      <div class="cta">
+        <a class="btn primary" id="enterBtn" href="/">Enter the testnet →</a>
+        <button class="btn ghost" id="shareBtn">Copy shareable link</button>
+      </div>
+    </div>
+
+    <div class="foot">
+      Deterministic from your address · same function the engine runs at cold start &nbsp;·&nbsp;
+      <a href="/dashboard.html">Live risk dashboard →</a> &nbsp;·&nbsp; <a href="/replay.html">March 2020 replay →</a>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // Behavioral tier — cold start (tier-v0.2-provisional). This is a byte-for-byte JS port of
+    // the engine's demoTierForAddress(): a wallet with no Perpify history yet gets a provisional
+    // tier derived deterministically from its address, so differentiation is immediate and
+    // honest. Once the wallet actually trades, the engine's live model (liquidations, realized
+    // PnL, turnover, tenure) takes over — that's what "enter the testnet" begins.
+    var TIER_COLOR = {
+      A:{bg:"rgba(38,166,154,0.16)",fg:"#26a69a"}, B:{bg:"rgba(79,142,255,0.16)",fg:"#4F8EFF"},
+      C:{bg:"rgba(138,138,130,0.16)",fg:"#c9c6bf"}, D:{bg:"rgba(255,180,84,0.16)",fg:"#ffb454"},
+      E:{bg:"rgba(239,83,80,0.16)",fg:"#ef5350"}
+    };
+    function demoTierForAddress(addr){
+      var h = addr.toLowerCase().replace(/^0x/, "");
+      var acc = 0;
+      for (var i=0;i<h.length;i++){ var d = parseInt(h[i],16); if(isNaN(d)) d=0; acc = (Math.imul(acc,31) + d) >>> 0; }
+      var bucket = acc % 100;
+      if (bucket < 12) return { tier:"A", tierMult:0.75, factors:[
+        {name:"drawdown-discipline",contribution:0.42},{name:"sizing-vs-balance",contribution:0.33},{name:"tenure",contribution:0.25}] };
+      if (bucket < 42) return { tier:"B", tierMult:0.9, factors:[
+        {name:"consistent-sizing",contribution:0.55},{name:"low-drawdown-response",contribution:0.45}] };
+      if (bucket < 72) return { tier:"C", tierMult:1.0, factors:[{name:"provisional-baseline",contribution:1.0}] };
+      if (bucket < 90) return { tier:"D", tierMult:1.2, factors:[
+        {name:"elevated-volatility-response",contribution:0.6},{name:"sizing-variance",contribution:0.4}] };
+      return { tier:"E", tierMult:1.45, factors:[
+        {name:"prior-liquidations",contribution:0.68},{name:"oversizing",contribution:0.32}] };
+    }
+
+    var $ = function(id){ return document.getElementById(id); };
+    function isAddr(a){ return /^0x[0-9a-fA-F]{40}$/.test((a||"").trim()); }
+    function shortAddr(a){ return a.slice(0,6) + "…" + a.slice(-4); }
+    function toast(msg){ var t=$("toast"); t.textContent=msg; t.className="toast show"; setTimeout(function(){ t.className="toast"; }, 1800); }
+
+    function render(addr){
+      addr = addr.trim();
+      var r = demoTierForAddress(addr);
+      var col = TIER_COLOR[r.tier];
+      var badge = $("badge"); badge.textContent = r.tier; badge.style.background = col.bg; badge.style.color = col.fg;
+      $("mult").textContent = "×" + r.tierMult.toFixed(2);
+      $("mult").style.color = col.fg;
+      if (r.tierMult < 1.0) {
+        $("multsub").textContent = "you post " + Math.round((1 - r.tierMult) * 100) + "% less margin than baseline for the same trade";
+      } else if (r.tierMult > 1.0) {
+        $("multsub").textContent = "you post " + Math.round((r.tierMult - 1) * 100) + "% more margin than baseline — history you can improve";
+      } else {
+        $("multsub").textContent = "baseline margin — a blank slate; trade to earn a lower requirement";
+      }
+      // factors, normalized to sum 1 for the bars
+      var tot = r.factors.reduce(function(s,f){ return s + Math.abs(f.contribution); }, 0) || 1;
+      var html = r.factors.map(function(f){
+        var pct = Math.round((Math.abs(f.contribution)/tot)*100);
+        var label = f.name.replace(/-/g," ");
+        return '<div class="frow"><div class="ft"><span>' + label + '</span><span>' + pct + '%</span></div>' +
+               '<div class="bar"><i style="width:' + pct + '%"></i></div></div>';
+      }).join("");
+      $("factors").innerHTML = html;
+      $("ppAddr").textContent = shortAddr(addr);
+      $("ppVer").textContent = "tier-v0.2 · provisional";
+      $("note").textContent = "Provisional — derived from your address, exactly as the engine scores a wallet with no history yet. Trade on the testnet and your tier is re-scored from real behavior: liquidations, realized-PnL discipline, sizing, and tenure.";
+      $("enterBtn").href = "/?ref=passport";
+      $("shareBtn").onclick = function(){
+        var link = location.origin + location.pathname + "?address=" + addr;
+        navigator.clipboard.writeText(link).then(function(){ toast("Passport link copied"); },
+          function(){ toast(link); });
+      };
+      $("connect").style.display = "none";
+      $("passport").style.display = "block";
+      $("err").textContent = "";
+      history.replaceState(null, "", location.pathname + "?address=" + addr);
+    }
+
+    $("revealBtn").onclick = function(){
+      var a = $("addrInput").value.trim();
+      if (!isAddr(a)) { $("err").textContent = "Enter a valid 0x… address (40 hex characters)."; return; }
+      render(a);
+    };
+    $("addrInput").addEventListener("keydown", function(e){ if (e.key === "Enter") $("revealBtn").click(); });
+
+    $("connectBtn").onclick = function(){
+      if (!window.ethereum) { $("err").textContent = "No injected wallet found — paste an address instead."; return; }
+      window.ethereum.request({ method: "eth_requestAccounts" }).then(function(accts){
+        if (accts && accts[0]) render(accts[0]);
+        else $("err").textContent = "No account returned by the wallet.";
+      }).catch(function(){ $("err").textContent = "Wallet connection was rejected."; });
+    };
+
+    // deep link: ?address=0x… renders immediately (shareable, deterministic)
+    var pre = new URLSearchParams(location.search).get("address");
+    if (pre && isAddr(pre)) render(pre);
+  </script>
+</body>
+</html>
