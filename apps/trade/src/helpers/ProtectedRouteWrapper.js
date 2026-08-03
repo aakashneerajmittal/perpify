@@ -1,63 +1,36 @@
 /* eslint-disable react/prop-types */
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { hasWallet, PERPIFY_AUTH_EVENT } from "@/config/perpifySession";
 
-import Session from "supertokens-web-js/recipe/session";
-import { useDispatch } from "react-redux";
-
+/**
+ * PERPIFY testnet: authentication is the connected/burner wallet, not SuperTokens. Show the
+ * protected page when a wallet is connected; otherwise send the visitor to the trade screen,
+ * which carries the Connect Wallet flow.
+ *
+ * (Density's SuperTokens session gate — Session.doesSessionExist() + 2FA — is retired here: the
+ * burner wallet never has a SuperTokens session, so the gate always failed and blanked every
+ * protected page, most visibly the Portfolio page which rendered as an empty screen.)
+ */
 function ProtectedRouteWrapper(props) {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const [showUI, setShowUI] = useState(hasWallet());
 
-  const [showUI, setShowUI] = useState(false);
-
-  const sessionPayload = useRef({
-    isFirstFactorComplete: false,
-    isSecondFactorComplete: false
-  });
   useEffect(() => {
-    dispatch({ type: "PAUSE_RENDERING" });
-    Session.doesSessionExist()
-      .then((isSessionPresent) => {
-        sessionPayload.current = {
-          ...sessionPayload.current,
-          isFirstFactorComplete: isSessionPresent
-        };
-        if (isSessionPresent) {
-          Session.getAccessTokenPayloadSecurely().then((sessionSnapshot) => {
-            sessionPayload.current = {
-              ...sessionPayload.current,
-              isSecondFactorComplete: sessionSnapshot["2fa-completed"] && sessionSnapshot["2fa-completed"].v
-            };
-            routeNavigator(sessionPayload.current);
-          });
-        } else {
-          routeNavigator(sessionPayload.current);
-        }
-      })
-      .catch(() => {
-        sessionPayload.current = {
-          ...sessionPayload.current,
-          isFirstFactorComplete: false,
-          isSecondFactorComplete: false
-        };
-        routeNavigator(sessionPayload.current);
-      });
+    const check = () => {
+      if (hasWallet()) {
+        setShowUI(true);
+      } else {
+        setShowUI(false);
+        navigate("/");
+      }
+    };
+    check();
+    window.addEventListener(PERPIFY_AUTH_EVENT, check);
+    return () => window.removeEventListener(PERPIFY_AUTH_EVENT, check);
   }, []);
 
-  function routeNavigator(sessionContext) {
-    if (sessionContext.isFirstFactorComplete && sessionContext.isSecondFactorComplete) {
-      setShowUI(true);
-    } else {
-      navigate("/auth");
-    }
-  }
-
-  if (showUI) {
-    return props.children;
-  } else {
-    return null;
-  }
+  return showUI ? props.children : null;
 }
 
 export default ProtectedRouteWrapper;
