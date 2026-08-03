@@ -80,6 +80,12 @@ export default function usePerpifyMarketData({ tradeScreen }: { tradeScreen?: bo
       binanceData.current[`${key}@session`] = String(m.session || "live"); // live | reduce-only
       binanceData.current[`${key}@conf`] = String(m.conf ?? ""); // oracle confidence 0..1
       binanceData.current[`${key}@per`] = changePct;
+      // 24h header stats (session-relative on testnet) — the header's DayData/Change24 read these
+      // straight from redux (the old Binance web-worker ticker path never fires under Perpify).
+      binanceData.current[`${key}@high`] = String(st.high);
+      binanceData.current[`${key}@low`] = String(st.low);
+      binanceData.current[`${key}@priceChange`] = st.open ? (pxNum - st.open).toFixed(2) : "0";
+      binanceData.current[`${key}@vol`] = String(Math.round(4000 + (st.high - st.low) * 60)); // synthetic testnet turnover
       dispatch({ type: "SET_BINANCE_DATA", payload: { ...binanceData.current } });
 
       // 24h ticker row per symbol (session-relative on testnet)

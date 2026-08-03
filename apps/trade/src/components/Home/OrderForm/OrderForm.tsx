@@ -58,9 +58,12 @@ function OrderForm({ Side }: OrderFormProps) {
           </Grid>
         </Box>
         <CustomDivider alignment={""} />
-        <Box p={1} height={"calc(100% - 100px)"} sx={{ position: "relative" }}>
-          <Box height={"calc(100%)"} overflow={"auto"}>
-            <Box sx={{ height: "450px" }}>
+        {/* flex:1 so this region takes whatever height remains under the TierCard + header,
+            keeping the absolutely-positioned submit button inside the viewport. The scroll area
+            reserves ~92px at the bottom for the submit box so fields never hide behind it. */}
+        <Box p={1} sx={{ position: "relative", flex: 1, minHeight: 0 }}>
+          <Box height={"calc(100% - 92px)"} minHeight={"140px"} overflow={"auto"}>
+            <Box sx={{ minHeight: "300px" }}>
               <Grid item xs={12} gap={1} justifyContent={"space-between"} container>
                 <QuantityLimitTriggerFieldWrapper side={Side} />
 

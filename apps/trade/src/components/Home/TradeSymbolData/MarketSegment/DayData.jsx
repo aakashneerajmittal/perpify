@@ -1,66 +1,31 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { PropTypes } from "prop-types";
 import { Typography } from "@mui/material";
 import { useSelector } from "react-redux";
 import { MONO_FAMILY } from "@/assets/Theme/typography";
-const DayLow = ({ symbol, setDecimalPrecision, color, symbolPricePrecision, type, contextListner }) => {
-  // const setTickerData = useSelector((state) => state.BinanceStreamData.ticker);
-  const webWorkerInstance = useSelector((state) => state.getPersonalDetails.binanceWebWorkerInstance);
-  const tickerSnapshot = useSelector((state) => state.BinanceStreamData.tickerSnapshot);
-  const [tickerData, setTickerData] = useState();
-  const tickerHandler = (sData) => {
-    const tickerData = {
-      symbol: sData.s,
-      ltp: sData.c,
-      change24hHigh: sData.h,
-      change24hLow: sData.l,
-      volume24h: sData.q,
-      countDown: sData.T,
-      change24h: sData.p,
-      change24hpercent: sData.P
-    };
-    return tickerData;
-  };
-
-  useEffect(() => {
-    const handleMessage = (message) => {
-      const data = JSON.parse(message);
-      if (data?.data?.s === symbol.toUpperCase() && data?.data?.e === "24hrTicker") {
-        const ticketData = tickerHandler(data?.data);
-        setTickerData(ticketData);
-      }
-    };
-    if (webWorkerInstance) {
-      webWorkerInstance.on("message", handleMessage, `${contextListner}-daydate`);
-    }
-
-    return () => {
-      if (webWorkerInstance) {
-        // webWorkerInstance.removeAllListeners();
-        webWorkerInstance.removeListener("message", handleMessage, `${contextListner}-daydate`);
-      }
-    };
-  }, [webWorkerInstance, symbol]);
+const DayLow = ({ symbol, setDecimalPrecision, color, symbolPricePrecision, type }) => {
+  // PERPIFY: read the 24h header stats straight from the redux market-data map that
+  // usePerpifyMarketData fills from the engine's mark stream (high/low/vol keyed `${sym}@…`).
+  // The old Binance web-worker `24hrTicker` path never fires under Perpify, so DayData used to
+  // show "--" for every market.
+  const key = symbol?.toLowerCase();
+  const binanceData = useSelector((state) => state.BinanceStreamData.binanceData);
   const changemarketSegment = useMemo(() => {
-    const data = tickerData;
-    if (!tickerData) {
-      return "--";
-    }
+    if (!binanceData || !key) return "--";
+    const high = binanceData[`${key}@high`];
+    const low = binanceData[`${key}@low`];
+    const vol = binanceData[`${key}@vol`];
     switch (type) {
       case "DAY_LOW":
-        return data && data.change24hLow;
+        return low !== undefined && Number.isFinite(Number(low)) ? low : "--";
       case "DAY_HIGH":
-        return data && data.change24hHigh;
+        return high !== undefined && Number.isFinite(Number(high)) ? high : "--";
       case "DAY_VOLUME":
-        return data && (data.volume24h ? parseFloat(data.volume24h) : 0);
+        return vol ? parseFloat(vol) : 0;
       default:
         return 0;
     }
-  }, [tickerData]);
-
-  useEffect(() => {
-    setTickerData(tickerSnapshot);
-  }, [symbol, tickerSnapshot]);
+  }, [binanceData, key, type]);
   return (
     <Typography color={color} component={"h5"} variant={"Medium_12"} sx={{ fontFamily: MONO_FAMILY }}>
       {setDecimalPrecision(changemarketSegment, symbolPricePrecision)}

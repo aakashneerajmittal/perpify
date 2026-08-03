@@ -24,6 +24,7 @@ import { computeGapReading, gapScaleFor } from "../risk/gapCoefficient.js";
 import { demoTierForAddress, scoreTier } from "../risk/tierScore.js";
 import { orderFields, verifyOrder } from "../auth/eip712.js";
 import { getAddress } from "ethers";
+import { handleRest } from "./rest.js";
 
 // Behavioral tier scoring lives in risk/tierScore (cold-start provisional + live model).
 // Re-exported here for existing importers.
@@ -78,7 +79,30 @@ export class WireServer {
     // (Railway/Render) healthcheck the port and gives a friendly response if someone opens
     // the engine URL directly. WebSocket upgrades are handled separately below.
     this.http = createServer((req, res) => {
-      res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+      // REST compatibility layer (24h stats, candles, depth, funding, sentiment, …) with CORS,
+      // so the Binance-shaped frontend's fetches succeed instead of CORS-failing. Falls through
+      // to the health JSON for anything it doesn't recognize.
+      const cors = {
+        origin: (req.headers.origin as string) || undefined,
+        reqHeaders: (req.headers["access-control-request-headers"] as string) || undefined,
+      };
+      try {
+        const rest = handleRest(this.bus, req.method ?? "GET", req.url ?? "/", Date.now(), cors);
+        if (rest) {
+          res.writeHead(rest.status, rest.headers);
+          res.end(rest.body);
+          return;
+        }
+      } catch (e) {
+        console.error("[rest-error]", (e as Error).message);
+      }
+      res.writeHead(200, {
+        "content-type": "application/json",
+        "cache-control": "no-store",
+        "access-control-allow-origin": cors.origin || "*",
+        "access-control-allow-credentials": "true",
+        "vary": "Origin",
+      });
       res.end(JSON.stringify({ service: "perpify-engine", ok: true, markets: MARKET_IDS, ts: this.bus.state.seq }));
     });
     this.wss = new WebSocketServer({ noServer: true });
