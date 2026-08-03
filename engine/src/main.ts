@@ -37,7 +37,10 @@ const args = new Map(
     return [k!, v ?? "true"] as const;
   }),
 );
-const OFFLINE = args.has("offline");
+// The deployed image bakes in --offline (reliable demo default). To turn on-chain settlement
+// live WITHOUT rebuilding the image, set PERPIFY_ONCHAIN=1 (plus PRIVATE_KEY) in the host env:
+// it overrides --offline. Without it, --offline still forces the safe off-chain path.
+const OFFLINE = args.has("offline") && process.env.PERPIFY_ONCHAIN !== "1";
 const DEMO = args.has("demo"); // investor demo: browsers that connect get testnet funds + a tier
 const FRESH = args.has("fresh"); // skip replaying today's command log — clean two-sided maker book
 const SOAK_S = args.has("soak") ? Number(args.get("soak")) : 0;

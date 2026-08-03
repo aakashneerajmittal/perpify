@@ -16,3 +16,14 @@ services:
       # add/adjust here (comma-separated) if the frontend is served elsewhere. Keep `null`.
       - key: ALLOWED_ORIGINS
         value: "*"
+      # ── On-chain settlement (Base Sepolia) — OFF by default ──────────────────────────────
+      # The image runs off-chain for a reliable demo. To turn live epoch settlement / deposit
+      # scanning ON, set all three below in the Render dashboard (sync:false = Render prompts you
+      # for the value; nothing secret is committed). Use a DEDICATED testnet key holding only
+      # Base Sepolia ETH for gas — never a key with real funds. Remove PERPIFY_ONCHAIN to roll back.
+      - key: PERPIFY_ONCHAIN
+        sync: false # set to "1" to override the image's --offline and go on-chain
+      - key: PRIVATE_KEY
+        sync: false # operator key (testnet gas only) — recovers cleanly to off-chain if unset
+      - key: BASE_SEPOLIA_RPC_URL
+        sync: false # optional; defaults to https://sepolia.base.org
