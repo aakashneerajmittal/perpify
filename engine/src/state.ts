@@ -22,7 +22,7 @@ import { createHash } from "node:crypto";
 import { createBook, type Book } from "./book.js";
 import { toCoeff6 } from "./fixed.js";
 import { unrealizedPnl } from "./margin.js";
-import type { Account, Address, EngineEvent, EngineParams, Hex, MarketId, SequencerPlan } from "./types.js";
+import type { Account, Address, EngineEvent, EngineParams, Hex, MarketId, SequencerPlan, TriggerOrder } from "./types.js";
 
 /** the insurance fund is an ordinary account — its free balance + position equity is the fund */
 export const INSURANCE_ACCOUNT: Address = "0xinsurancefund";
@@ -37,6 +37,8 @@ export interface MarketState {
   gapModelVersion: string;
   confidence: number;
   reduceOnly: boolean;
+  /** armed conditional (TP/SL/stop) orders; hold no collateral until they fire */
+  triggers: Map<string, TriggerOrder>;
 }
 
 export interface EngineState {
@@ -82,6 +84,7 @@ function createMarket(params: EngineParams): MarketState {
     gapModelVersion: "gap-v0.0-unset",
     confidence: 1.0,
     reduceOnly: false,
+    triggers: new Map(),
   };
 }
 
@@ -125,7 +128,16 @@ export function marketState(s: EngineState, market: MarketId): MarketState {
 export function getOrCreateAccount(s: EngineState, owner: Address): Account {
   let a = s.accounts.get(owner);
   if (!a) {
-    a = { owner, free: 0n, reserved: 0n, positions: new Map(), tier: null, lastNonce: -1 };
+    a = {
+      owner,
+      free: 0n,
+      reserved: 0n,
+      positions: new Map(),
+      tier: null,
+      lastNonce: -1,
+      realizedPnl6: 0n,
+      behavior: { trades: 0, liquidations: 0, volumeUsd6: 0n, fundedUsd6: 0n, firstSeenSeq: s.seq },
+    };
     s.accounts.set(owner, a);
   }
   return a;

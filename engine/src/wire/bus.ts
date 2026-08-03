@@ -120,6 +120,42 @@ export class EngineBus {
           touched.add(ex.owner);
           break;
         }
+        case "TriggerArmed": {
+          const t = ev.trigger;
+          this.emitTo(t.owner, {
+            eventType: "CONDITIONAL_ORDER_UPDATE",
+            orderID: t.id,
+            eventData: {
+              status: "ARMED",
+              id: t.id,
+              symbol: t.market,
+              side: t.side.toUpperCase(),
+              triggerPrice: (Number(t.triggerPx) / 1e8).toFixed(2),
+              triggerAbove: t.triggerAbove,
+              qty: (Number(t.qty) / 1e8).toFixed(8),
+              limitPrice: (Number(t.limitPx) / 1e8).toFixed(2),
+              reduceOnly: t.reduceOnly,
+            },
+          });
+          break;
+        }
+        case "TriggerFired": {
+          this.emitTo(ev.owner, {
+            eventType: "CONDITIONAL_ORDER_UPDATE",
+            orderID: ev.triggerId,
+            eventData: { status: "FIRED", id: ev.triggerId, symbol: ev.market },
+          });
+          touched.add(ev.owner);
+          break;
+        }
+        case "TriggerCanceled": {
+          this.emitTo(ev.owner, {
+            eventType: "CONDITIONAL_ORDER_UPDATE",
+            orderID: ev.triggerId,
+            eventData: { status: "CANCELED", id: ev.triggerId, reason: ev.reason },
+          });
+          break;
+        }
         case "DepositApplied":
         case "WithdrawApplied": {
           touched.add(ev.owner);
@@ -174,6 +210,28 @@ export class EngineBus {
     const a = getOrCreateAccount(this.state, owner.toLowerCase());
     const markOf = (m: MarketId) => marketState(this.state, m).markPx8;
     return toAccountUpdate(a, markOf, "SNAPSHOT", 0n);
+  }
+
+  /** armed conditional (TP/SL/stop) orders for a trader across all markets (painted on connect) */
+  openTriggers(owner: string): Array<Record<string, unknown>> {
+    const o = owner.toLowerCase();
+    const out: Array<Record<string, unknown>> = [];
+    for (const [market, mkt] of this.state.markets) {
+      for (const t of mkt.triggers.values()) {
+        if (t.owner !== o) continue;
+        out.push({
+          id: t.id,
+          symbol: market,
+          side: t.side.toUpperCase(),
+          triggerPrice: (Number(t.triggerPx) / 1e8).toFixed(2),
+          triggerAbove: t.triggerAbove,
+          qty: (Number(t.qty) / 1e8).toFixed(8),
+          limitPrice: (Number(t.limitPx) / 1e8).toFixed(2),
+          reduceOnly: t.reduceOnly,
+        });
+      }
+    }
+    return out;
   }
 
   /** static params + this trader's live tier for one market — lets the UI render the margin

@@ -20,64 +20,12 @@ import type { EngineBus } from "./bus.js";
 import type { Command, MarketId, Side, Tif, TierCode } from "../types.js";
 import { px8 as toPx8, qty8 as toQty8, usd6 } from "../fixed.js";
 import { MARKET_IDS } from "../state.js";
-import { computeGapReading } from "../risk/gapCoefficient.js";
+import { computeGapReading, gapScaleFor } from "../risk/gapCoefficient.js";
+import { demoTierForAddress, scoreTier } from "../risk/tierScore.js";
 
-/**
- * Provisional behavioral tier for the testnet demo, derived deterministically from
- * the wallet address. Stands in for the behavioral inference engine (which reads a
- * wallet's on-chain history) until real history exists: every wallet gets a stable
- * A–E tier, so two different wallets genuinely pay different margin for the same
- * trade (IM = notional × baseIM × gapCoeff × tierMult) and see different leverage
- * caps — the "the venue knows you" demo. Distribution skews to B/C like a real book.
- */
-export function demoTierForAddress(addr: string): {
-  tier: TierCode;
-  tierMult: number;
-  factors: { name: string; contribution: number }[];
-} {
-  const h = addr.toLowerCase().replace(/^0x/, "");
-  let acc = 0;
-  for (let i = 0; i < h.length; i++) acc = (acc * 31 + (parseInt(h[i]!, 16) || 0)) >>> 0;
-  const bucket = acc % 100;
-  if (bucket < 12)
-    return {
-      tier: "A",
-      tierMult: 0.75,
-      factors: [
-        { name: "drawdown-discipline", contribution: 0.42 },
-        { name: "sizing-vs-balance", contribution: 0.33 },
-        { name: "tenure", contribution: 0.25 },
-      ],
-    };
-  if (bucket < 42)
-    return {
-      tier: "B",
-      tierMult: 0.9,
-      factors: [
-        { name: "consistent-sizing", contribution: 0.55 },
-        { name: "low-drawdown-response", contribution: 0.45 },
-      ],
-    };
-  if (bucket < 72)
-    return { tier: "C", tierMult: 1.0, factors: [{ name: "provisional-baseline", contribution: 1.0 }] };
-  if (bucket < 90)
-    return {
-      tier: "D",
-      tierMult: 1.2,
-      factors: [
-        { name: "elevated-volatility-response", contribution: 0.6 },
-        { name: "sizing-variance", contribution: 0.4 },
-      ],
-    };
-  return {
-    tier: "E",
-    tierMult: 1.45,
-    factors: [
-      { name: "prior-liquidations", contribution: 0.68 },
-      { name: "oversizing", contribution: 0.32 },
-    ],
-  };
-}
+// Behavioral tier scoring lives in risk/tierScore (cold-start provisional + live model).
+// Re-exported here for existing importers.
+export { demoTierForAddress };
 
 export interface DemoConfig {
   fundUsd: number; // testnet collateral credited to a new trader on first connect
@@ -110,9 +58,13 @@ export class WireServer {
   private dispatch: (cmd: Command) => import("../types.js").EngineEvent[];
   private clientOrderSeq = 0;
   private nonces = new Map<string, number>();
+  /** live sockets per connected owner — for pushing fresh SESSION_INFO on tier changes */
+  private sockets = new Map<string, Set<WebSocket>>();
   /** demo: markets currently pinned to their weekend-elevated gap coefficient so the
    *  "prices the dark" story is demonstrable off-hours. main.ts's refresh skips these. */
   demoWeekendMarkets = new Set<MarketId>();
+  /** demo: markets forced into low-confidence reduce-only (new exposure blocked). */
+  demoReduceOnlyMarkets = new Set<MarketId>();
 
   constructor(
     public bus: EngineBus,
@@ -242,6 +194,54 @@ export class WireServer {
       return;
     }
 
+    if (m?.type === "demo_reduce_only") {
+      // DEMO: force a market into low-confidence reduce-only (new exposure blocked, closes
+      // allowed) — the "oracle confidence dropped → venue protects itself" story.
+      const market = resolveMarket(m.symbol);
+      const on = !this.demoReduceOnlyMarkets.has(market);
+      if (on) this.demoReduceOnlyMarkets.add(market);
+      else this.demoReduceOnlyMarkets.delete(market);
+      this.dispatch({
+        kind: "RiskReading",
+        reading: { kind: "confidence", market, confidence: on ? 0.35 : 0.96, dispersionBps: on ? 40 : 3, stalenessMs: 200, reduceOnly: on, signature: "0xdemo-confidence" },
+      });
+      return;
+    }
+
+    if (m?.type === "place_trigger") {
+      // conditional order (TP / SL / stop). The child order fires when the mark crosses.
+      const market = resolveMarket(m.symbol);
+      const side: Side = m.side === "sell" ? "sell" : "buy";
+      const triggerPx = Number(m.triggerPx);
+      const qty = Number(m.qty);
+      if (!(triggerPx > 0) || !(qty > 0)) return void this.send(ws, { type: "reject", reason: "bad trigger" });
+      const limit = Number(m.limitPx) || 0;
+      this.dispatch({
+        kind: "PlaceTrigger",
+        trigger: {
+          id: m.id || `trg-${owner.slice(2, 8)}-${this.clientOrderSeq++}`,
+          market,
+          owner,
+          triggerPx: toPx8(triggerPx),
+          triggerAbove: !!m.triggerAbove,
+          side,
+          qty: toQty8(qty),
+          limitPx: limit > 0 ? toPx8(limit) : 0n,
+          reduceOnly: m.reduceOnly !== false, // brackets default reduce-only
+          nonce: this.nextNonce(owner),
+          expiry: 0,
+          signature: "0xui-testnet",
+        },
+      });
+      return;
+    }
+
+    if (m?.type === "cancel_trigger") {
+      const market = resolveMarket(m.symbol);
+      this.dispatch({ kind: "CancelTrigger", market, triggerId: String(m.triggerId), owner });
+      return;
+    }
+
     if (m?.type === "demo_gap") {
       // DEMO: simulate a severe reopen gap adverse to the sender's position in the named
       // market (default: the market they hold, else the flagship), big enough to breach
@@ -271,9 +271,11 @@ export class WireServer {
       const on = !this.demoWeekendMarkets.has(market);
       if (on) this.demoWeekendMarkets.add(market);
       else this.demoWeekendMarkets.delete(market);
-      const g = computeGapReading(new Date());
+      const scale = gapScaleFor(market);
+      const g = computeGapReading(new Date(), "normal", scale);
+      const weekendCoeff = Math.min(2.5, 1 + (1.162711 - 1) * scale); // per-symbol dark premium
       const reading = on
-        ? { gapCoefficient: 1.162711, session: "weekend" as const, hoursDark: 65.5 }
+        ? { gapCoefficient: weekendCoeff, session: "weekend" as const, hoursDark: 65.5 }
         : { gapCoefficient: g.gapCoefficient, session: g.session, hoursDark: g.hoursDarkRemaining };
       this.dispatch({
         kind: "RiskReading",
@@ -318,14 +320,21 @@ export class WireServer {
         this.dispatch({ kind: "Deposit", owner, amount: usd6(d.fundUsd), l1TxHash: "0xdemo-testnet-faucet" });
       }
 
+      if (!this.sockets.has(owner)) this.sockets.set(owner, new Set());
+      this.sockets.get(owner)!.add(ws);
       const unsub = this.bus.subscribe(owner, (msg) => this.send(ws, msg));
-      ws.on("close", unsub);
+      ws.on("close", () => {
+        unsub();
+        this.sockets.get(owner)?.delete(ws);
+      });
       ws.on("message", (raw) => this.handleUserMessage(owner, ws, raw));
 
       // paint immediately: flagship session info (tier/leverage are account-wide) + the
-      // full cross-account snapshot (balance + every open position across markets)
+      // full cross-account snapshot (balance + every open position across markets) + any
+      // armed conditional orders
       this.send(ws, this.bus.traderInfo(owner));
       this.send(ws, this.bus.accountSnapshot(owner));
+      this.send(ws, { type: "CONDITIONAL_ORDERS_SNAPSHOT", orders: this.bus.openTriggers(owner) });
       return;
     }
 
@@ -371,6 +380,7 @@ export class WireServer {
         p: (Number(mkt.markPx8) / 1e8).toFixed(8),
         i: (Number(mkt.indexPx8) / 1e8).toFixed(8),
         gc: (Number(mkt.gapCoeff6) / 1e6).toFixed(6),
+        conf: mkt.confidence.toFixed(3),
         session: mkt.reduceOnly ? "reduce-only" : "live",
         E: this.bus.state.seq,
       });
@@ -381,10 +391,33 @@ export class WireServer {
     ws.on("close", () => clearInterval(t));
   }
 
+  /**
+   * Recompute each connected trader's behavioral tier from their live behavior (tier-v0.2)
+   * and, when it changes, dispatch a TierUpdate + push fresh SESSION_INFO so the tier card
+   * updates live — the "watch your margin change as you trade" demo.
+   */
+  private refreshTiers(): void {
+    for (const [owner, wss] of this.sockets) {
+      if (wss.size === 0) continue;
+      const a = this.bus.state.accounts.get(owner);
+      if (!a) continue;
+      const r = scoreTier(owner, a.behavior, a.realizedPnl6, this.bus.state.seq);
+      const cur = a.tier;
+      const changed = !cur || cur.tier !== r.tier || Math.abs(Number(cur.tierMult6) / 1e6 - r.tierMult) > 1e-9;
+      if (!changed) continue;
+      this.dispatch({
+        kind: "TierUpdate",
+        reading: { wallet: owner, tier: r.tier, tierMult: r.tierMult, factors: r.factors, modelVersion: r.modelVersion, signature: "0xtier-live" },
+      });
+      for (const ws of wss) this.send(ws, this.bus.traderInfo(owner));
+    }
+  }
+
   listen(): Promise<number> {
     return new Promise((resolve) => {
       this.http.listen(this.opts.port, () => {
         const addr = this.http.address();
+        this.timers.push(setInterval(() => this.refreshTiers(), 15_000)); // live behavioral tiers
         resolve(typeof addr === "object" && addr ? addr.port : this.opts.port);
       });
     });

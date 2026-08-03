@@ -116,6 +116,29 @@ export interface Trade {
   seq: number;
 }
 
+/**
+ * A conditional (trigger) order — the primitive behind take-profit, stop-loss and stop
+ * entries. It holds no collateral while armed; when the mark crosses `triggerPx` in the
+ * armed direction, the engine emits the child order (market IOC if `limitPx===0`, else a
+ * GTC limit). TP vs SL is just the direction the UI arms: the engine only knows "fire when
+ * mark crosses". Reduce-only brackets close a position; non-reduce-only arms a stop entry.
+ */
+export interface TriggerOrder {
+  id: string;
+  market: MarketId;
+  owner: Address;
+  triggerPx: Px8;
+  triggerAbove: boolean; // fire when mark >= triggerPx (true) or mark <= triggerPx (false)
+  side: Side; // child order side
+  qty: Qty8;
+  limitPx: Px8; // 0 → child is market (IOC crossing); >0 → child is a GTC limit at this price
+  reduceOnly: boolean;
+  nonce: number;
+  expiry: number;
+  signature: Hex;
+  seq: number; // armed-at sequence
+}
+
 // ---------- accounts & positions (isolated margin only in V1) ----------
 
 export interface Position {
@@ -139,6 +162,20 @@ export interface Account {
   positions: Map<MarketId, Position>;
   tier: (TierReading & { tierMult6: bigint }) | null;
   lastNonce: number;
+  /** lifetime realized PnL (signed, usd6) across all closed/reduced positions — a tracking
+   *  counter, not cash (the cash already moved into `free`); powers the portfolio view */
+  realizedPnl6: Usd6;
+  /** behavioral counters for live tier inference (see risk/tierScore) */
+  behavior: BehaviorStats;
+}
+
+/** observed trading behavior accumulated in the engine, fed to the live tier model */
+export interface BehaviorStats {
+  trades: number; // number of fills the wallet participated in
+  liquidations: number; // times liquidated
+  volumeUsd6: Usd6; // cumulative traded notional
+  fundedUsd6: Usd6; // cumulative deposits (sizing baseline)
+  firstSeenSeq: number; // tenure anchor (seq of first activity)
 }
 
 // ---------- commands (the ONLY way anything enters the core) ----------
@@ -170,6 +207,8 @@ export type Command =
   | { kind: "FundingTick"; market: MarketId }
   | { kind: "Deposit"; owner: Address; amount: Usd6; l1TxHash: Hex }
   | { kind: "Withdraw"; owner: Address; amount: Usd6 }
+  | { kind: "PlaceTrigger"; trigger: Omit<TriggerOrder, "seq"> }
+  | { kind: "CancelTrigger"; market: MarketId; triggerId: string; owner: Address }
   | { kind: "LiquidationPlan"; market: MarketId; plan: SequencerPlan }
   | { kind: "EpochClose"; epochId: number };
 
@@ -223,5 +262,8 @@ export type EngineEvent =
   | { kind: "BackstopFill"; owner: Address; qty: Qty8; px: Px8; note: "insurance-fund-counterparty"; seq: number }
   | { kind: "BadDebt"; owner: Address; amount: Usd6; coveredByInsurance: boolean; seq: number }
   | { kind: "ReduceOnlyChanged"; market: MarketId; active: boolean; cause: string; seq: number }
+  | { kind: "TriggerArmed"; trigger: TriggerOrder }
+  | { kind: "TriggerFired"; triggerId: string; owner: Address; market: MarketId; seq: number }
+  | { kind: "TriggerCanceled"; triggerId: string; owner: Address; reason: "user" | "fired" | "expired"; seq: number }
   | { kind: "LiquidationPlanAccepted"; market: MarketId; publishedHash: Hex; entries: number; seq: number }
   | { kind: "EpochSettled"; epochId: number; stateRoot: Hex; seq: number };

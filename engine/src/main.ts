@@ -26,7 +26,7 @@ import { TakerBot } from "./bots/taker.js";
 import { ChainClient } from "./chain.js";
 import { checkConservation, stateRoot, MARKET_IDS } from "./state.js";
 import { px8 as toPx8 } from "./fixed.js";
-import { computeGapReading } from "./risk/gapCoefficient.js";
+import { computeGapReading, gapScaleFor } from "./risk/gapCoefficient.js";
 import type { Command, MarketId } from "./types.js";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -208,9 +208,10 @@ async function main() {
   // margin, maker spread and the header all glide into the dark together. A market pinned
   // by the demo-weekend toggle is skipped so its override holds.
   const refreshReadings = () => {
-    const g = computeGapReading(new Date());
     for (const id of MARKET_IDS) {
       if (server.demoWeekendMarkets.has(id)) continue;
+      // per-symbol dark premium: single stocks gap wider than the index (vol-scaled v0)
+      const g = computeGapReading(new Date(), "normal", gapScaleFor(id));
       dispatch({
         kind: "RiskReading",
         reading: {
@@ -231,6 +232,28 @@ async function main() {
   every(3_600_000, () => {
     for (const id of MARKET_IDS) dispatch({ kind: "FundingTick", market: id });
   });
+
+  // oracle confidence per market (testnet proxy): high while the synthetic feed is fresh;
+  // a demo control drops it below threshold → reduce-only (new exposure blocked, closes allowed).
+  const refreshConfidence = () => {
+    for (const id of MARKET_IDS) {
+      const forced = server.demoReduceOnlyMarkets.has(id);
+      dispatch({
+        kind: "RiskReading",
+        reading: {
+          kind: "confidence",
+          market: id,
+          confidence: forced ? 0.35 : 0.96,
+          dispersionBps: forced ? 40 : 3,
+          stalenessMs: 200,
+          reduceOnly: forced,
+          signature: "0xservice",
+        },
+      });
+    }
+  };
+  refreshConfidence(); // fresh at boot
+  every(30_000, refreshConfidence);
 
   // daily epoch settlement in live mode
   if (chain) {

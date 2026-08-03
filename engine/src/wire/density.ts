@@ -17,7 +17,13 @@ const f8 = (v: bigint): string => (Number(v) / 1e8).toFixed(8);
 const f6 = (v: bigint): string => (Number(v) / 1e6).toFixed(6);
 
 export interface WireMessage {
-  eventType: "ORDER_TRADE_UPDATE" | "ACCOUNT_UPDATE" | "ORDER_UPDATE" | "ACCOUNT_FROZE" | "LIQUIDATION_EXPLAINER";
+  eventType:
+    | "ORDER_TRADE_UPDATE"
+    | "ACCOUNT_UPDATE"
+    | "ORDER_UPDATE"
+    | "ACCOUNT_FROZE"
+    | "LIQUIDATION_EXPLAINER"
+    | "CONDITIONAL_ORDER_UPDATE";
   orderID?: string;
   eventData: unknown;
 }
@@ -133,6 +139,8 @@ export function toAccountUpdate(
     orderID: "",
     eventData: {
       eventReason,
+      // lifetime realized PnL across all closed positions (portfolio view)
+      accumulatedRealized: f6(account.realizedPnl6),
       balances: [
         {
           asset: "USDC",

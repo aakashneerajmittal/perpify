@@ -34,6 +34,22 @@ const PRECLOSE_RAMP_HOURS = 2.0;
 const EXTENDED_MIN_HOURS = 39.0;
 export const GAP_MODEL_VERSION = "gap-v0.1";
 
+/**
+ * Per-underlying dark-premium scale (v0). Single stocks gap wider than the index across a
+ * dark period, so the above-1.0 portion of the index coefficient is scaled per symbol.
+ * Vol-scaled from the index model today (SPX = 1.0); calibratable from per-stock daily
+ * history. Applied as: coeff = 1 + (indexCoeff − 1) × scale, clamped to the cap.
+ */
+export const SYMBOL_GAP_SCALE: Record<string, number> = {
+  "SPX-PERP": 1.0,
+  "NVDA-PERP": 2.0,
+  "AAPL-PERP": 1.35,
+  "MSFT-PERP": 1.3,
+  "GOOGL-PERP": 1.5,
+  "AMZN-PERP": 1.6,
+};
+export const gapScaleFor = (market: string): number => SYMBOL_GAP_SCALE[market] ?? 1.0;
+
 const OPEN_HOUR = 9.5; // 09:30 ET
 const CLOSE_HOUR = 16.0; // 16:00 ET
 
@@ -79,7 +95,7 @@ function etParts(now: Date): { dow: number; hour: number } {
  * Compute the live gap reading for `now`. Uses a 168-hour week (Sun 00:00 = 0) with
  * regular sessions Mon–Fri 09:30–16:00 ET; holidays are out of scope for v0.
  */
-export function computeGapReading(now: Date, regime = "normal"): GapReading {
+export function computeGapReading(now: Date, regime = "normal", darkScale = 1.0): GapReading {
   const { dow, hour } = etParts(now);
   const w = dow * 24 + hour; // week-hour, 0..168
 
@@ -109,9 +125,9 @@ export function computeGapReading(now: Date, regime = "normal"): GapReading {
       const upNextOpen = Math.min(...openCands.filter((o) => o > closeAt));
       const upTotal = upNextOpen - closeAt;
       const upDark: DarkType = upTotal >= EXTENDED_MIN_HOURS ? "extended" : "weeknight";
-      const initial = coefficient(upDark, regime, upTotal, upTotal);
+      const initial = 1 + (coefficient(upDark, regime, upTotal, upTotal) - 1) * darkScale;
       const ramp = (PRECLOSE_RAMP_HOURS - hrsToClose) / PRECLOSE_RAMP_HOURS; // 0..1
-      const coeff = 1 + ramp * (initial - 1);
+      const coeff = Math.min(COEFF_CAP, 1 + ramp * (initial - 1));
       return {
         gapCoefficient: round6(coeff),
         session: "open",
@@ -124,7 +140,7 @@ export function computeGapReading(now: Date, regime = "normal"): GapReading {
     return { gapCoefficient: 1.0, session: "open", darkType: null, hoursDarkRemaining: 0, regime, modelVersion: GAP_MODEL_VERSION };
   }
 
-  const coeff = coefficient(darkType, regime, dTotal, dRemaining);
+  const coeff = Math.min(COEFF_CAP, 1 + (coefficient(darkType, regime, dTotal, dRemaining) - 1) * darkScale);
   return {
     gapCoefficient: round6(coeff),
     session: darkType === "extended" ? "weekend" : "weeknight",

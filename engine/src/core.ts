@@ -49,7 +49,7 @@ import {
   stateRoot,
   type EngineState,
 } from "./state.js";
-import type { Account, Address, Command, EngineEvent, EngineParams, MarketId, Order, Side, Trade } from "./types.js";
+import type { Account, Address, Command, EngineEvent, EngineParams, MarketId, Order, Side, Trade, TriggerOrder } from "./types.js";
 
 export { INSURANCE_ACCOUNT };
 
@@ -125,6 +125,12 @@ function applyFill(
   a.reserved -= reserveCol + reserveFee;
   s.feePool6 += reserveFee;
 
+  // behavior tracking for live tiers (skip the insurance fund's backstop fills)
+  if (owner !== INSURANCE_ACCOUNT) {
+    a.behavior.trades += 1;
+    a.behavior.volumeUsd6 += notionalUsd6(qty, px);
+  }
+
   let remainingQty = qty;
   let colRemaining = reserveCol;
 
@@ -135,6 +141,7 @@ function applyFill(
     const colForClose = qty > 0n ? (reserveCol * closeQty) / qty : 0n;
     const dir = pos.side === "buy" ? 1n : -1n;
     const realized = ((px - pos.entryPx) * closeQty * dir) / 10_000_000_000n;
+    a.realizedPnl6 += realized; // lifetime realized PnL counter (not cash — cash moves below)
     const share = (pos.isolatedCollateral * closeQty) / pos.qty;
     pos.isolatedCollateral -= share;
     pos.qty -= closeQty;
@@ -215,7 +222,7 @@ function releaseReserve(s: EngineState, owner: Address, orderId: string): void {
 
 // ---------- order placement ----------
 
-function placeOrder(s: EngineState, evs: EngineEvent[], raw: Omit<Order, "remaining" | "seq">): void {
+function placeOrder(s: EngineState, evs: EngineEvent[], raw: Omit<Order, "remaining" | "seq">, internal = false): void {
   const o: Order = { ...raw, owner: raw.owner.toLowerCase(), remaining: raw.qty, seq: s.seq };
   const a = getOrCreateAccount(s, o.owner);
   const reject = (reason: string) =>
@@ -224,8 +231,9 @@ function placeOrder(s: EngineState, evs: EngineEvent[], raw: Omit<Order, "remain
   const mkt = s.markets.get(o.market);
   if (!mkt) return reject("unknown market");
   if (o.qty <= 0n || o.price <= 0n) return reject("invalid qty/price");
-  if (o.nonce <= a.lastNonce) return reject("stale nonce");
-  if (o.expiry !== 0 && o.expiry < s.seq) return reject("expired");
+  // engine-fired orders (triggers) were validated at arm time and are not user-signed here
+  if (!internal && o.nonce <= a.lastNonce) return reject("stale nonce");
+  if (!internal && o.expiry !== 0 && o.expiry < s.seq) return reject("expired");
   if (mkt.indexPx8 === 0n) return reject("market not open: no oracle price yet");
   if (o.reduceOnly && o.tif !== "IOC") return reject("reduce-only must be IOC in v0");
   if (mkt.book.byId.has(o.id)) return reject("duplicate order id");
@@ -278,7 +286,7 @@ function placeOrder(s: EngineState, evs: EngineEvent[], raw: Omit<Order, "remain
     reservesOf(s).set(o.id, { colLeft: reserveCol, feeLeft: reserveFee, qtyLeft: o.qty });
   }
 
-  a.lastNonce = o.nonce;
+  if (!internal) a.lastNonce = o.nonce;
   const outcome = addOrder(mkt.book, o);
 
   if (outcome.postOnlyRejected) {
@@ -333,6 +341,7 @@ function liquidate(s: EngineState, evs: EngineEvent[], owner: Address, market: M
   const a = s.accounts.get(owner);
   const pos = a?.positions.get(market);
   if (!a || !pos) return;
+  a.behavior.liquidations += 1; // behavioral signal for live tiers
   const mkt = marketState(s, market);
   const c = coeffsFor(s, market, a);
   const equityAtTrigger = positionEquity(pos, mkt.markPx8);
@@ -469,6 +478,54 @@ function liquidationScan(s: EngineState, evs: EngineEvent[], market: MarketId): 
   }
 }
 
+// ---------- conditional (trigger) orders ----------
+
+/**
+ * Fire any armed trigger whose price has been crossed by the current mark, in deterministic
+ * id order. A reduce-only trigger (TP/SL on a position) always fires as a marketable IOC that
+ * crosses the book; a stop-entry may fire as a resting GTC limit. Firing can move the mark and
+ * arm further triggers, so we loop (bounded) until nothing new crosses.
+ */
+function fireTriggers(s: EngineState, evs: EngineEvent[], market: MarketId): void {
+  const mkt = marketState(s, market);
+  for (let round = 0; round < 10; round++) {
+    const mark = mkt.markPx8;
+    if (mark === 0n) return;
+    let fired = false;
+    for (const id of [...mkt.triggers.keys()].sort()) {
+      const t = mkt.triggers.get(id);
+      if (!t) continue;
+      const crossed = t.triggerAbove ? mark >= t.triggerPx : mark <= t.triggerPx;
+      if (!crossed) continue;
+      mkt.triggers.delete(id);
+      emit(s, evs, { kind: "TriggerFired", triggerId: id, owner: t.owner, market, seq: s.seq });
+      const asMarket = t.limitPx === 0n || t.reduceOnly; // reduce-only brackets always market-close
+      const refIdx = mkt.indexPx8 || mark;
+      const px = asMarket ? (t.side === "buy" ? (refIdx * 105n) / 100n : (refIdx * 95n) / 100n) : t.limitPx;
+      placeOrder(
+        s,
+        evs,
+        {
+          id: `trg-${id}`,
+          market,
+          owner: t.owner,
+          side: t.side,
+          price: px,
+          qty: t.qty,
+          tif: asMarket ? "IOC" : "GTC",
+          reduceOnly: t.reduceOnly,
+          nonce: t.nonce,
+          expiry: 0,
+          signature: t.signature,
+        },
+        true,
+      );
+      fired = true;
+    }
+    if (!fired) break;
+  }
+}
+
 // ---------- the apply loop ----------
 
 export function apply(s: EngineState, cmd: Command): EngineEvent[] {
@@ -484,6 +541,7 @@ export function apply(s: EngineState, cmd: Command): EngineEvent[] {
       }
       const a = getOrCreateAccount(s, owner);
       a.free += cmd.amount;
+      a.behavior.fundedUsd6 += cmd.amount;
       s.totalDeposited6 += cmd.amount;
       emit(s, evs, { kind: "DepositApplied", owner, amount: cmd.amount, l1TxHash: cmd.l1TxHash, seq: s.seq });
       break;
@@ -528,6 +586,7 @@ export function apply(s: EngineState, cmd: Command): EngineEvent[] {
       // stale-trade guard: mark = last trade only while it stays within 0.5% of index;
       // beyond that the index is the better truth (proper mark = f(index, mid, last) is an M2 item)
       if (bigabs(mkt.markPx8 - mkt.indexPx8) * 200n > mkt.indexPx8) mkt.markPx8 = mkt.indexPx8;
+      fireTriggers(s, evs, cmd.market); // stops/TPs fire before forced liquidation gets the chance
       liquidationScan(s, evs, cmd.market);
       break;
     }
@@ -590,6 +649,43 @@ export function apply(s: EngineState, cmd: Command): EngineEvent[] {
         seq: s.seq,
       });
       liquidationScan(s, evs, cmd.market); // funding can push positions under MM
+      break;
+    }
+
+    case "PlaceTrigger": {
+      const t = cmd.trigger;
+      const owner = t.owner.toLowerCase();
+      const mkt = s.markets.get(t.market);
+      if (!mkt) {
+        emit(s, evs, { kind: "CommandRejected", command: "PlaceTrigger", owner, reason: "unknown market", seq: s.seq });
+        break;
+      }
+      if (t.qty <= 0n || t.triggerPx <= 0n) {
+        emit(s, evs, { kind: "CommandRejected", command: "PlaceTrigger", owner, reason: "invalid trigger", seq: s.seq });
+        break;
+      }
+      if (mkt.triggers.has(t.id)) {
+        emit(s, evs, { kind: "CommandRejected", command: "PlaceTrigger", owner, reason: "duplicate trigger id", seq: s.seq });
+        break;
+      }
+      const armed: TriggerOrder = { ...t, owner, seq: s.seq };
+      mkt.triggers.set(t.id, armed);
+      emit(s, evs, { kind: "TriggerArmed", trigger: armed });
+      // if the mark has already crossed the trigger price, fire immediately
+      fireTriggers(s, evs, t.market);
+      break;
+    }
+
+    case "CancelTrigger": {
+      const owner = cmd.owner.toLowerCase();
+      const mkt = s.markets.get(cmd.market);
+      const t = mkt?.triggers.get(cmd.triggerId);
+      if (!mkt || !t || t.owner !== owner) {
+        emit(s, evs, { kind: "CommandRejected", command: "CancelTrigger", owner, reason: "unknown trigger", seq: s.seq });
+        break;
+      }
+      mkt.triggers.delete(cmd.triggerId);
+      emit(s, evs, { kind: "TriggerCanceled", triggerId: cmd.triggerId, owner, reason: "user", seq: s.seq });
       break;
     }
 
