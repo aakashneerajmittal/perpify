@@ -100,7 +100,7 @@ export default function ConnectWalletModal({ open, onClose }: { open: boolean; o
           Connect wallet
         </Box>
         <Box sx={{ fontFamily: SERIF_FAMILY, fontStyle: "italic", fontSize: 15, color: MUTED, mb: "20px" }}>
-          Trade 24/7 S&amp;P 500 perpetuals, AI-priced.
+          Trade the S&amp;P 500 &amp; top US stocks, 24/7 — AI-priced.
         </Box>
 
         {/* real connectors */}

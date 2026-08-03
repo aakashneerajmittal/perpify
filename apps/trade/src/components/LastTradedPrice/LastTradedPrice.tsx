@@ -21,7 +21,7 @@ const lastTradedPrice: React.FC<lastTradedPriceProps> = ({ arrow, symbolPricePre
   if (titleTag && snapltp) {
     titleTag.innerHTML = `${
       convertToPrecisionValueForPrice(snapltp, symbolPricePrecision) + " | "
-    }${symbol?.toUpperCase()} · Perpify — 24/7 perpetual futures on the S&P 500, AI-priced`;
+    }${symbol?.toUpperCase()} · Perpify — 24/7 AI-priced equity perpetuals`;
   }
 
   const getLastPriceColor = useMemo(() => {

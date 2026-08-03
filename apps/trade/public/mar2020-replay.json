@@ -1,0 +1,121 @@
+{
+  "scenario": "March 2020 — real SPY daily closes ×10 (Mar 6 close → Mar 16 weekend gap)",
+  "entryPx": 2975,
+  "gapToPx": 2398,
+  "gapPct": -19.4,
+  "traders": 20,
+  "insuranceSeed": 4000,
+  "naive": {
+    "label": "Naive venue — 10x flat, no gap pricing",
+    "gapCoeff": 1,
+    "effectiveMarginPct": 10,
+    "badDebt": 5530,
+    "liquidations": 20,
+    "insuranceStart": 4000,
+    "insuranceEnd": -1051,
+    "insolvent": true,
+    "conservationHolds": true
+  },
+  "perpify": {
+    "label": "Perpify — 10x × weekend gap 1.6 (~6x effective)",
+    "gapCoeff": 1.6,
+    "effectiveMarginPct": 16,
+    "badDebt": 1925,
+    "liquidations": 20,
+    "insuranceStart": 4000,
+    "insuranceEnd": 2555,
+    "insolvent": false,
+    "conservationHolds": true
+  },
+  "badDebtReductionPct": 65,
+  "verdict": "Perpify solvent — naive venue INSOLVENT",
+  "pricePath": [
+    {
+      "date": "2020-03-06",
+      "px": 2975
+    },
+    {
+      "date": "2020-03-09",
+      "px": 2742
+    },
+    {
+      "date": "2020-03-12",
+      "px": 2481
+    },
+    {
+      "date": "2020-03-16",
+      "px": 2398
+    }
+  ],
+  "clearingPlan": [
+    {
+      "owner": "0x0000000000000000000000000000000000000d04",
+      "scoreTier": 1,
+      "scoreContagion": 0.273,
+      "scoreDepth": 0.125,
+      "queueRank": 1,
+      "action": "liquidate"
+    },
+    {
+      "owner": "0x0000000000000000000000000000000000000d03",
+      "scoreTier": 0.75,
+      "scoreContagion": 0.21,
+      "scoreDepth": 0.125,
+      "queueRank": 2,
+      "action": "liquidate"
+    },
+    {
+      "owner": "0x0000000000000000000000000000000000000d02",
+      "scoreTier": 0.5,
+      "scoreContagion": 0.148,
+      "scoreDepth": 0.125,
+      "queueRank": 3,
+      "action": "liquidate"
+    },
+    {
+      "owner": "0x0000000000000000000000000000000000000d07",
+      "scoreTier": 0.5,
+      "scoreContagion": 0.148,
+      "scoreDepth": 0.125,
+      "queueRank": 4,
+      "action": "liquidate"
+    },
+    {
+      "owner": "0x0000000000000000000000000000000000000d01",
+      "scoreTier": 0.25,
+      "scoreContagion": 0.085,
+      "scoreDepth": 0.125,
+      "queueRank": 5,
+      "action": "liquidate"
+    },
+    {
+      "owner": "0x0000000000000000000000000000000000000d06",
+      "scoreTier": 0.25,
+      "scoreContagion": 0.085,
+      "scoreDepth": 0.125,
+      "queueRank": 6,
+      "action": "liquidate"
+    },
+    {
+      "owner": "0x0000000000000000000000000000000000000d00",
+      "scoreTier": 0,
+      "scoreContagion": 0.023,
+      "scoreDepth": 0.125,
+      "queueRank": 7,
+      "action": "liquidate"
+    },
+    {
+      "owner": "0x0000000000000000000000000000000000000d05",
+      "scoreTier": 0,
+      "scoreContagion": 0.023,
+      "scoreDepth": 0.125,
+      "queueRank": 8,
+      "action": "liquidate"
+    }
+  ],
+  "planHash": "0xcdf58b6fe5069cfab3736a9e7060e8fde2b9ff4fdf21c8b51282cee2b8a20e6c",
+  "modelVersions": {
+    "gap": "gap-v0.1",
+    "sequencer": "seq-v0.1"
+  }
+}

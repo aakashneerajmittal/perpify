@@ -27,7 +27,7 @@ const connectors = [
           showQrModal: true,
           metadata: {
             name: "Perpify",
-            description: "AI-priced 24/7 perpetual futures on the S&P 500",
+            description: "AI-priced 24/7 perpetuals on the S&P 500 and top US stocks",
             url: "https://demo.perpify.trade",
             icons: ["https://demo.perpify.trade/favicon.svg"]
           }

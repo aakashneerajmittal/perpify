@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Perpify — March 2020 Replay</title>
+  <style>
+    :root { --bg:#080808; --panel:#0e0e0e; --line:rgba(255,255,255,0.08); --txt:#F0EDE8; --mut:#8a8a82; --dim:#55554f; --blue:#4F8EFF; --amber:#ffb454; --green:#26a69a; --red:#ef5350; --mono:'DM Mono',ui-monospace,'SF Mono',Menlo,monospace; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--txt); font-family:'Syne',system-ui,-apple-system,sans-serif; line-height:1.5; }
+    .wrap { max-width:1000px; margin:0 auto; padding:40px 24px 80px; }
+    .tag { font-family:var(--mono); font-size:11px; letter-spacing:0.18em; color:var(--blue); text-transform:uppercase; }
+    h1 { font-size:34px; font-weight:800; letter-spacing:-0.02em; margin:10px 0 6px; }
+    .sub { color:var(--mut); font-size:15px; max-width:680px; }
+    .scenario { font-family:var(--mono); font-size:12px; color:var(--dim); margin-top:14px; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:28px; }
+    @media (max-width:720px){ .grid { grid-template-columns:1fr; } }
+    .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px; }
+    .card.win { border-color:rgba(79,142,255,0.5); box-shadow:0 0 0 1px rgba(79,142,255,0.15); }
+    .card.lose { border-color:rgba(239,83,80,0.4); }
+    .card h2 { font-size:16px; margin:0 0 2px; }
+    .card .who { font-size:12px; color:var(--mut); margin-bottom:18px; min-height:32px; }
+    .row { display:flex; justify-content:space-between; align-items:baseline; padding:9px 0; border-top:1px solid var(--line); }
+    .row .k { color:var(--mut); font-size:12.5px; }
+    .row .v { font-family:var(--mono); font-size:15px; }
+    .verdict { margin-top:8px; font-family:var(--mono); font-size:13px; padding:6px 10px; border-radius:8px; display:inline-block; }
+    .ok { color:var(--green); background:rgba(38,166,154,0.1); }
+    .bad { color:var(--red); background:rgba(239,83,80,0.1); }
+    .headline { margin-top:30px; background:linear-gradient(180deg,rgba(79,142,255,0.08),transparent); border:1px solid rgba(79,142,255,0.25); border-radius:14px; padding:22px 24px; }
+    .headline .big { font-size:26px; font-weight:800; letter-spacing:-0.01em; }
+    .headline .big b { color:var(--blue); }
+    .section { margin-top:34px; }
+    .section h3 { font-size:13px; letter-spacing:0.08em; text-transform:uppercase; color:var(--mut); margin-bottom:12px; }
+    .path { display:flex; gap:8px; flex-wrap:wrap; }
+    .step { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 14px; }
+    .step .d { font-size:10.5px; color:var(--dim); font-family:var(--mono); }
+    .step .p { font-family:var(--mono); font-size:16px; margin-top:2px; }
+    .step .chg { font-family:var(--mono); font-size:11px; color:var(--red); }
+    table { width:100%; border-collapse:collapse; font-size:12.5px; }
+    th { text-align:left; color:var(--dim); font-weight:500; font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; padding:8px 10px; border-bottom:1px solid var(--line); }
+    td { padding:9px 10px; border-bottom:1px solid var(--line); font-family:var(--mono); }
+    .foot { margin-top:40px; color:var(--dim); font-size:11.5px; font-family:var(--mono); }
+    a { color:var(--blue); text-decoration:none; }
+    .bar { height:8px; border-radius:4px; background:rgba(255,255,255,0.06); overflow:hidden; margin-top:6px; }
+    .bar > i { display:block; height:100%; border-radius:4px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="tag">Perpify · Testnet · Replay</div>
+    <h1>March 2020, replayed</h1>
+    <div class="sub">The same crash, the same traders, the same size — run through two venues. A naive venue that prices risk with a flat number, and Perpify, which prices the dark period <em>before</em> the gap. This is the deterministic engine replaying real history; the numbers below are its output.</div>
+    <div class="scenario" id="scenario">loading…</div>
+
+    <div class="headline" id="headline"></div>
+
+    <div class="grid" id="venues"></div>
+
+    <div class="section">
+      <h3>The weekend gap (real SPY closes ×10)</h3>
+      <div class="path" id="path"></div>
+    </div>
+
+    <div class="section">
+      <h3>Published clearing plan — the order the sequencer would clear in (seq-v0.1)</h3>
+      <table id="plan"><thead><tr><th>Rank</th><th>Wallet</th><th>Tier score</th><th>Contagion</th><th>Depth</th><th>Action</th></tr></thead><tbody></tbody></table>
+      <div class="foot" id="planhash"></div>
+    </div>
+
+    <div class="foot">
+      Deterministic replay from the Perpify engine · gap model gap-v0.1 · sequencer seq-v0.1 ·
+      real 2020 SPY daily data. Testnet, synthetic collateral. &nbsp;·&nbsp; <a href="/">← back to the venue</a>
+    </div>
+  </div>
+
+  <script>
+    const fmt = (n) => "$" + Math.round(n).toLocaleString("en-US");
+    fetch("/mar2020-replay.json").then(r => r.json()).then(r => {
+      document.getElementById("scenario").textContent =
+        r.scenario + " · entry " + r.entryPx + " → gap " + r.gapToPx + " (" + r.gapPct + "%) · " + r.traders + " traders · insurance seed " + fmt(r.insuranceSeed);
+
+      document.getElementById("headline").innerHTML =
+        '<div class="big">Perpify took <b>' + r.badDebtReductionPct + '% less bad debt</b> — and stayed solvent.</div>' +
+        '<div style="color:var(--mut);font-size:14px;margin-top:8px">' + r.verdict + '. It charged the weekend gap coefficient into margin <em>before</em> the gap, so positions carried enough collateral to absorb the Monday reopen.</div>';
+
+      const card = (v, win) =>
+        '<div class="card ' + (win ? 'win' : 'lose') + '">' +
+          '<h2>' + (win ? 'Perpify' : 'Naive venue') + '</h2>' +
+          '<div class="who">' + v.label + '</div>' +
+          '<div class="row"><span class="k">Effective margin</span><span class="v">' + v.effectiveMarginPct + '%</span></div>' +
+          '<div class="row"><span class="k">Positions liquidated</span><span class="v">' + v.liquidations + '</span></div>' +
+          '<div class="row"><span class="k">Bad debt</span><span class="v" style="color:' + (v.badDebt > 2500 ? 'var(--red)' : 'var(--amber)') + '">' + fmt(v.badDebt) + '</span></div>' +
+          '<div class="row"><span class="k">Insurance fund</span><span class="v">' + fmt(v.insuranceStart) + ' → <b style="color:' + (v.insolvent ? 'var(--red)' : 'var(--green)') + '">' + fmt(v.insuranceEnd) + '</b></span></div>' +
+          '<div style="margin-top:14px"><span class="verdict ' + (v.insolvent ? 'bad' : 'ok') + '">' + (v.insolvent ? '❌ INSOLVENT — fund wiped' : '✅ Solvent — fund intact') + '</span></div>' +
+        '</div>';
+      document.getElementById("venues").innerHTML = card(r.naive, false) + card(r.perpify, true);
+
+      document.getElementById("path").innerHTML = r.pricePath.map((s, i) => {
+        const prev = i ? r.pricePath[i-1].px : s.px;
+        const chg = i ? ((s.px/prev - 1) * 100).toFixed(1) + "%" : "";
+        return '<div class="step"><div class="d">' + s.date + '</div><div class="p">' + s.px.toLocaleString() + '</div><div class="chg">' + chg + '</div></div>';
+      }).join('<div style="align-self:center;color:var(--dim)">→</div>');
+
+      const tb = document.querySelector("#plan tbody");
+      tb.innerHTML = r.clearingPlan.map(e =>
+        '<tr><td>' + e.queueRank + '</td><td>' + e.owner.slice(0,10) + '…</td><td>' + e.scoreTier + '</td><td>' + e.scoreContagion + '</td><td>' + e.scoreDepth + '</td><td style="color:' + (e.action === 'liquidate' ? 'var(--amber)' : 'var(--mut)') + '">' + e.action + '</td></tr>'
+      ).join("");
+      document.getElementById("planhash").textContent = "plan hash " + r.planHash + " · anyone can replay inputs → model → same order";
+    }).catch(() => {
+      document.getElementById("scenario").textContent = "Could not load the replay artifact.";
+    });
+  </script>
+</body>
+</html>

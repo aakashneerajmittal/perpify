@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Perpify — Live Risk Dashboard</title>
+  <style>
+    :root { --bg:#080808; --panel:#0e0e0e; --line:rgba(255,255,255,0.08); --txt:#F0EDE8; --mut:#8a8a82; --dim:#55554f; --blue:#4F8EFF; --amber:#ffb454; --green:#26a69a; --red:#ef5350; --mono:'DM Mono',ui-monospace,'SF Mono',Menlo,monospace; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--txt); font-family:'Syne',system-ui,-apple-system,sans-serif; }
+    .wrap { max-width:1040px; margin:0 auto; padding:40px 24px 80px; }
+    .tag { font-family:var(--mono); font-size:11px; letter-spacing:0.18em; color:var(--blue); text-transform:uppercase; }
+    h1 { font-size:32px; font-weight:800; letter-spacing:-0.02em; margin:10px 0 6px; }
+    .sub { color:var(--mut); font-size:15px; max-width:720px; }
+    .status { font-family:var(--mono); font-size:11px; color:var(--dim); margin-top:12px; }
+    .dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--green); margin-right:5px; vertical-align:middle; }
+    .dot.off { background:var(--red); }
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; margin-top:28px; }
+    .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:20px; transition:border-color .3s; }
+    .card.hot { border-color:rgba(255,180,84,0.5); }
+    .card .top { display:flex; justify-content:space-between; align-items:baseline; }
+    .card .sym { font-weight:800; font-size:18px; }
+    .card .sym small { font-family:var(--mono); font-size:9.5px; color:var(--dim); letter-spacing:0.08em; margin-left:4px; }
+    .card .name { font-size:11px; color:var(--mut); }
+    .card .px { font-family:var(--mono); font-size:22px; margin-top:14px; }
+    .metrics { display:flex; gap:18px; margin-top:16px; }
+    .m .lbl { font-size:9.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--dim); }
+    .m .val { font-family:var(--mono); font-size:16px; margin-top:2px; }
+    .pill { font-family:var(--mono); font-size:10px; padding:2px 8px; border-radius:20px; }
+    .pill.live { color:var(--green); background:rgba(38,166,154,0.12); }
+    .pill.ro { color:var(--amber); background:rgba(255,180,84,0.14); }
+    .foot { margin-top:40px; color:var(--dim); font-size:11.5px; font-family:var(--mono); }
+    a { color:var(--blue); text-decoration:none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="tag">Perpify · Testnet · Public Risk</div>
+    <h1>Live risk dashboard</h1>
+    <div class="sub">The AI gap coefficient, live, across every Perpify market. It sits at 1.00 while markets are open and continuous; it climbs into nights and weekends as the dark period is priced into margin — <em>before</em> the gap, not after. No login. This is the venue's risk state, in the open.</div>
+    <div class="status"><span class="dot off" id="dot"></span><span id="status">connecting to engine…</span></div>
+    <div class="grid" id="grid"></div>
+    <div class="foot">
+      Streaming from the Perpify engine · gap-v0.1 · updates live &nbsp;·&nbsp;
+      <a href="/replay.html">March 2020 replay →</a> &nbsp;·&nbsp; <a href="/">the venue →</a>
+    </div>
+  </div>
+
+  <script>
+    var ENGINE = new URLSearchParams(location.search).get("engine") || "wss://perpify-engine.onrender.com";
+    var MARKETS = [
+      { s:"SPX-PERP", n:"S&P 500 Index" }, { s:"NVDA-PERP", n:"NVIDIA" }, { s:"AAPL-PERP", n:"Apple" },
+      { s:"MSFT-PERP", n:"Microsoft" }, { s:"GOOGL-PERP", n:"Alphabet" }, { s:"AMZN-PERP", n:"Amazon" }
+    ];
+    var state = {}, live = 0;
+    var grid = document.getElementById("grid");
+    MARKETS.forEach(function(m){
+      var el = document.createElement("div"); el.className = "card"; el.id = "c-" + m.s;
+      el.innerHTML =
+        '<div class="top"><div><div class="sym">' + m.s.replace("-PERP","") + '<small>PERP</small></div><div class="name">' + m.n + '</div></div>' +
+        '<span class="pill live" id="ss-' + m.s + '">—</span></div>' +
+        '<div class="px" id="px-' + m.s + '">--</div>' +
+        '<div class="metrics">' +
+          '<div class="m"><div class="lbl">Gap coefficient</div><div class="val" id="gc-' + m.s + '">--</div></div>' +
+          '<div class="m"><div class="lbl">Oracle confidence</div><div class="val" id="cf-' + m.s + '">--</div></div>' +
+        '</div>';
+      grid.appendChild(el);
+    });
+
+    function connect(m){
+      var ws;
+      try { ws = new WebSocket(ENGINE + "/marketDataStream?symbol=" + encodeURIComponent(m.s)); } catch(e){ return; }
+      ws.onopen = function(){ live++; setStatus(); };
+      ws.onmessage = function(ev){
+        var d; try { d = JSON.parse(ev.data); } catch(e){ return; }
+        if (d.e !== "markPriceUpdate") return;
+        var gc = Number(d.gc), px = Number(d.p), cf = Number(d.conf);
+        document.getElementById("px-"+m.s).textContent = px.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+        var gcEl = document.getElementById("gc-"+m.s);
+        gcEl.textContent = gc.toFixed(3) + "×"; gcEl.style.color = gc > 1.005 ? "var(--amber)" : "var(--blue)";
+        document.getElementById("c-"+m.s).className = "card" + (gc > 1.1 ? " hot" : "");
+        document.getElementById("cf-"+m.s).textContent = isFinite(cf) ? cf.toFixed(2) : "--";
+        var ss = document.getElementById("ss-"+m.s);
+        var ro = d.session === "reduce-only";
+        ss.textContent = ro ? "reduce-only" : "live"; ss.className = "pill " + (ro ? "ro" : "live");
+      };
+      ws.onclose = function(){ live=Math.max(0,live-1); setStatus(); setTimeout(function(){ connect(m); }, 2500); };
+      ws.onerror = function(){ try{ ws.close(); }catch(e){} };
+    }
+    function setStatus(){
+      var d = document.getElementById("dot"), s = document.getElementById("status");
+      if (live > 0){ d.className = "dot"; s.textContent = "live · " + live + "/" + MARKETS.length + " markets streaming from " + ENGINE.replace("wss://",""); }
+      else { d.className = "dot off"; s.textContent = "reconnecting to engine…"; }
+    }
+    MARKETS.forEach(connect);
+  </script>
+</body>
+</html>
