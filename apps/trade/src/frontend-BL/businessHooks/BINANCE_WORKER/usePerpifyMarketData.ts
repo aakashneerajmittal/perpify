@@ -77,6 +77,8 @@ export default function usePerpifyMarketData({ tradeScreen }: { tradeScreen?: bo
       binanceData.current[`${key}@ticker`] = px;
       binanceData.current[`${key}@indexPrice`] = String(m.i);
       binanceData.current[`${key}@gapCoefficient`] = String(m.gc); // Perpify extension
+      binanceData.current[`${key}@session`] = String(m.session || "live"); // live | reduce-only
+      binanceData.current[`${key}@conf`] = String(m.conf ?? ""); // oracle confidence 0..1
       binanceData.current[`${key}@per`] = changePct;
       dispatch({ type: "SET_BINANCE_DATA", payload: { ...binanceData.current } });
 

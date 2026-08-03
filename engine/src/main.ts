@@ -109,7 +109,18 @@ async function main() {
   const replayed = FRESH ? 0 : replayBootLog(bus);
   console.log(`[boot] venue service · ${FRESH ? "fresh start (log replay skipped)" : `replayed ${replayed} commands from today's log`} · port ${PORT} · ${MARKET_IDS.length} markets`);
 
-  const chain = OFFLINE ? null : ChainClient.fromRepo(repoRoot);
+  // On-chain settlement (Base Sepolia) is env-gated and crash-safe: with --offline, or if the
+  // operator secrets aren't present, the venue runs fully off-chain (reliable demo default).
+  // To turn it on for the live demo: set BASE_SEPOLIA_RPC_URL + PRIVATE_KEY and drop --offline.
+  let chain: ChainClient | null = null;
+  if (!OFFLINE) {
+    try {
+      chain = ChainClient.fromRepo(repoRoot);
+      console.log("[boot] chain: Base Sepolia settlement ON (operator key loaded)");
+    } catch (e) {
+      console.warn(`[boot] chain OFF — ${(e as Error).message}; running off-chain`);
+    }
+  }
 
   // SPX seed: last dataset close ×10 (testnet SPX proxy)
   const spyLines = readFileSync(join(repoRoot, "risk", "data", "spy_daily.csv"), "utf8").trim().split("\n");

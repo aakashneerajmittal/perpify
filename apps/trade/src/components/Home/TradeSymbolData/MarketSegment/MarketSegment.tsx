@@ -18,6 +18,7 @@ import SideMenu from "@/components/Home/SideMenu/SideMenu";
 import PropTypes from "prop-types";
 import BuySellToggle from "@/components/Home/OrderForm/BuySellToggle";
 import GapCoefficient from "./GapCoefficient";
+import ReduceOnlyChip from "./ReduceOnlyChip";
 import ConnectButton from "@/components/Wallet/ConnectButton";
 interface Props {
   showOrderForm: { expand: boolean; side: string };
@@ -160,6 +161,7 @@ const MarketSegment = ({ showOrderForm, setShowOrderForm }: Props) => {
             <Funding contextListner="market" symbol={symbol} />
           </Box>
           <GapCoefficient />
+          <ReduceOnlyChip />
         </Box>
       </Tabs>
     </Box>

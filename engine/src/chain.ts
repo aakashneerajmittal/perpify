@@ -49,14 +49,22 @@ export class ChainClient {
   }
 
   static fromRepo(repoRoot: string): ChainClient {
+    // Secrets come from env vars in prod (Render), or contracts/.env in local dev. Env wins.
     const env: Record<string, string> = {};
-    for (const line of readFileSync(`${repoRoot}/contracts/.env`, "utf8").split("\n")) {
-      const m = line.match(/^([A-Z_]+)=(.*)$/);
-      if (m) env[m[1]!] = m[2]!.trim();
+    try {
+      for (const line of readFileSync(`${repoRoot}/contracts/.env`, "utf8").split("\n")) {
+        const m = line.match(/^([A-Z_]+)=(.*)$/);
+        if (m) env[m[1]!] = m[2]!.trim();
+      }
+    } catch {
+      /* no local .env — use env vars below */
     }
+    const rpc = process.env.BASE_SEPOLIA_RPC_URL || env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org";
+    const key = process.env.PRIVATE_KEY || env.PRIVATE_KEY;
+    if (!key) throw new Error("no operator PRIVATE_KEY (set the env var or contracts/.env) — staying off-chain");
     const deployment = JSON.parse(readFileSync(`${repoRoot}/contracts/deployments/base-sepolia.json`, "utf8"));
     const abis = JSON.parse(readFileSync(`${repoRoot}/contracts/harness/build.json`, "utf8"));
-    return new ChainClient(env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org", env.PRIVATE_KEY!, deployment, abis);
+    return new ChainClient(rpc, key, deployment, abis);
   }
 
   async operatorAddress(): Promise<string> {
