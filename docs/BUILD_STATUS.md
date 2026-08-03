@@ -14,13 +14,21 @@ Perpify is a **live, tradeable perpetual-futures venue** you can use in a browse
 runs **six markets** — the S&P 500 index perp plus single-stock perps on the five largest US
 companies (NVDA, AAPL, MSFT, GOOGL, AMZN) — priced with Perpify's AI **gap coefficient** and
 **behavioral tiers**. A visitor connects a wallet, gets $100k testnet USDC, and can open
-positions across markets from one balance, see live margin that moves with tier × gap, get
-liquidated with a signed explainer, and close out. The hard, differentiated core — a
-deterministic matching engine that can't lie about money, the gap model, tiers, and a
-production-grade trading UI — **exists and is deployed.** What remains is mostly (a) turning
-on things that are stubbed for the demo (real wallet-signature login, on-chain settlement in
-the live path, conditional orders) and (b) the funded-roadmap showpieces (sequenced reopen /
-March-2020 replay, public dashboards, PVault yield vaults, SDK/MCP).
+positions across markets from one balance, place **market / limit / stop / TP-SL** orders, see
+live margin that moves with tier × gap, get liquidated with a signed explainer, and close out.
+The hard, differentiated core — a deterministic matching engine that can't lie about money, the
+gap model, tiers, and a production-grade trading UI — **exists and is deployed.**
+
+**As of Aug 3, the full M2 + M3 backlog is built.** Conditional orders (TP/SL/stop), the
+realized-PnL ledger, live behavioral-tier inference, confidence/reduce-only, and per-symbol gap
+calibration are all live. The M3 showpieces are done: the sequenced-reopen **March-2020 replay**,
+the public **risk dashboard**, the shareable **trader passport**, the **PVault** structured-
+liquidity page, and the **SDK + MCP** server. **EIP-712 signed-order auth** is live in the engine
+(verify-if-present) with a wallet-signing frontend built behind a flag. The only thing not
+literally "on" is **live on-chain settlement**, which is fully wired and one dashboard toggle away
+(`PERPIFY_ONCHAIN=1` + an operator key — see `docs/ONCHAIN_SETTLEMENT.md`); it's off by default so
+a slow testnet RPC can't stall the demo. What remains is genuinely **post-funding**: proofs,
+audits, mainnet, latency hardening.
 
 ---
 
@@ -62,21 +70,23 @@ proofs are a funded-roadmap upgrade.
 | **Engine ↔ chain pipeline** | Epoch settlement batching, state-root posting, risk-reading posting to the registry — exists and was demonstrated on Sepolia. | `engine/src/chain.ts`, `run-epoch-cycle.ts`. |
 | **Deploy infra** | Engine as a Docker service (Render), frontend on Netlify, auto-deploy from `main`, health endpoint, wss/TLS runbook. | `Dockerfile.engine`, `render.yaml`, `netlify.toml`, `docs/DEPLOY.md`. |
 
-### A.2 To build 🔜
+### A.2 Recently shipped (M2 + M3) ✅
 
-| Priority | Item | Why / what it unlocks |
+| Was | Item | Now |
 |---|---|---|
-| **High** | **Real EIP-712 wallet-signature auth** — replace the testnet "wallet address = token" stub with signed orders (nonce + expiry), verified in the engine intake. | Turns the demo into a real DEX; today login is a burner/address stub. Code marked `real EIP-712 sig lands with production auth`. |
-| **High** | **On-chain settlement in the live path** — the live demo engine runs `--offline` (off-chain) for reliability; wire the deployed engine to Base Sepolia so deposits/withdrawals/epochs settle on-chain live. | Contracts + pipeline exist and were tested; they're just not in the live demo loop yet. |
-| **High** | **Conditional orders (TP/SL, stop, stop-limit)** — engine support for take-profit / stop-loss brackets and stop triggers. | Frontend already declines these cleanly ("coming soon"). Marked M2. |
-| **Medium** | **Real behavioral tier inference** — score tiers from actual on-chain/trading history (sizing, drawdown response, tenure, liquidation history) instead of address-derived; refit as testnet data accumulates. | `risk/tier/` scaffold exists; the live tier is provisional. |
-| **Medium** | **Per-symbol gap calibration** — each stock currently shares the SPX gap curve (same session clock). Calibrate per-underlying gap distributions (a stock gaps differently than the index). | More credible per-market margin; the model version stamping is already in place. |
-| **Medium** | **Confidence / reduce-only from live oracles** — Pyth + Chainlink dispersion/staleness driving the reduce-only flag (the engine honors the flag; the live feed isn't wired). | Architecture §4.3. Elegant: equity feeds go quiet off-hours exactly when gap takes over. |
-| **Medium** | **Realized-PnL ledger + intake API** — per-fill/per-position lifetime realized PnL and the REST intake API. | Marked M2 in `wire/density.ts` (`rp`/`accumulatedRealized` are stubbed at 0). |
-| **M3** | **Sequencer / sequenced reopen** — deterministic clearing plan at reopen (scored by tier, contagion, depth) + the **March-2020 replay** engine. | The headline showpiece. `queueRank` is stubbed `null` (normal mode) today. |
-| **M3** | **PVault tranche flows** — wire the Senior/Junior yield-vault contract to the engine + a catastrophe-mode drill. | Contract exists; not connected to engine/UI. |
-| **M3** | **SDK + MCP server** — typed clients + `place_order`/`simulate_margin`/`lookup_tier`/`read_liquidation_queue` tools. | `sdk/` is empty scaffolding. On-thesis, cheap once the API is stable. |
-| **Post-funding** | Proof system (zk or optimistic), professional audits, mainnet deploy, multisig operator, real USDC, HFT-grade latency (Rust hot-path). | Explicitly gated on the raise. |
+| High | **EIP-712 signed-order auth** — sign the canonical Order struct (Base Sepolia domain, verifyingContract = deployed Settlement); engine recovers the signer, matches it to the owner + connection, then admits. Verify-if-present, so unsigned demo orders are unchanged. | **Live in engine** (`auth/eip712.ts`, 11 tests incl. real-socket integration). FE signing built behind the `signedOrders` flag. |
+| High | **On-chain settlement in the live path** — deposit scan + epoch state-root posting + risk-reading posting. | **Flip-ready**: `PERPIFY_ONCHAIN=1` + operator key turns it on from the Render dashboard, crash-safe, instant rollback. `docs/ONCHAIN_SETTLEMENT.md`. Off by default so a slow RPC can't stall the demo. |
+| High | **Conditional orders (TP/SL, stop, stop-limit)** — per-market armed triggers fired on the mark crossing; reduce-only closes. | **Done** (`core.fireTriggers`, `triggers.test.ts`). |
+| Medium | **Real behavioral tier inference** — liquidations, realized-PnL discipline, turnover-vs-funding, tenure; provisional cold-start below an activity floor. | **Done** (`risk/tierScore.ts`, live re-scoring pushes fresh SESSION_INFO). |
+| Medium | **Per-symbol gap calibration** — single stocks gap wider than the index (vol-scaled). | **Done** (`SYMBOL_GAP_SCALE`, per-market signed readings). |
+| Medium | **Confidence / reduce-only** — low-confidence markets block new exposure, allow closes. | **Done** (confidence readings + reduce-only chip in UI). |
+| Medium | **Realized-PnL ledger + intake** — lifetime realized PnL per account, streamed on ACCOUNT_UPDATE. | **Done** (`accumulatedRealized`; surfaced in the UI next to unrealized P&L). |
+| M3 | **Sequencer / sequenced reopen + March-2020 replay** — deterministic clearing plan scored by tier/contagion/depth. | **Done** (`risk/sequencer.ts`, `replay-mar2020.ts`; 65% less bad debt vs a naive venue). |
+| M3 | **PVault tranche flows** — Senior/Junior waterfall (profit yield curve + reserve; loss → junior → reserve → senior, wipe + catastrophe + insolvency). | **Done** (`vault/tranches.ts`, 13 tests + randomized invariant sweep; live on `/vaultStream`). |
+| M3 | **SDK + MCP server** — typed client + agent tools. | **Done** (`sdk/`, stdio-tested). |
+
+**Still ahead — post-funding only:** proof system (zk or optimistic), professional audits, mainnet
+deploy, multisig operator, real USDC, HFT-grade latency (Rust hot-path). Explicitly gated on the raise.
 
 ---
 
@@ -101,19 +111,25 @@ switched off with feature flags (see Section C) — nothing was deleted.
 | **Demo controls** | "Simulate gap" (force a reopen gap → liquidation → explainer) and "preview weekend" (elevate the gap coefficient) — for live storytelling. | Testnet-only theatre. |
 | **Brand + resilience** | Perpify logo + brand-blue accent (#4F8EFF); all labels read USDC (no "Density"/"USDT"); crash-proof error boundary + boot fallback so an investor never sees a blank page. | |
 
-### B.2 To build 🔜
+### B.2 Recently shipped ✅
 
-| Priority | Item | Why / what it unlocks |
+| Was | Item | Now |
 |---|---|---|
-| **High** | **Real wallet-signature login UX** — sign-in + per-order signing flow once the backend EIP-712 auth lands (replaces the burner). | Pairs with the backend auth item. |
-| **High** | **TP/SL & stop-order ticket** — the order-form UI for brackets/stops (currently declined "coming soon"). | Pairs with backend conditional orders. |
-| **Medium** | **Account / portfolio page** — tier + factor history, balances, order history, realized PnL views. | Density's account page is in code (flagged off); needs Perpify wiring + the realized-PnL backend. |
-| **Medium** | **Copy tweaks for multi-market** — a couple of strings still say "S&P 500 perpetuals" (e.g., the connect-wallet subtitle) now that there are 6 markets. | Small polish. |
-| **Medium** | **Public dashboards** (future `gaps.perpify.trade`) — live gap coefficient, confidence, tier distribution, venue/insurance state, liquidation feed. | Architecture §4.4; backlog item 13. A public, no-login proof surface. |
-| **M3** | **March-2020 replay UI** — interactive "Perpify vs a naive venue" side-by-side replay. | The fundraising showpiece front-end; pairs with the backend sequencer. |
-| **M3** | **Waitlist passport flow** — connect wallet → provisional tier from history → onboarding. | Backlog item; feeds the closed-testnet cohort. |
-| **M3** | **PVault page** — tranche NAVs, deposit/withdraw, waterfall visual. | Pairs with backend tranche flows. |
-| **Later** | **Mobile** + re-enabling the parked Density features (News, Rewards, Referral, Leaderboard, Signal/copy trading, fiat) as the product grows. | All present in code behind flags. |
+| High | **TP/SL & stop-order ticket** — order-form UI for brackets/stops, wired to the conditional-orders engine. | **Done** (arms reduce-only triggers alongside the entry). |
+| High | **Wallet-signature order signing** — sign each market/limit order with a real connected wallet. | **Built**, behind the `signedOrders` flag (viem, mirrors the engine domain). Off by default so the demo burner path is untouched; flip on to require real-wallet signatures. |
+| Medium | **Account / portfolio surfacing** — lifetime realized PnL next to unrealized Total P&L. | **Done** (`RealizedPnl.tsx`, streamed from the engine ledger). |
+| Medium | **Copy tweaks for multi-market** — connect-wallet subtitle and other single-market strings. | **Done.** |
+| Medium | **Public risk dashboard** — live gap coefficient + confidence + session state across all six markets, no login. | **Done** (`/dashboard.html`). |
+| M3 | **March-2020 replay UI** — interactive "Perpify vs a naive venue" side-by-side. | **Done** (`/replay.html`). |
+| M3 | **Waitlist trader passport** — connect wallet / paste address → provisional tier + factors → enter the testnet. Shareable, deep-linkable; tier is a byte-for-byte match to the engine's cold-start function. | **Done** (`/passport.html`). |
+| M3 | **PVault page** — live tranche NAVs/TVL/reserve + faithful deposit & catastrophe-drill previews. | **Done** (`/pvault.html`, reads `/vaultStream`). |
+
+**Still ahead — later / post-funding:** mobile, and re-enabling the parked Density features (News,
+Rewards, Referral, Leaderboard, Signal/copy trading, fiat) as the product grows — all present in
+code behind flags.
+
+The four public proof-surface pages (`/dashboard.html`, `/replay.html`, `/passport.html`,
+`/pvault.html`) are cross-linked into one no-login tour an investor can click through.
 
 ---
 
