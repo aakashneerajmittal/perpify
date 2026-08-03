@@ -12,6 +12,9 @@ import {
 } from "../../../../frontend-BL/redux/constants/Constants";
 import { getMetaDataApi, postMetaDataApi, placeOCOOrderApi } from "../../../../frontend-api-service/Api";
 import { showSnackBar } from "../../../../frontend-BL/redux/actions/Internal/GlobalErrorHandler.ac";
+import { FEATURES } from "../../../../config/perpifyFeatures";
+import { isRealWallet, getWallet } from "../../../../config/perpifySession";
+import { signOrder, toWirePayload, nextNonce, hasInjectedSigner } from "../../../auth/eip712Order";
 const MapOrder = {
   LIMIT: "Limit",
   MARKET: "Market",
@@ -158,10 +161,32 @@ const placePerpifyOrder = (params, dispatch, setShowLoader, setOrderConfirm, nav
       tif = "GTC";
     }
     if (!(price > 0)) return fail("Enter a valid price.");
-    dispatch({
-      type: PERPIFY_PLACE_ORDER,
-      payload: { type: "place_order", id: baseId, symbol: params.symbol, side, qty, price: Number(price.toFixed(2)), tif, reduceOnly: !!params.reduceOnly }
-    });
+    const px = Number(price.toFixed(2));
+    // Real EIP-712 signing path (auth-v1): only for a connected real wallet with an injected
+    // signer, and only when the flag is on. The demo burner has no injected signer, so it always
+    // takes the plain testnet path below — the live demo is untouched.
+    if (FEATURES.signedOrders && isRealWallet() && hasInjectedSigner()) {
+      const owner = getWallet();
+      const canonical = {
+        owner,
+        market: params.symbol,
+        side,
+        qty8: BigInt(Math.round(qty * 1e8)),
+        price8: BigInt(Math.round(px * 1e8)),
+        tif,
+        reduceOnly: !!params.reduceOnly,
+        nonce: nextNonce(owner),
+        expiry: 0n
+      };
+      signOrder(canonical)
+        .then((sig) => dispatch({ type: "PERPIFY_PLACE_ORDER_SIGNED", payload: toWirePayload(canonical, sig, baseId) }))
+        .catch(() => dispatch(showSnackBar({ src: ORDER_CREATION_FAIL, message: "Signature declined — order not placed.", type: "failure" })));
+    } else {
+      dispatch({
+        type: PERPIFY_PLACE_ORDER,
+        payload: { type: "place_order", id: baseId, symbol: params.symbol, side, qty, price: px, tif, reduceOnly: !!params.reduceOnly }
+      });
+    }
   }
 
   // TP / SL brackets: reduce-only closes armed alongside the entry

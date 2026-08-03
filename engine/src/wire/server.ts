@@ -22,6 +22,8 @@ import { px8 as toPx8, qty8 as toQty8, usd6 } from "../fixed.js";
 import { MARKET_IDS } from "../state.js";
 import { computeGapReading, gapScaleFor } from "../risk/gapCoefficient.js";
 import { demoTierForAddress, scoreTier } from "../risk/tierScore.js";
+import { orderFields, verifyOrder } from "../auth/eip712.js";
+import { getAddress } from "ethers";
 
 // Behavioral tier scoring lives in risk/tierScore (cold-start provisional + live model).
 // Re-exported here for existing importers.
@@ -153,6 +155,56 @@ export class WireServer {
         },
       };
       this.dispatch(cmd);
+      return;
+    }
+
+    // EIP-712 signed order (auth-v1): the trader signs the canonical Order struct with their
+    // wallet; the engine recovers the signer, checks it matches the claimed owner (and this
+    // connection's owner), and only then admits the order. Client-chosen nonce/expiry are
+    // carried through to the engine's existing replay/expiry enforcement. Verify-if-present:
+    // unsigned orders above are unaffected, so the live demo path is untouched.
+    if (m?.type === "place_order_signed") {
+      let fields;
+      try {
+        fields = orderFields(m);
+      } catch {
+        return void this.send(ws, { type: "reject", reason: "malformed signed order" });
+      }
+      if (!verifyOrder(fields, String(m.signature ?? ""))) {
+        return void this.send(ws, { type: "reject", reason: "bad signature" });
+      }
+      // bind the signed order to this authenticated connection (canonicalize both sides)
+      let connOwner: string | null = null;
+      try {
+        connOwner = getAddress(owner);
+      } catch {
+        connOwner = null;
+      }
+      if (connOwner && connOwner !== fields.owner) {
+        return void this.send(ws, { type: "reject", reason: "signer is not this connection's owner" });
+      }
+      const market = resolveMarket(m.symbol ?? m.market);
+      const price = BigInt(m.price8);
+      const qty = BigInt(m.qty8);
+      if (!(qty > 0n) || !(price > 0n)) return void this.send(ws, { type: "reject", reason: "bad qty/price" });
+      this.dispatch({
+        kind: "PlaceOrder",
+        order: {
+          id: m.id || `sig-${fields.owner.slice(2, 8)}-${this.clientOrderSeq++}`,
+          market,
+          // engine accounts are keyed lowercase (matching the connection's token owner); the
+          // signature was verified against the checksummed owner above.
+          owner: fields.owner.toLowerCase(),
+          side: fields.side === "sell" ? "sell" : "buy",
+          price,
+          qty,
+          tif: fields.tif === "IOC" ? "IOC" : fields.tif === "POST_ONLY" ? "POST_ONLY" : "GTC",
+          reduceOnly: fields.reduceOnly,
+          nonce: Number(fields.nonce),
+          expiry: Number(fields.expiry),
+          signature: String(m.signature),
+        },
+      });
       return;
     }
 

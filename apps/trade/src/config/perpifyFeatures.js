@@ -28,6 +28,12 @@ export const FEATURES = {
   apiManagement: false,
   settings: true, // basic settings kept; sub-tabs for disabled features hide themselves
   multiSymbolWatchlist: false, // single market (SPX-PERP) for now
+
+  // Real EIP-712 wallet-signature order auth (auth-v1). The engine verifies signatures when
+  // present and is fully tested; the frontend signing path is BUILT and ready but shipped OFF
+  // so the demo (which uses the instant demo wallet, no injected signer) is untouched. Flip to
+  // true to require real connected wallets to sign each market/limit order with their wallet.
+  signedOrders: false,
 };
 
 /** helper for nav/route guards: is this feature reachable right now? */

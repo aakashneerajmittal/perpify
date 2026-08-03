@@ -488,6 +488,12 @@ const densitySocketMiddleware = () => {
         if (socket && socket.readyState === 1) socket.send(JSON.stringify(payload));
         break;
       }
+      case "PERPIFY_PLACE_ORDER_SIGNED": {
+        // EIP-712 wallet-signed order — payload is the ready {type:"place_order_signed",...} wire
+        // msg (owner/qty8/price8/nonce/expiry/signature). Engine verifies before it touches the book.
+        if (socket && socket.readyState === 1) socket.send(JSON.stringify(payload));
+        break;
+      }
       case "PERPIFY_CANCEL_ORDER": {
         if (socket && socket.readyState === 1) socket.send(JSON.stringify({ type: "cancel", orderId: payload?.orderId, symbol: payload?.symbol }));
         break;
