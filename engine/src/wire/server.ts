@@ -40,6 +40,7 @@ export interface WireServerOpts {
   priceIntervalMs?: number;
   dispatch?: (cmd: Command) => import("../types.js").EngineEvent[]; // persisting wrapper; defaults to bus.dispatch
   demo?: DemoConfig; // when set, auto-fund + tier new traders (investor demo)
+  vaultSnapshot?: () => unknown; // live PVault tranche state for /vaultStream (read-only broadcast)
 }
 
 const MARKET_SET = new Set<string>(MARKET_IDS);
@@ -91,7 +92,7 @@ export class WireServer {
         return;
       }
       const url = new URL(req.url ?? "/", "http://localhost");
-      if (!["/v1/order-and-account-updates", "/v1/ws/order-book", "/marketDataStream"].includes(url.pathname)) {
+      if (!["/v1/order-and-account-updates", "/v1/ws/order-book", "/marketDataStream", "/vaultStream"].includes(url.pathname)) {
         socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
         socket.destroy();
         return;
@@ -358,6 +359,28 @@ export class WireServer {
         }
       });
       ws.on("close", () => timer && clearInterval(timer));
+      return;
+    }
+
+    if (route === "/vaultStream") {
+      // read-only broadcast of the live PVault tranche state (Senior/Junior NAV, APY, TVL,
+      // reserve, catastrophe flag). Interactive deposits/drills are client-side previews.
+      const interval = Math.max(1000, this.opts.priceIntervalMs ?? 1000);
+      ws.on("message", (raw) => {
+        try {
+          if (JSON.parse(String(raw))?.type === "ping") this.send(ws, { type: "pong" });
+        } catch {
+          /* ignore */
+        }
+      });
+      const pushV = () => {
+        const snap = this.opts.vaultSnapshot?.();
+        if (snap) this.send(ws, { e: "vaultState", ...(snap as object) });
+      };
+      pushV();
+      const vt = setInterval(pushV, interval);
+      this.timers.push(vt);
+      ws.on("close", () => clearInterval(vt));
       return;
     }
 

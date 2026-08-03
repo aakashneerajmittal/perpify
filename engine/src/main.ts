@@ -27,6 +27,7 @@ import { ChainClient } from "./chain.js";
 import { checkConservation, stateRoot, MARKET_IDS } from "./state.js";
 import { px8 as toPx8 } from "./fixed.js";
 import { computeGapReading, gapScaleFor } from "./risk/gapCoefficient.js";
+import { VaultRuntime } from "./vault/runtime.js";
 import type { Command, MarketId } from "./types.js";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -163,6 +164,10 @@ async function main() {
     return { id, price: anchor, anchor, wiggleSeed: 20260729 + i * 7919, maker, takers };
   });
 
+  // PVault structured-liquidity vault: seeded once, books venue fees through the Senior/Junior
+  // waterfall each vault-day. Isolated from the trading ledger; broadcast read-only on /vaultStream.
+  const vault = new VaultRuntime(600_000, 200_000);
+
   const server = new WireServer(bus, {
     port: PORT,
     bookIntervalMs: 500,
@@ -170,6 +175,7 @@ async function main() {
     dispatch, // browser orders go through the persisting wrapper → logged + replayable
     allowedOrigins: ORIGINS,
     demo: DEMO ? { fundUsd: 100_000, tier: "B", tierMult: 0.9 } : undefined,
+    vaultSnapshot: () => vault.snapshot(),
   });
   const boundPort = await server.listen();
   console.log(
@@ -265,6 +271,10 @@ async function main() {
   };
   refreshConfidence(); // fresh at boot
   every(30_000, refreshConfidence);
+
+  // PVault: book one vault-day of venue fees through the tranche waterfall each minute, scaled
+  // to real venue activity (event count). Senior tracks its target; Junior earns the residual.
+  every(60_000, () => vault.accrue(bus.state.eventCount));
 
   // daily epoch settlement in live mode
   if (chain) {

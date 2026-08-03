@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Perpify — PVault (Structured Liquidity)</title>
+  <style>
+    :root { --bg:#080808; --panel:#0e0e0e; --line:rgba(255,255,255,0.08); --txt:#F0EDE8; --mut:#8a8a82; --dim:#55554f; --blue:#4F8EFF; --amber:#ffb454; --green:#26a69a; --red:#ef5350; --mono:'DM Mono',ui-monospace,'SF Mono',Menlo,monospace; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--txt); font-family:'Syne',system-ui,-apple-system,sans-serif; }
+    .wrap { max-width:1000px; margin:0 auto; padding:40px 22px 90px; }
+    .tag { font-family:var(--mono); font-size:11px; letter-spacing:0.18em; color:var(--blue); text-transform:uppercase; }
+    h1 { font-size:32px; font-weight:800; letter-spacing:-0.02em; margin:10px 0 6px; }
+    .sub { color:var(--mut); font-size:15px; max-width:760px; line-height:1.5; }
+    .status { font-family:var(--mono); font-size:11px; color:var(--dim); margin-top:12px; }
+    .dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--red); margin-right:5px; vertical-align:middle; }
+    .dot.on { background:var(--green); }
+
+    .tranches { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:26px; }
+    @media (max-width:720px){ .tranches { grid-template-columns:1fr; } }
+    .tr { background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:22px; position:relative; overflow:hidden; }
+    .tr.senior { border-color:rgba(79,142,255,0.35); }
+    .tr.junior { border-color:rgba(255,180,84,0.30); }
+    .tr .role { font-family:var(--mono); font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase; }
+    .tr.senior .role { color:var(--blue); }
+    .tr.junior .role { color:var(--amber); }
+    .tr .nick { font-size:12px; color:var(--mut); margin-top:2px; }
+    .tr .nav { font-family:var(--mono); font-size:30px; margin-top:16px; }
+    .tr .navlbl { font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--dim); }
+    .tr .row2 { display:flex; gap:20px; margin-top:16px; }
+    .tr .row2 .lbl { font-size:9.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--dim); }
+    .tr .row2 .v { font-family:var(--mono); font-size:14px; margin-top:2px; }
+    .apy { font-family:var(--mono); font-size:13px; margin-top:14px; padding:8px 10px; border-radius:8px; }
+    .tr.senior .apy { color:var(--blue); background:rgba(79,142,255,0.10); }
+    .tr.junior .apy { color:var(--amber); background:rgba(255,180,84,0.10); }
+
+    .strip { display:flex; gap:14px; margin-top:16px; flex-wrap:wrap; }
+    .chip { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 16px; flex:1; min-width:150px; }
+    .chip .lbl { font-size:9.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--dim); }
+    .chip .v { font-family:var(--mono); font-size:18px; margin-top:3px; }
+    .ratiobar { height:8px; border-radius:8px; background:rgba(79,142,255,0.35); overflow:hidden; margin-top:8px; position:relative; }
+    .ratiobar > i { display:block; height:100%; background:var(--amber); }
+
+    .panel2 { background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:22px; margin-top:22px; }
+    .panel2 h2 { font-size:16px; margin:0 0 4px; }
+    .panel2 .h2sub { color:var(--mut); font-size:13px; line-height:1.5; }
+
+    /* waterfall */
+    .fall { display:flex; flex-direction:column; gap:8px; margin-top:18px; }
+    .layer { border-radius:10px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; font-size:13px; border:1px solid var(--line); transition:opacity .4s, background .4s, transform .4s; }
+    .layer .amt { font-family:var(--mono); }
+    .layer.junior { background:rgba(255,180,84,0.10); }
+    .layer.reserve { background:rgba(240,237,232,0.05); }
+    .layer.senior { background:rgba(79,142,255,0.10); }
+    .layer.hit { transform:translateX(4px); }
+    .layer.gone { opacity:0.32; }
+    .arrow { text-align:center; color:var(--dim); font-size:12px; }
+
+    .controls { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; align-items:center; }
+    .controls input { background:#000; border:1px solid var(--line); border-radius:9px; color:var(--txt); font-family:var(--mono); font-size:13px; padding:11px 12px; width:150px; outline:none; }
+    .controls input:focus { border-color:var(--blue); }
+    .btn { font-family:'Syne',sans-serif; font-weight:700; font-size:13.5px; border:none; border-radius:9px; padding:11px 16px; cursor:pointer; }
+    .btn.red { background:var(--red); color:#150404; }
+    .btn.ghost { background:transparent; color:var(--txt); border:1px solid var(--line); }
+    .btn.blue { background:var(--blue); color:#03060d; }
+    .btn.amber { background:var(--amber); color:#1c1403; }
+    .seg { display:inline-flex; border:1px solid var(--line); border-radius:9px; overflow:hidden; }
+    .seg button { background:transparent; color:var(--mut); border:none; padding:11px 15px; cursor:pointer; font-family:'Syne',sans-serif; font-size:13px; }
+    .seg button.on { background:rgba(255,255,255,0.06); color:var(--txt); }
+    .drillout { font-family:var(--mono); font-size:12.5px; color:var(--mut); margin-top:14px; line-height:1.7; min-height:20px; }
+    .preview { font-size:10.5px; font-family:var(--mono); letter-spacing:0.08em; color:var(--dim); text-transform:uppercase; margin-top:4px; }
+    .foot { margin-top:38px; color:var(--dim); font-size:11.5px; font-family:var(--mono); }
+    a { color:var(--blue); text-decoration:none; }
+    .catbanner { display:none; margin-top:14px; padding:11px 14px; border-radius:10px; background:rgba(239,83,80,0.12); border:1px solid rgba(239,83,80,0.4); color:var(--red); font-size:13px; }
+    .catbanner.show { display:block; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="tag">Perpify · Testnet · PVault</div>
+    <h1>Structured liquidity, two tranches</h1>
+    <div class="sub">One trading book, two risk profiles. <b style="color:var(--blue)">Senior</b> ("the Shielded") takes an 8% floor / 12% target and is protected. <b style="color:var(--amber)">Junior</b> ("the Shield") takes the first loss and the leveraged upside. Every epoch the venue's house PnL runs through a waterfall — profit to yield, loss <em>to the junior first</em>. Live NAVs stream from the engine; the deposit and the catastrophe drill below are faithful previews of the same on-chain math.</div>
+    <div class="status"><span class="dot" id="dot"></span><span id="statusTxt">connecting to engine…</span></div>
+
+    <div class="tranches">
+      <div class="tr senior">
+        <div class="role">Senior · the Shielded</div>
+        <div class="nick">first-out · loss-protected · yield floor</div>
+        <div class="navlbl" style="margin-top:14px">Tranche NAV</div>
+        <div class="nav" id="sNav">--</div>
+        <div class="row2">
+          <div><div class="lbl">NAV / share</div><div class="v" id="sNps">--</div></div>
+          <div><div class="lbl">Share of TVL</div><div class="v" id="sShare">--</div></div>
+        </div>
+        <div class="apy" id="sApy">8% floor · 12% target APY</div>
+      </div>
+      <div class="tr junior">
+        <div class="role">Junior · the Shield</div>
+        <div class="nick">first-loss · leveraged upside · absorbs drawdowns</div>
+        <div class="navlbl" style="margin-top:14px">Tranche NAV</div>
+        <div class="nav" id="jNav">--</div>
+        <div class="row2">
+          <div><div class="lbl">NAV / share</div><div class="v" id="jNps">--</div></div>
+          <div><div class="lbl">Share of TVL</div><div class="v" id="jShare">--</div></div>
+        </div>
+        <div class="apy" id="jApy">leveraged residual yield</div>
+      </div>
+    </div>
+
+    <div class="strip">
+      <div class="chip"><div class="lbl">Total value locked</div><div class="v" id="tvl">--</div></div>
+      <div class="chip"><div class="lbl">Yield reserve</div><div class="v" id="reserve">--</div></div>
+      <div class="chip">
+        <div class="lbl">Junior buffer (of TVL)</div><div class="v" id="jratio">--</div>
+        <div class="ratiobar"><i id="ratioFill" style="width:0%"></i></div>
+      </div>
+      <div class="chip"><div class="lbl">Epoch · mode</div><div class="v" id="epoch">--</div></div>
+    </div>
+
+    <div class="panel2">
+      <h2>The loss waterfall</h2>
+      <div class="h2sub">A house loss is absorbed top-down: <b style="color:var(--amber)">Junior NAV</b> first, then the <b>yield reserve</b>, then <b style="color:var(--blue)">Senior NAV</b>. If the junior is exhausted it is wiped (its shares void) and the vault enters catastrophe mode. Run a drill — it applies the loss to the live figures with the exact contract math.</div>
+
+      <div class="fall">
+        <div class="layer junior" id="lyJunior"><span>1 · Junior absorbs first</span><span class="amt" id="lyJuniorAmt">--</span></div>
+        <div class="arrow">↓ then</div>
+        <div class="layer reserve" id="lyReserve"><span>2 · Yield reserve</span><span class="amt" id="lyReserveAmt">--</span></div>
+        <div class="arrow">↓ then</div>
+        <div class="layer senior" id="lySenior"><span>3 · Senior (protected)</span><span class="amt" id="lySeniorAmt">--</span></div>
+      </div>
+
+      <div class="controls">
+        <input id="lossInput" placeholder="loss, e.g. 250000" inputmode="numeric" />
+        <button class="btn red" id="drillBtn">Run catastrophe drill</button>
+        <button class="btn ghost" id="resetBtn">Reset to live</button>
+      </div>
+      <div class="preview">Preview · does not affect the shared vault</div>
+      <div class="catbanner" id="catbanner">Catastrophe mode — junior wiped. Senior exits now pay a 1% fee that recapitalizes the junior; reduce-only is signaled venue-side until the buffer rebuilds.</div>
+      <div class="drillout" id="drillout"></div>
+    </div>
+
+    <div class="panel2">
+      <h2>Model a deposit</h2>
+      <div class="h2sub">See the shares you'd mint at the live NAV and where you'd sit in the stack. Faithful preview of depositSenior / depositJunior — no wallet, no transaction.</div>
+      <div class="controls">
+        <div class="seg" id="trancheSeg">
+          <button data-t="senior" class="on">Senior</button>
+          <button data-t="junior">Junior</button>
+        </div>
+        <input id="depInput" placeholder="amount, e.g. 25000" inputmode="numeric" />
+        <button class="btn blue" id="depBtn">Model deposit</button>
+      </div>
+      <div class="drillout" id="depout"></div>
+    </div>
+
+    <div class="foot">
+      Live tranche state streams from the Perpify engine · vault-v0.1 (port of PVaultTranches.sol) &nbsp;·&nbsp;
+      <a href="/dashboard.html">Live risk dashboard →</a> &nbsp;·&nbsp; <a href="/passport.html">trader passport →</a> &nbsp;·&nbsp; <a href="/">the venue →</a>
+    </div>
+  </div>
+
+  <script>
+    var ENGINE = new URLSearchParams(location.search).get("engine") || "wss://perpify-engine.onrender.com";
+    var $ = function(id){ return document.getElementById(id); };
+    var live = null;   // latest live snapshot from the engine
+    var view = null;   // current view state (live, or post-drill preview)
+    var depTranche = "senior";
+
+    var fmtUsd = function(n){ return "$" + Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 }); };
+    var fmtUsd2 = function(n){ return "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+
+    // ---- faithful client-side waterfall (port of PVaultTranches.settleEpoch loss branch) ----
+    function applyLoss(s, loss){
+      var st = { seniorNav:s.seniorNav, juniorNav:s.juniorNav, reserve:s.yieldReserve,
+                 catastrophe:s.catastropheMode, wiped:false, fromJunior:0, fromReserve:0, fromSenior:0, uncovered:0 };
+      var rem = loss;
+      var fj = Math.min(rem, st.juniorNav); st.juniorNav -= fj; st.fromJunior = fj; rem -= fj;
+      if (rem > 0){
+        st.wiped = st.juniorNav === 0 && loss > s.juniorNav; // junior punched through
+        st.catastrophe = true;
+        var fr = Math.min(rem, st.reserve); st.reserve -= fr; st.fromReserve = fr; rem -= fr;
+        var fs = Math.min(rem, st.seniorNav); st.seniorNav -= fs; st.fromSenior = fs; rem -= fs;
+        st.uncovered = rem;
+      }
+      return st;
+    }
+
+    function paint(s){
+      $("sNav").textContent = fmtUsd(s.seniorNav);
+      $("jNav").textContent = fmtUsd(s.juniorNav);
+      $("sNps").textContent = s.seniorNavPerShare.toFixed(4);
+      $("jNps").textContent = s.juniorNavPerShare.toFixed(4);
+      var tvl = s.seniorNav + s.juniorNav;
+      $("sShare").textContent = tvl > 0 ? (100 * s.seniorNav / tvl).toFixed(1) + "%" : "--";
+      $("jShare").textContent = tvl > 0 ? (100 * s.juniorNav / tvl).toFixed(1) + "%" : "--";
+      $("tvl").textContent = fmtUsd(s.tvl);
+      $("reserve").textContent = fmtUsd(s.yieldReserve);
+      $("jratio").textContent = (s.juniorRatioBps / 100).toFixed(1) + "%";
+      $("ratioFill").style.width = Math.min(100, s.juniorRatioBps / 100) + "%";
+      $("epoch").textContent = "#" + s.epochId + " · " + (s.insolvent ? "INSOLVENT" : s.catastropheMode ? "catastrophe" : "healthy");
+      $("epoch").style.color = s.insolvent ? "var(--red)" : s.catastropheMode ? "var(--amber)" : "var(--txt)";
+      $("sApy").textContent = (s.seniorTargetApyBps/100).toFixed(0) + "% target · 8% floor (reserve-backed)";
+      $("lyJuniorAmt").textContent = fmtUsd(s.juniorNav) + " buffer";
+      $("lyReserveAmt").textContent = fmtUsd(s.yieldReserve);
+      $("lySeniorAmt").textContent = fmtUsd(s.seniorNav) + " protected";
+      $("catbanner").className = "catbanner" + (s.catastropheMode ? " show" : "");
+      ["lyJunior","lyReserve","lySenior"].forEach(function(id){ $(id).className = $(id).className.replace(/ (hit|gone)/g,""); });
+    }
+
+    function setStatus(on){
+      $("dot").className = "dot" + (on ? " on" : "");
+      $("statusTxt").textContent = on
+        ? "live · streaming from " + ENGINE.replace("wss://","")
+        : "reconnecting to engine…";
+    }
+
+    function connect(){
+      var ws;
+      try { ws = new WebSocket(ENGINE + "/vaultStream"); } catch(e){ return; }
+      ws.onopen = function(){ setStatus(true); };
+      ws.onmessage = function(ev){
+        var d; try { d = JSON.parse(ev.data); } catch(e){ return; }
+        if (d.e !== "vaultState") return;
+        live = d;
+        if (!view || view._live) { view = Object.assign({ _live:true }, d); paint(view); }
+        else { // keep the drill preview, but refresh the live baseline silently
+          $("statusTxt").textContent = "live · drill preview shown (press Reset to follow live)";
+        }
+      };
+      ws.onclose = function(){ setStatus(false); setTimeout(connect, 2500); };
+      ws.onerror = function(){ try { ws.close(); } catch(e){} };
+    }
+
+    $("drillBtn").onclick = function(){
+      if (!live) { $("drillout").textContent = "waiting for live vault state…"; return; }
+      var loss = Number(String($("lossInput").value).replace(/[^0-9.]/g,""));
+      if (!(loss > 0)) { $("drillout").textContent = "enter a loss amount."; return; }
+      var r = applyLoss(live, loss);
+      var next = Object.assign({}, live, {
+        seniorNav: r.seniorNav, juniorNav: r.juniorNav, yieldReserve: r.reserve,
+        tvl: r.seniorNav + r.juniorNav, catastropheMode: r.catastrophe,
+        insolvent: r.uncovered > 0,
+        epochId: live.epochId + 1,
+        juniorRatioBps: (r.seniorNav + r.juniorNav) > 0 ? Math.round(10000 * r.juniorNav / (r.seniorNav + r.juniorNav)) : 0,
+        seniorNavPerShare: live.seniorNavPerShare, juniorNavPerShare: r.wiped ? 0 : live.juniorNavPerShare,
+        _live: false
+      });
+      view = next; paint(next);
+      // animate the layers that took the hit
+      if (r.fromJunior > 0) $("lyJunior").className += " hit" + (next.juniorNav === 0 ? " gone" : "");
+      if (r.fromReserve > 0) $("lyReserve").className += " hit" + (next.yieldReserve === 0 ? " gone" : "");
+      if (r.fromSenior > 0) $("lySenior").className += " hit";
+      var parts = [];
+      parts.push("Loss " + fmtUsd2(loss) + " routed through the stack:");
+      parts.push("• Junior absorbed " + fmtUsd2(r.fromJunior) + (next.juniorNav === 0 && r.fromReserve+r.fromSenior>0 ? " → WIPED (shares void, fresh generation)" : ""));
+      if (r.fromReserve > 0) parts.push("• Reserve absorbed " + fmtUsd2(r.fromReserve));
+      if (r.fromSenior > 0) parts.push("• Senior absorbed " + fmtUsd2(r.fromSenior) + " — protection breached");
+      if (r.uncovered > 0) parts.push("• UNCOVERED " + fmtUsd2(r.uncovered) + " → vault insolvent, halts");
+      if (r.fromSenior === 0 && r.uncovered === 0) parts.push("Senior fully protected. ✓");
+      $("drillout").innerHTML = parts.join("<br>");
+    };
+
+    $("resetBtn").onclick = function(){
+      if (!live) return;
+      view = Object.assign({ _live:true }, live); paint(view);
+      $("drillout").textContent = ""; setStatus(true);
+    };
+
+    Array.prototype.forEach.call($("trancheSeg").children, function(b){
+      b.onclick = function(){
+        depTranche = b.getAttribute("data-t");
+        Array.prototype.forEach.call($("trancheSeg").children, function(x){ x.className = ""; });
+        b.className = "on";
+      };
+    });
+
+    $("depBtn").onclick = function(){
+      if (!live) { $("depout").textContent = "waiting for live vault state…"; return; }
+      var amt = Number(String($("depInput").value).replace(/[^0-9.]/g,""));
+      if (!(amt > 0)) { $("depout").textContent = "enter a deposit amount."; return; }
+      var nav = depTranche === "senior" ? live.seniorNav : live.juniorNav;
+      var shares = depTranche === "senior" ? live.seniorShares : live.juniorShares;
+      // shares minted = amount * totalShares / nav  (1:1 if the tranche is empty)
+      var minted = (shares === 0 || nav === 0) ? amt : amt * shares / nav;
+      var newNav = nav + amt;
+      var ownPct = 100 * minted / (shares + minted);
+      var lines = [];
+      lines.push("Deposit " + fmtUsd2(amt) + " into the " + depTranche.toUpperCase() + " tranche:");
+      lines.push("• Mints ≈ " + minted.toLocaleString("en-US",{maximumFractionDigits:2}) + " shares at NAV/share " +
+        (depTranche==="senior"?live.seniorNavPerShare:live.juniorNavPerShare).toFixed(4));
+      lines.push("• You'd hold ≈ " + ownPct.toFixed(2) + "% of the tranche (NAV → " + fmtUsd(newNav) + ")");
+      if (depTranche === "junior") lines.push("• Junior: first-loss + leveraged upside · 48h lock-up on testnet");
+      else lines.push("• Senior: protected by the junior buffer · 8% floor / 12% target");
+      $("depout").innerHTML = lines.join("<br>");
+    };
+    $("lossInput").addEventListener("keydown", function(e){ if (e.key === "Enter") $("drillBtn").click(); });
+    $("depInput").addEventListener("keydown", function(e){ if (e.key === "Enter") $("depBtn").click(); });
+
+    connect();
+  </script>
+</body>
+</html>
