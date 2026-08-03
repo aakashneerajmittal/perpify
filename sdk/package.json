@@ -1,0 +1,19 @@
+{
+  "name": "@perpify/sdk",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Perpify TypeScript client + Model Context Protocol server for the venue.",
+  "scripts": {
+    "mcp": "tsx mcpServer.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "ws": "^8.21.1"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
