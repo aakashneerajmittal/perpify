@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Trader DNA — Perpify</title>
+<meta name="description" content="Connect your exchange or drop a CSV — crypto or stocks — and an ML model scores your trading behavior the way Perpify's underwriting engine prices risk: what kind of trader you are, how well you traded the market you were handed, and what it cost you in dollars." />
+<meta property="og:title" content="Trader DNA — score your trading behavior" />
+<meta property="og:description" content="An ML mirror for traders. See your behavioral tier, your archetype, and the dollar cost of your worst habits — regime-adjusted, priced the Perpify way." />
+<meta property="og:type" content="website" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#080808; --bg1:#0f0f0f; --bg2:#151515; --bg3:#1c1c1c; --line:#262622;
+  --ink:#f0ede8; --mut:#8a8a82; --dim:#55554e;
+  --amber:#ffb454; --blue:#4f8eff; --green:#3ecf8e; --red:#ff5566; --violet:#b98cff;
+  --mono:'DM Mono',ui-monospace,monospace; --disp:'Syne',sans-serif; --serif:'Instrument Serif',serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:var(--amber);text-decoration:none}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+.mono{font-family:var(--mono)}
+.disp{font-family:var(--disp)}
+h1,h2,h3{font-family:var(--disp);font-weight:700;letter-spacing:-.01em;margin:0}
+.tnum{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+button{font-family:var(--mono);cursor:pointer;border:none;background:none;color:inherit}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:500;transition:.15s;border:1px solid var(--line)}
+.btn-primary{background:var(--amber);color:#1a1206;border-color:var(--amber);font-weight:600}
+.btn-primary:hover{filter:brightness(1.08)}
+.btn-ghost{background:var(--bg2);color:var(--ink)}
+.btn-ghost:hover{background:var(--bg3);border-color:#33332c}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:11.5px;letter-spacing:.03em;border:1px solid var(--line);color:var(--mut);background:var(--bg1)}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+
+/* nav */
+nav{position:sticky;top:0;z-index:40;backdrop-filter:blur(10px);background:rgba(8,8,8,.72);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+.brand{display:flex;align-items:center;gap:11px;font-family:var(--disp);font-weight:800;letter-spacing:.02em}
+.brand .mk{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--amber),#ff8a3d);display:grid;place-items:center;color:#160f04;font-size:15px}
+.brand small{font-weight:500;color:var(--mut);font-family:var(--mono);letter-spacing:.06em;font-size:11px;text-transform:uppercase}
+
+/* hero */
+.hero{padding:64px 0 34px;border-bottom:1px solid var(--line);position:relative;overflow:hidden}
+.hero .glow{position:absolute;inset:-40% 30% auto -10%;height:520px;background:radial-gradient(closest-side,rgba(255,180,84,.10),transparent);pointer-events:none}
+.hero h1{font-size:clamp(34px,6vw,60px);line-height:1.02;font-weight:800;letter-spacing:-.02em;max-width:15ch}
+.hero h1 em{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--amber)}
+.hero p.sub{color:var(--mut);font-size:16px;max-width:60ch;margin:20px 0 0}
+.hero .cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:30px}
+.trust{display:flex;gap:22px;flex-wrap:wrap;margin-top:26px;color:var(--dim);font-size:12px}
+.trust b{color:var(--mut);font-weight:500}
+
+/* generic card */
+.card{background:var(--bg1);border:1px solid var(--line);border-radius:16px;padding:22px}
+.grid{display:grid;gap:16px}
+.section-t{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:14px}
+
+/* two-ways-in */
+.ways{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:40px}
+.way{padding:24px;border-radius:16px;border:1px solid var(--line);background:linear-gradient(180deg,var(--bg1),var(--bg));position:relative}
+.way h3{font-size:19px;margin-bottom:6px}
+.way .tag{position:absolute;top:18px;right:18px}
+.way p{color:var(--mut);font-size:13.5px;margin:0 0 18px}
+.dz{border:1.5px dashed #34342c;border-radius:12px;padding:26px;text-align:center;color:var(--mut);transition:.15s;cursor:pointer}
+.dz:hover,.dz.drag{border-color:var(--amber);background:rgba(255,180,84,.04);color:var(--ink)}
+.logos{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.logos span{font-size:11px;color:var(--dim);padding:3px 8px;border:1px solid var(--line);border-radius:6px}
+
+/* results */
+#results{display:none}
+.rgrid{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
+@media(max-width:900px){.rgrid{grid-template-columns:1fr}.ways{grid-template-columns:1fr}}
+.scorewrap{display:flex;flex-direction:column;align-items:center;text-align:center}
+.gauge{position:relative;width:230px;height:230px}
+.score-num{font-family:var(--disp);font-weight:800;font-size:62px;line-height:1;letter-spacing:-.03em}
+.score-of{color:var(--dim);font-size:13px;margin-top:2px}
+.tierbadge{font-family:var(--disp);font-weight:800;font-size:15px;padding:5px 14px;border-radius:999px;display:inline-flex;gap:8px;align-items:center;margin-top:14px}
+.arch-name{font-family:var(--disp);font-weight:800;font-size:26px;letter-spacing:-.01em;margin-top:4px}
+.arch-read{color:var(--mut);font-size:13.5px;margin-top:8px;max-width:34ch}
+.confbar{height:5px;border-radius:3px;background:var(--bg3);overflow:hidden;margin-top:6px}
+.confbar>i{display:block;height:100%;background:var(--amber)}
+
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kpi{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:14px}
+.kpi .l{font-size:11px;color:var(--dim);letter-spacing:.05em;text-transform:uppercase}
+.kpi .v{font-family:var(--disp);font-weight:700;font-size:22px;margin-top:4px}
+.kpi .s{font-size:11.5px;color:var(--mut);margin-top:2px}
+
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.two,.kpis{grid-template-columns:1fr}}
+.factor{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--bg3)}
+.factor:last-child{border-bottom:none}
+.factor .fb{flex:1;height:6px;border-radius:3px;background:var(--bg3);overflow:hidden}
+.factor .fb>i{display:block;height:100%}
+.factor .fn{font-size:13px;width:44%;color:var(--ink)}
+.factor .fv{font-size:12px;color:var(--mut);width:52px;text-align:right}
+
+.priv{display:flex;align-items:flex-start;gap:10px;padding:8px 0;font-size:13.5px;color:var(--ink)}
+.priv .ic{color:var(--amber);margin-top:1px}
+.priv.lock{color:var(--dim)}
+.priv.lock .ic{color:var(--dim)}
+
+.improve{border-left:2px solid var(--amber);padding:6px 0 6px 14px;margin:12px 0}
+.improve .h{font-size:14px;color:var(--ink)}
+.improve .d{font-size:12.5px;color:var(--mut);margin-top:3px}
+.improve .delta{color:var(--green);font-weight:500}
+
+.dollar{background:linear-gradient(180deg,rgba(255,180,84,.06),transparent);border:1px solid #2b2519;border-radius:14px;padding:18px;margin-bottom:12px}
+.dollar .big{font-family:var(--disp);font-weight:800;font-size:30px;letter-spacing:-.02em}
+.dollar .lbl{font-size:12.5px;color:var(--mut);margin-top:4px}
+.neg{color:var(--red)} .pos{color:var(--green)}
+
+.regime-strip{display:flex;gap:4px;margin-top:10px}
+.regime-strip .rc{flex:1;height:26px;border-radius:5px;display:grid;place-items:center;font-size:10px;color:#0c0c0c;font-weight:600}
+.regtag{font-size:11px;padding:2px 8px;border-radius:6px;font-weight:600}
+
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:80;display:none;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--bg1);border:1px solid var(--line);border-radius:18px;max-width:520px;width:100%;padding:26px;max-height:86vh;overflow:auto}
+.modal h3{font-size:20px;margin-bottom:4px}
+.field{display:block;margin-top:14px}
+.field span{font-size:12px;color:var(--mut);display:block;margin-bottom:5px}
+.field input,.field select{width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:11px 12px;color:var(--ink);font-family:var(--mono);font-size:14px}
+.conn{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:1px solid var(--line);border-radius:11px;margin-top:10px;background:var(--bg2)}
+.conn .ci{display:flex;align-items:center;gap:11px}
+.conn .badge{font-size:10px;color:var(--dim);border:1px solid var(--line);padding:2px 7px;border-radius:5px}
+
+footer{border-top:1px solid var(--line);margin-top:56px;padding:30px 0;color:var(--dim);font-size:12px}
+.spinner{width:18px;height:18px;border:2px solid rgba(255,180,84,.25);border-top-color:var(--amber);border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.hide{display:none!important}
+.small{font-size:12px;color:var(--dim)}
+canvas{max-width:100%}
+.tabrow{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.tab{padding:7px 14px;border-radius:8px;font-size:12.5px;border:1px solid var(--line);background:var(--bg1);color:var(--mut)}
+.tab.on{background:var(--bg3);color:var(--ink);border-color:#3a3a30}
+.mapgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.err{color:var(--red);font-size:12.5px;margin-top:8px}
+</style>
+</head>
+<body>
+<nav><div class="wrap">
+  <div class="brand"><span class="mk">◈</span> PERPIFY <small>· Trader DNA</small></div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <span class="pill"><span class="dot" style="background:var(--green)"></span> model <span class="tnum" id="nav-model">dna-v0.1</span></span>
+    <button class="btn btn-ghost" style="padding:8px 14px" onclick="openConnect()">Connect API</button>
+  </div>
+</div></nav>
+
+<!-- HERO / INTAKE -->
+<section id="intake">
+<div class="hero"><div class="wrap" style="position:relative">
+  <div class="glow"></div>
+  <span class="pill" style="margin-bottom:20px"><span class="dot" style="background:var(--amber)"></span> Behavioral underwriting · scored through the cycle</span>
+  <h1>Your trades already know <em>who you are.</em></h1>
+  <p class="sub">Connect your exchange or drop a CSV — crypto or stocks. A machine-learning model scores your behavior the way Perpify's underwriting engine prices risk: your <b style="color:var(--ink)">archetype</b>, how well you traded <b style="color:var(--ink)">the market you were handed</b>, what your worst habits cost you <b style="color:var(--ink)">in dollars</b>, and what a better score unlocks.</p>
+  <div class="cta">
+    <button class="btn btn-primary" onclick="document.getElementById('file').click()">↑ Upload trade history (CSV)</button>
+    <button class="btn btn-ghost" onclick="runSample()">◈ See it on a sample trader</button>
+  </div>
+  <div class="trust">
+    <span><b>Private by design.</b> CSVs are parsed in your browser — they never leave your device.</span>
+    <span><b>ML, not rules.</b> Gradient-boosted model, SHAP-explained.</span>
+  </div>
+</div></div>
+
+<div class="wrap">
+  <div class="ways">
+    <div class="way">
+      <span class="tag pill" style="color:var(--green);border-color:#234">◉ verified path</span>
+      <h3>Connect API / broker</h3>
+      <p>Read-only keys or a broker aggregator pull your full, always-fresh history. Trustworthy enough to grant a <b style="color:var(--ink)">real provisional mainnet tier</b>.</p>
+      <div class="logos"><span>Binance</span><span>Bybit</span><span>OKX</span><span>Hyperliquid</span><span>IBKR</span><span>Schwab</span><span>Robinhood</span></div>
+      <button class="btn btn-ghost" style="margin-top:16px;width:100%" onclick="openConnect()">Connect read-only →</button>
+    </div>
+    <div class="way">
+      <span class="tag pill">◇ instant · no login</span>
+      <h3>Upload a CSV</h3>
+      <p>Export your trade or order history and drop it in. We auto-detect the platform; anything else maps in one screen.</p>
+      <div class="dz" id="dz" onclick="document.getElementById('file').click()">
+        <div style="font-size:15px;color:var(--ink)">Drop trade history here</div>
+        <div class="small" style="margin-top:6px">or click to browse · .csv</div>
+      </div>
+      <input type="file" id="file" accept=".csv,text/csv" class="hide" />
+      <div class="logos"><span>Binance</span><span>Bybit</span><span>OKX</span><span>Hyperliquid</span><span>IBKR Flex</span><span>Schwab/TD</span><span>Zerodha</span><span>Robinhood</span><span>Generic</span></div>
+      <div id="parse-status" class="small" style="margin-top:12px"></div>
+      <div id="parse-err" class="err"></div>
+    </div>
+  </div>
+
+  <!-- generic column mapper -->
+  <div id="mapper" class="card hide" style="margin-top:16px">
+    <div class="section-t">Map your columns</div>
+    <p class="small" style="margin-top:-6px">We couldn't fingerprint this export. Tell us which column is which — we'll remember the shape.</p>
+    <div class="mapgrid" id="map-fields"></div>
+    <button class="btn btn-primary" style="margin-top:16px" onclick="applyMapping()">Score my trades →</button>
+  </div>
+</div>
+</section>
+
+<!-- RESULTS -->
+<section id="results"><div class="wrap">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin:28px 0 18px">
+    <div>
+      <div class="section-t" style="margin-bottom:6px">Your Trader DNA</div>
+      <div id="src-line" class="small"></div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost" onclick="downloadCard()">↓ Share card</button>
+      <button class="btn btn-ghost" onclick="resetApp()">↺ New history</button>
+    </div>
+  </div>
+
+  <div class="rgrid">
+    <!-- LEFT: score + archetype -->
+    <div class="card scorewrap">
+      <div class="gauge"><canvas id="gauge" width="460" height="460" style="width:230px;height:230px"></canvas>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div class="score-num tnum" id="score">–</div>
+          <div class="score-of">Trader DNA score · /100</div>
+        </div>
+      </div>
+      <div class="tierbadge" id="tier">–</div>
+      <div class="arch-name" id="arch">–</div>
+      <div class="arch-read" id="read">–</div>
+      <div style="width:100%;margin-top:16px">
+        <div class="small" style="display:flex;justify-content:space-between"><span>Confidence</span><span id="conf-t">–</span></div>
+        <div class="confbar"><i id="conf" style="width:0%"></i></div>
+        <div class="small" id="conf-note" style="margin-top:6px"></div>
+      </div>
+      <canvas id="radar" width="520" height="420" style="width:100%;max-width:320px;margin-top:14px"></canvas>
+    </div>
+
+    <!-- RIGHT: dollars, factors, privileges, improve -->
+    <div class="grid">
+      <div class="card">
+        <div class="section-t">What it cost you — in dollars</div>
+        <div class="two" style="gap:12px">
+          <div class="dollar"><div class="big" id="d-bad">$0</div><div class="lbl" id="d-bad-l">cost of your worst habit</div></div>
+          <div class="dollar"><div class="big" id="d-tier">$0</div><div class="lbl" id="d-tier-l">your tier is worth / yr here</div></div>
+        </div>
+        <div id="alpha-beta" style="margin-top:4px"></div>
+      </div>
+
+      <div class="two">
+        <div class="card">
+          <div class="section-t">What helped your score</div>
+          <div id="helped"></div>
+        </div>
+        <div class="card">
+          <div class="section-t">What hurt it</div>
+          <div id="hurt"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-t">Scored through the cycle — your regime read</div>
+        <div id="regime-read"></div>
+        <div class="regime-strip" id="regime-strip"></div>
+        <div class="small" style="margin-top:8px">Each trade is judged against the market state when you made it. Green = you were handed a clean tape; amber/red = you had to navigate stress or chop.</div>
+      </div>
+
+      <div class="two">
+        <div class="card">
+          <div class="section-t">What your tier unlocks</div>
+          <div id="privs"></div>
+        </div>
+        <div class="card">
+          <div class="section-t">Your 3 highest-leverage fixes</div>
+          <div id="improve"></div>
+          <button class="btn btn-ghost" style="width:100%;margin-top:8px" onclick="resetApp()">↻ Re-score after you change</button>
+        </div>
+      </div>
+
+      <div class="card" style="display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+        <div>
+          <div style="font-family:var(--disp);font-weight:700;font-size:16px">Turn this into a <span style="color:var(--amber)">verified</span> tier.</div>
+          <div class="small" style="margin-top:4px">A CSV is a mirror. Connect read-only to prove it — and carry a real provisional tier onto Perpify.</div>
+        </div>
+        <button class="btn btn-primary" onclick="openConnect()">Connect &amp; verify →</button>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- CONNECT MODAL (scaffold) -->
+<div class="modal-bg" id="connect-bg">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3>Connect read-only</h3>
+      <button onclick="closeConnect()" style="color:var(--mut);font-size:20px">✕</button>
+    </div>
+    <p class="small" style="margin-top:2px">Scoped, read-only, revocable. No withdrawal permission — ever. Encrypted at rest. This is the <b style="color:var(--green)">verified</b> path that can grant a provisional mainnet tier.</p>
+    <div style="margin-top:8px">
+      <div class="section-t" style="margin:14px 0 6px">Crypto — read-only API key</div>
+      <div class="conn"><div class="ci">◎ Binance</div><span class="badge">read-only</span></div>
+      <div class="conn"><div class="ci">◎ Bybit</div><span class="badge">read-only</span></div>
+      <div class="conn"><div class="ci">◎ OKX</div><span class="badge">read-only</span></div>
+      <div class="conn"><div class="ci">⬡ Hyperliquid — wallet address</div><span class="badge">on-chain</span></div>
+      <div class="section-t" style="margin:16px 0 6px">Equities — via aggregator</div>
+      <div class="conn"><div class="ci">▤ IBKR · Schwab · Robinhood · Fidelity</div><span class="badge">SnapTrade</span></div>
+    </div>
+    <div class="card" style="margin-top:16px;background:var(--bg2)">
+      <div class="small">The live connect flow runs server-side (the only server surface) and is being rolled out to the waitlist. Join to get the verified-tier path first:</div>
+      <label class="field"><span>Email or wallet</span><input id="wl" placeholder="you@… or 0x…" /></label>
+      <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="joinWaitlist()">Join the verified-tier waitlist</button>
+      <div id="wl-done" class="small" style="margin-top:8px;color:var(--green)"></div>
+    </div>
+  </div>
+</div>
+
+<footer><div class="wrap" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px">
+  <div>PERPIFY · Trader DNA — a behavioral mirror. Scoring ≠ access; mainnet tier grants stay identity-gated &amp; geo-fenced.</div>
+  <div>Model <span id="foot-model">dna-v0.1</span> · not investment advice</div>
+</div></footer>
+
+<script>
+/* ============================================================================
+   Trader DNA — client-side scoring app.
+   Everything below runs in the browser. Uploaded CSVs are parsed locally and
+   NEVER transmitted. The model (model.json) is a static download; only the
+   model comes down, your data never goes up.
+   ========================================================================= */
+"use strict";
+let MODEL = null;
+
+async function loadModel(){
+  if (window.__DNA_MODEL__) { MODEL = window.__DNA_MODEL__; return; }
+  const r = await fetch('./model.json'); MODEL = await r.json();
+}
+
+/* ---------------------------------------------------------------------------
+   REGIME CALENDAR — coarse index-proxy (VIX-implied annualized vol) by month.
+   Same regime vocabulary as the venue's gap model (bounds 0.12/0.20/0.35 ->
+   calm/normal/elevated/crisis). "grey" = choppy / low-trend-efficiency tape.
+   Per-symbol intraday regime is a v1 deepening; this coarse layer ships the
+   principle: your behavior is judged against the market state at trade time.
+   ------------------------------------------------------------------------- */
+const REGIME_BOUNDS=[0.12,0.20,0.35];
+const VOL_BY_MONTH={
+ "2015-01":.17,"2015-02":.15,"2015-03":.14,"2015-04":.13,"2015-05":.14,"2015-06":.16,"2015-07":.14,"2015-08":.22,"2015-09":.24,"2015-10":.17,"2015-11":.16,"2015-12":.19,
+ "2016-01":.25,"2016-02":.24,"2016-03":.16,"2016-04":.14,"2016-05":.15,"2016-06":.20,"2016-07":.13,"2016-08":.12,"2016-09":.15,"2016-10":.16,"2016-11":.18,"2016-12":.13,
+ "2017-01":.12,"2017-02":.11,"2017-03":.12,"2017-04":.12,"2017-05":.11,"2017-06":.11,"2017-07":.10,"2017-08":.12,"2017-09":.10,"2017-10":.10,"2017-11":.11,"2017-12":.10,
+ "2018-01":.13,"2018-02":.25,"2018-03":.21,"2018-04":.18,"2018-05":.15,"2018-06":.15,"2018-07":.13,"2018-08":.13,"2018-09":.13,"2018-10":.23,"2018-11":.20,"2018-12":.29,
+ "2019-01":.20,"2019-02":.15,"2019-03":.15,"2019-04":.13,"2019-05":.18,"2019-06":.16,"2019-07":.14,"2019-08":.20,"2019-09":.16,"2019-10":.16,"2019-11":.13,"2019-12":.14,
+ "2020-01":.15,"2020-02":.24,"2020-03":.58,"2020-04":.42,"2020-05":.31,"2020-06":.33,"2020-07":.27,"2020-08":.23,"2020-09":.28,"2020-10":.29,"2020-11":.25,"2020-12":.22,
+ "2021-01":.24,"2021-02":.23,"2021-03":.20,"2021-04":.18,"2021-05":.19,"2021-06":.16,"2021-07":.18,"2021-08":.17,"2021-09":.21,"2021-10":.18,"2021-11":.23,"2021-12":.22,
+ "2022-01":.26,"2022-02":.29,"2022-03":.28,"2022-04":.27,"2022-05":.29,"2022-06":.31,"2022-07":.25,"2022-08":.23,"2022-09":.31,"2022-10":.30,"2022-11":.24,"2022-12":.22,
+ "2023-01":.20,"2023-02":.19,"2023-03":.25,"2023-04":.18,"2023-05":.17,"2023-06":.14,"2023-07":.14,"2023-08":.16,"2023-09":.16,"2023-10":.19,"2023-11":.15,"2023-12":.13,
+ "2024-01":.13,"2024-02":.14,"2024-03":.13,"2024-04":.15,"2024-05":.13,"2024-06":.13,"2024-07":.16,"2024-08":.20,"2024-09":.17,"2024-10":.19,"2024-11":.15,"2024-12":.16,
+ "2025-01":.16,"2025-02":.17,"2025-03":.19,"2025-04":.22,"2025-05":.18,"2025-06":.16,"2025-07":.15,"2025-08":.16,"2025-09":.17,"2025-10":.18,"2025-11":.16,"2025-12":.15,
+ "2026-01":.15,"2026-02":.14,"2026-03":.15,"2026-04":.16,"2026-05":.14,"2026-06":.13,"2026-07":.13,"2026-08":.14,"2026-09":.14,"2026-10":.15,"2026-11":.14,"2026-12":.14
+};
+// choppy / grey months (sideways, low trend efficiency)
+const GREY_MONTHS=new Set(["2015-01","2015-05","2016-09","2016-10","2019-05","2019-08","2021-09","2021-10","2023-08","2023-09","2024-04","2024-05","2024-06","2025-03","2025-09"]);
+const DEFAULT_VOL=0.15;
+function ymKey(d){ return d.getUTCFullYear()+"-"+String(d.getUTCMonth()+1).padStart(2,"0"); }
+function volRegime(av){ return av<REGIME_BOUNDS[0]?0:av<REGIME_BOUNDS[1]?1:av<REGIME_BOUNDS[2]?2:3; }
+function regimeAt(ts){
+  const d=new Date(ts); const k=ymKey(d);
+  const av=VOL_BY_MONTH[k]!==undefined?VOL_BY_MONTH[k]:DEFAULT_VOL;
+  return { av, vol_reg:volRegime(av), grey:GREY_MONTHS.has(k) };
+}
+const REGIME_META=[
+ {name:"calm",  col:"#3ecf8e"},
+ {name:"normal",col:"#8fbf6f"},
+ {name:"elevated",col:"#ffb454"},
+ {name:"crisis",col:"#ff5566"}
+];
+// approx monthly market return proxy for beta (sign+size), coarse — SPX-ish log return
+const MKT_RET_BY_MONTH={
+ "2020-02":-.084,"2020-03":-.125,"2020-04":.126,"2022-01":-.052,"2022-04":-.088,"2022-06":-.083,"2022-09":-.093,
+ "2023-01":.062,"2024-08":-.015,"2018-12":-.091,"2018-10":-.069,"2020-11":.108,"2023-11":.089
+};
+function mktRetOverHold(entryTs, holdDays){
+  // coarse: annualized drift ~ small; use monthly proxy if known else vol-scaled 0-mean
+  const d=new Date(entryTs); const k=ymKey(d);
+  const monthly = MKT_RET_BY_MONTH[k]!==undefined?MKT_RET_BY_MONTH[k]:0.006;
+  const frac = Math.min(1, Math.max(0.02, holdDays/21));
+  return monthly*frac;
+}
+
+/* ---------------------------------------------------------------------------
+   CSV PARSING — a small robust RFC-4180-ish parser (quotes, commas, CRLF).
+   ------------------------------------------------------------------------- */
+function parseCSV(text){
+  text = text.replace(/^﻿/,"");
+  const rows=[]; let row=[], cur="", i=0, q=false;
+  while(i<text.length){
+    const c=text[i];
+    if(q){
+      if(c==='"'){ if(text[i+1]==='"'){cur+='"';i+=2;continue;} q=false;i++;continue; }
+      cur+=c;i++;continue;
+    }
+    if(c==='"'){q=true;i++;continue;}
+    if(c===','){row.push(cur);cur="";i++;continue;}
+    if(c==='\n'||c==='\r'){
+      if(c==='\r'&&text[i+1]==='\n')i++;
+      row.push(cur);cur=""; if(row.length>1||row[0]!=="")rows.push(row); row=[]; i++; continue;
+    }
+    cur+=c;i++;
+  }
+  if(cur!==""||row.length){row.push(cur); if(row.length>1||row[0]!=="")rows.push(row);}
+  return rows;
+}
+function toObjects(rows){
+  if(!rows.length) return {headers:[],data:[]};
+  const headers=rows[0].map(h=>h.trim());
+  const data=rows.slice(1).filter(r=>r.some(x=>x&&x.trim()!=="")).map(r=>{
+    const o={}; headers.forEach((h,j)=>o[h]=(r[j]??"").trim()); return o;
+  });
+  return {headers,data};
+}
+function num(x){ if(x==null)return NaN; const s=String(x).replace(/[$,%\s]/g,"").replace(/[()]/g,m=>m==="("?"-":""); const v=parseFloat(s); return v; }
+function parseTs(x){
+  if(x==null||x==="")return NaN;
+  if(/^\d{10}$/.test(x))return parseInt(x)*1000;
+  if(/^\d{13}$/.test(x))return parseInt(x);
+  let t=Date.parse(x); if(!isNaN(t))return t;
+  // dd-mm-yyyy or dd/mm/yyyy
+  const m=String(x).match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+  if(m){ let[_,a,b,y]=m; if(y.length===2)y="20"+y; t=Date.parse(`${y}-${b.padStart(2,"0")}-${a.padStart(2,"0")}`); if(!isNaN(t))return t;}
+  return NaN;
+}
+
+/* ---------------------------------------------------------------------------
+   PLATFORM ADAPTERS — a header signature -> field map. Each yields normalized
+   Fills: {ts, symbol, assetClass, side(+1 buy/-1 sell), qty(abs), price, fee,
+   realizedPnl?}. Adapters are DATA; add a platform by adding a signature.
+   ------------------------------------------------------------------------- */
+const ADAPTERS=[
+ {id:"binance-futures",name:"Binance Futures",cls:"crypto",
+  match:h=>has(h,["Date(UTC)","Symbol","Side"])&&(has(h,["Realized Profit"])||has(h,["Quantity","Price"])),
+  map:r=>({ts:parseTs(pick(r,["Date(UTC)","Date"])),symbol:norm(pick(r,["Symbol"])),
+    side:/buy|long/i.test(pick(r,["Side"]))?1:-1,qty:Math.abs(num(pick(r,["Quantity","Amount","Qty"]))),
+    price:num(pick(r,["Price"])),fee:Math.abs(num(pick(r,["Fee","Commission"]))||0),
+    realizedPnl:num(pick(r,["Realized Profit","Realized PnL","realizedPnl"]))})},
+ {id:"bybit",name:"Bybit",cls:"crypto",
+  match:h=>has(h,["Contracts","Order Type"])||has(h,["Symbol","Direction","Exec Price"]),
+  map:r=>({ts:parseTs(pick(r,["Time","Timestamp","Trade Time","Exec time"])),symbol:norm(pick(r,["Contracts","Symbol"])),
+    side:/buy|long/i.test(pick(r,["Side","Direction"]))?1:-1,qty:Math.abs(num(pick(r,["Qty","Quantity","Filled Qty"]))),
+    price:num(pick(r,["Exec Price","Price","Filled Price"])),fee:Math.abs(num(pick(r,["Fee","Trading Fee"]))||0),
+    realizedPnl:num(pick(r,["Realized P&L","Closed P&L","realizedPnl"]))})},
+ {id:"okx",name:"OKX",cls:"crypto",
+  match:h=>has(h,["Instrument","Trade ID"])||has(h,["Underlying","Side","Avg fill price"]),
+  map:r=>({ts:parseTs(pick(r,["Time","Order Time","Fill Time"])),symbol:norm(pick(r,["Instrument","Underlying","Symbol"])),
+    side:/buy|long/i.test(pick(r,["Side"]))?1:-1,qty:Math.abs(num(pick(r,["Fill Quantity","Quantity","Filled"]))),
+    price:num(pick(r,["Avg fill price","Price","Fill Price"])),fee:Math.abs(num(pick(r,["Fee"]))||0),
+    realizedPnl:num(pick(r,["PnL","Realized PnL"]))})},
+ {id:"hyperliquid",name:"Hyperliquid",cls:"crypto",
+  match:h=>has(h,["coin","dir"])||has(h,["coin","closedPnl"]),
+  map:r=>({ts:parseTs(pick(r,["time","timestamp"])),symbol:norm(pick(r,["coin"])),
+    side:/buy|long|open long|b/i.test(pick(r,["dir","side"]))?1:-1,qty:Math.abs(num(pick(r,["sz","size","qty"]))),
+    price:num(pick(r,["px","price"])),fee:Math.abs(num(pick(r,["fee"]))||0),
+    realizedPnl:num(pick(r,["closedPnl","pnl"]))})},
+ {id:"ibkr",name:"IBKR Flex",cls:"equity",
+  match:h=>has(h,["Symbol","TradeDate"])||has(h,["Symbol","DateTime","Quantity","TradePrice"]),
+  map:r=>({ts:parseTs(pick(r,["DateTime","TradeDate","Date/Time"])),symbol:norm(pick(r,["Symbol"])),
+    side:num(pick(r,["Quantity"]))>=0?1:-1,qty:Math.abs(num(pick(r,["Quantity"]))),
+    price:num(pick(r,["TradePrice","Price","T. Price"])),fee:Math.abs(num(pick(r,["IBCommission","Commission","Comm/Fee"]))||0),
+    realizedPnl:num(pick(r,["FifoPnlRealized","realizedPnl","Realized P/L"]))})},
+ {id:"schwab",name:"Schwab / TD",cls:"equity",
+  match:h=>has(h,["Action","Symbol","Quantity","Price"])&&has(h,["Date"]),
+  map:r=>({ts:parseTs(pick(r,["Date"])),symbol:norm(pick(r,["Symbol"])),
+    side:/buy/i.test(pick(r,["Action"]))?1:-1,qty:Math.abs(num(pick(r,["Quantity"]))),
+    price:num(pick(r,["Price"])),fee:Math.abs(num(pick(r,["Fees & Comm","Commission","Fees"]))||0)})},
+ {id:"zerodha",name:"Zerodha",cls:"equity",
+  match:h=>has(h,["trade_type","tradingsymbol"])||has(h,["Symbol","Trade Type","Quantity","Price"]),
+  map:r=>({ts:parseTs(pick(r,["trade_date","Trade Date","order_execution_time"])),symbol:norm(pick(r,["tradingsymbol","Symbol"])),
+    side:/buy/i.test(pick(r,["trade_type","Trade Type"]))?1:-1,qty:Math.abs(num(pick(r,["quantity","Quantity"]))),
+    price:num(pick(r,["price","Price"])),fee:0})},
+ {id:"robinhood",name:"Robinhood",cls:"equity",
+  match:h=>has(h,["Instrument","Trans Code"])||has(h,["Symbol","Side","Quantity","Average Price"]),
+  map:r=>({ts:parseTs(pick(r,["Activity Date","Process Date","Date"])),symbol:norm(pick(r,["Instrument","Symbol"])),
+    side:/buy|BTO|B/i.test(pick(r,["Trans Code","Side"]))?1:-1,qty:Math.abs(num(pick(r,["Quantity"]))),
+    price:num(pick(r,["Price","Average Price"])),fee:0})}
+];
+function has(headers,names){ const set=new Set(headers.map(h=>h.toLowerCase())); return names.every(n=>set.has(n.toLowerCase())); }
+function pick(row,names){ for(const n of names){ for(const k in row){ if(k.toLowerCase()===n.toLowerCase())return row[k]; } } return ""; }
+function norm(sym){ if(!sym)return "?"; return String(sym).toUpperCase().replace(/[-_]?(PERP|USDT|USDC|USD|SWAP|\.P)$/i,"").replace(/[^A-Z0-9]/g,"")||"?"; }
+function detectAdapter(headers){ for(const a of ADAPTERS){ try{ if(a.match(headers))return a; }catch(e){} } return null; }
+
+/* ---------------------------------------------------------------------------
+   RECONSTRUCTION — fills -> round-trips via FIFO signed-qty walk (the same
+   position walk the venue uses in buildClosedPositions). Robust to fills-only
+   exports. Each reducing fill closes a RoundTrip.
+   ------------------------------------------------------------------------- */
+function reconstruct(fills){
+  const valid=fills.filter(f=>f&&!isNaN(f.ts)&&f.qty>0&&isFinite(f.price)&&f.price>0).sort((a,b)=>a.ts-b.ts);
+  const bySym={};
+  for(const f of valid){ (bySym[f.symbol]=bySym[f.symbol]||[]).push(f); }
+  const rts=[];
+  for(const sym in bySym){
+    let lots=[]; // {qty(signed), price, ts, fee}
+    for(const f of bySym[sym]){
+      let signed=f.side*f.qty; const px=f.price; let feeRem=f.fee||0;
+      // reduce opposite lots first (FIFO)
+      while(signed!==0 && lots.length && Math.sign(lots[0].qty)===-Math.sign(signed)){
+        const lot=lots[0];
+        const closeQty=Math.min(Math.abs(signed),Math.abs(lot.qty));
+        const entrySide=Math.sign(lot.qty); // +1 long entry, -1 short entry
+        const entryPx=lot.price, exitPx=px;
+        const grossPnl=(exitPx-entryPx)*closeQty*entrySide;
+        const notional=entryPx*closeQty;
+        const holdDays=Math.max(0.01,(f.ts-lot.ts)/86400000);
+        const feeShare=(feeRem*(closeQty/Math.abs(f.side*f.qty)))+ (lot.fee*(closeQty/Math.abs(lot.qty0||Math.abs(lot.qty)))||0);
+        const reg=regimeAt(lot.ts);
+        rts.push({ts:lot.ts, symbol:sym, side:entrySide, notional,
+          pnl:grossPnl - (isFinite(feeShare)?feeShare:0),
+          providedPnl: (f.realizedPnl!=null&&isFinite(f.realizedPnl))?f.realizedPnl:null,
+          hold:holdDays, vol_reg:reg.vol_reg, grey:reg.grey,
+          mkt_ret: mktRetOverHold(lot.ts,holdDays)});
+        lot.qty += -entrySide*closeQty; // shrink lot toward 0
+        signed  += -Math.sign(signed)*closeQty;
+        if(Math.abs(lot.qty)<1e-9) lots.shift();
+      }
+      if(signed!==0){ lots.push({qty:signed,qty0:Math.abs(signed),price:px,ts:f.ts,fee:feeRem}); }
+    }
+  }
+  rts.sort((a,b)=>a.ts-b.ts);
+  // relabel t as days-since-first for feature parity with training
+  if(rts.length){ const t0=rts[0].ts; for(const r of rts){ r.t=(r.ts-t0)/86400000; } }
+  return rts;
+}
+/* ---------------------------------------------------------------------------
+   ACCOUNT EQUITY — highest-signal input. User override, else estimated from
+   peak concurrent deployed capital; equity then drifts with realized PnL so
+   size fractions mean the same thing they did in training (entry equity).
+   ------------------------------------------------------------------------- */
+function setEquity(rts, account0){
+  let eq=account0;
+  for(const r of rts){
+    r.equity=Math.max(0.1*account0, eq);
+    eq += (r.pnl||0);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   FEATURES — EXACT port of trader-dna/train/features.py. Training (Python) and
+   inference (JS) MUST compute identical features. Order = MODEL.features.
+   ------------------------------------------------------------------------- */
+function median(xs){const s=[...xs].sort((a,b)=>a-b),n=s.length;if(!n)return 0;return n%2?s[(n-1)/2]:0.5*(s[n/2-1]+s[n/2]);}
+function mean(xs){return xs.length?xs.reduce((a,b)=>a+b,0)/xs.length:0;}
+function std(xs){if(xs.length<2)return 0;const m=mean(xs);return Math.sqrt(xs.reduce((a,x)=>a+(x-m)*(x-m),0)/(xs.length-1));}
+function pctileArr(xs,p){if(!xs.length)return 0;const s=[...xs].sort((a,b)=>a-b);const k=(s.length-1)*p;const lo=Math.floor(k),hi=Math.ceil(k);if(lo===hi)return s[lo];return s[lo]*(hi-k)+s[hi]*(k-lo);}
+
+function extractFeatures(rts){
+  const F={};
+  const n=rts.length; if(!n)return F;
+  const eq=rts.map(r=>Math.max(1e-9,r.equity));
+  const sizeFrac=rts.map((r,i)=>r.notional/eq[i]);
+  const ret=rts.map((r,i)=>r.pnl/eq[i]);
+  const holds=rts.map(r=>Math.max(1e-6,r.hold));
+  const wins=ret.filter(x=>x>0), losses=ret.filter(x=>x<0);
+
+  F.sizing_median=median(sizeFrac);
+  const mSz=mean(sizeFrac);
+  F.sizing_cov=mSz>1e-9?std(sizeFrac)/mSz:0;
+  F.concentration=Math.max(...sizeFrac);
+  F.win_rate=wins.length/n;
+
+  const avgWin=wins.length?mean(wins):0, avgLoss=losses.length?Math.abs(mean(losses)):0;
+  F.payoff=avgLoss>1e-9?Math.min(10,avgWin/avgLoss):(wins.length?3:0);
+  const gp=wins.reduce((a,b)=>a+b,0), gl=Math.abs(losses.reduce((a,b)=>a+b,0));
+  F.profit_factor=gl>1e-9?Math.min(10,gp/gl):(gp>0?3:0);
+  F.expectancy=mean(ret);
+
+  let lvl=1,peak=-1e18,mdd=0;
+  for(const x of ret){lvl*=(1+x);peak=Math.max(peak,lvl);if(peak>0)mdd=Math.max(mdd,(peak-lvl)/peak);}
+  F.max_drawdown=mdd;
+  F.downside_dev=losses.length>=2?std(losses):(losses.length?Math.abs(losses[0]):0);
+  F.tail_loss=Math.abs(Math.min(0,pctileArr(ret,0.05)));
+
+  const afterLoss=[],afterWin=[];
+  for(let i=1;i<n;i++){if(ret[i-1]<0)afterLoss.push(sizeFrac[i]);else if(ret[i-1]>0)afterWin.push(sizeFrac[i]);}
+  const al=mean(afterLoss),aw=mean(afterWin);
+  F.revenge_sizing=aw>1e-9?al/aw-1:0;
+
+  let quick=0; for(let i=1;i<n;i++){if(ret[i-1]<0&&(rts[i].t-rts[i-1].t)<1)quick++;}
+  F.post_loss_freq=quick/n;
+
+  const loserH=holds.filter((h,i)=>ret[i]<0), winnerH=holds.filter((h,i)=>ret[i]>0);
+  const mhW=winnerH.length?median(winnerH):0;
+  F.disposition=(loserH.length&&mhW>1e-9)?Math.min(6,median(loserH)/mhW):1;
+
+  const mH=mean(holds);
+  F.hold_cov=mH>1e-9?std(holds)/mH:0;
+  const span=Math.max(1e-6,rts[n-1].t-rts[0].t)+mean(holds);
+  F.overtrade=n/Math.max(1,span);
+  F.turnover=rts.reduce((a,r)=>a+r.notional,0)/median(eq);
+  F.tenure=Math.log1p(span);
+  F.blowup_rate=ret.filter(x=>x<-0.20).length/n;
+
+  const greyS=sizeFrac.filter((s,i)=>rts[i].grey), clearS=sizeFrac.filter((s,i)=>!rts[i].grey);
+  if(greyS.length&&clearS.length){const g=mean(greyS),c=mean(clearS);F.grey_restraint=c>1e-9?Math.max(-1,Math.min(1,1-g/c)):0;}
+  else F.grey_restraint=0;
+
+  const calmS=sizeFrac.filter((s,i)=>rts[i].vol_reg<=1), crisisS=sizeFrac.filter((s,i)=>rts[i].vol_reg===3);
+  F.crisis_addrisk=(crisisS.length&&calmS.length)?Math.max(-1,Math.min(3,mean(crisisS)/mean(calmS)-1)):0;
+
+  F.regime_coverage=new Set(rts.map(r=>r.vol_reg)).size/4;
+
+  const mkt=rts.map(r=>r.mkt_ret);
+  const vr=std(ret)**2, vm=std(mkt)**2;
+  if(vr>1e-12&&vm>1e-12){const mr=mean(ret),mm=mean(mkt);let cov=0;for(let i=0;i<n;i++)cov+=(ret[i]-mr)*(mkt[i]-mm);cov/=(n-1);const beta=cov/vm;F.beta_share=Math.max(0,Math.min(1,(beta*beta*vm)/vr));}
+  else F.beta_share=0;
+  return F;
+}
+function featVector(F){return MODEL.features.map(k=>F[k]);}
+
+/* ---------------------------------------------------------------------------
+   INFERENCE — tree ensemble walk (matches sklearn to 1e-8) + calibration +
+   tier + Saabas path attribution (the model's own "what helped / hurt").
+   ------------------------------------------------------------------------- */
+function rawPredict(x){
+  let raw=MODEL.model.base; const lr=MODEL.model.learningRate;
+  for(const t of MODEL.model.trees){
+    let node=0; while(t.left[node]!==-1){ node=x[t.feat[node]]<=t.thr[node]?t.left[node]:t.right[node]; }
+    raw+=lr*t.val[node];
+  }
+  return raw;
+}
+function interp(x,xs,ys){
+  if(x<=xs[0])return ys[0]; if(x>=xs[xs.length-1])return ys[ys.length-1];
+  let lo=0,hi=xs.length-1; while(hi-lo>1){const m=(lo+hi)>>1; if(xs[m]<=x)lo=m;else hi=m;}
+  const t=(x-xs[lo])/(xs[hi]-xs[lo]); return ys[lo]+t*(ys[hi]-ys[lo]);
+}
+function scoreOf(raw){ return Math.max(0,Math.min(100, 100*interp(raw,MODEL.calibration.raw,MODEL.calibration.pct))); }
+function tierOf(score){ for(const t of MODEL.tiers){ if(score>=t.min)return t; } return MODEL.tiers[MODEL.tiers.length-1]; }
+function attribution(x){
+  const lr=MODEL.model.learningRate; const attr=new Array(MODEL.features.length).fill(0);
+  for(const t of MODEL.model.trees){
+    let node=0;
+    while(t.left[node]!==-1){
+      const f=t.feat[node]; const goLeft=x[f]<=t.thr[node]; const child=goLeft?t.left[node]:t.right[node];
+      attr[f]+=lr*(t.val[child]-t.val[node]); node=child;
+    }
+  }
+  return attr; // raw-units contribution per feature; sum+bias == raw
+}
+function standardize(x){return x.map((v,j)=>(v-MODEL.featureMean[j])/MODEL.featureStd[j]);}
+function nearestArchetype(x){
+  const z=standardize(x); let best=null,bd=1e18;
+  for(const a of MODEL.archetypes){ let d=0; for(let j=0;j<z.length;j++){const e=z[j]-a.centroid[j];d+=e*e;} if(d<bd){bd=d;best=a;} }
+  return best;
+}
+function featPercentile(name,val){ const k=MODEL.featureKnots[name]; if(!k||!k.length)return 0.5; let c=0; for(const v of k){if(v<=val)c++;} return c/k.length; }
+function radarValues(F){
+  const out={};
+  for(const axis in MODEL.radarAxes){ let s=0,c=0;
+    for(const [feat,sign] of MODEL.radarAxes[axis]){ let p=featPercentile(feat,F[feat]); if(sign<0)p=1-p; s+=p;c++; }
+    out[axis]=Math.round(100*s/Math.max(1,c));
+  }
+  return out;
+}
+
+/* ---------------------------------------------------------------------------
+   FEATURE -> HUMAN — labels + improvement prescriptions.
+   ------------------------------------------------------------------------- */
+const FLABEL={
+  sizing_median:"Position sizing",sizing_cov:"Sizing consistency",concentration:"Concentration risk",
+  win_rate:"Win rate",payoff:"Win/loss payoff",profit_factor:"Profit factor",expectancy:"Per-trade edge",
+  max_drawdown:"Drawdown control",downside_dev:"Downside volatility",tail_loss:"Tail-loss control",
+  revenge_sizing:"Revenge sizing",post_loss_freq:"Post-loss discipline",disposition:"Disposition (holding losers)",
+  hold_cov:"Holding consistency",overtrade:"Overtrading",turnover:"Turnover / churn",tenure:"Track record length",
+  blowup_rate:"Blow-up trades",grey_restraint:"Grey-tape restraint",crisis_addrisk:"Crisis risk-taking",
+  regime_coverage:"Regime coverage",beta_share:"Beta reliance"
+};
+const FIXES={
+  revenge_sizing:F=>`You size up ${(F.revenge_sizing).toFixed(1)}× more after a loss. Cap post-loss size at your normal unit`,
+  concentration:F=>`Your biggest single position was ${Math.round(F.concentration*100)}% of the account. Cap any one trade near your median`,
+  blowup_rate:F=>`${Math.round(F.blowup_rate*100)}% of your trades lost >20% of the account in one go. Add a hard stop`,
+  crisis_addrisk:F=>`You size ${Math.round(F.crisis_addrisk*100)}% larger in crisis regimes than in calm. Trim risk when vol spikes`,
+  grey_restraint:F=>`You don't step back when the tape goes grey. Knowing when NOT to trade is the rarest edge`,
+  overtrade:F=>`You average ${F.overtrade.toFixed(1)} trades/active day. Fewer, better setups compound faster`,
+  disposition:F=>`You hold losers ${F.disposition.toFixed(1)}× longer than winners. Cut losers first`,
+  post_loss_freq:F=>`${Math.round(F.post_loss_freq*100)}% of trades came right after a loss. Add a cooldown`,
+  tail_loss:F=>`Your worst 5% of trades lose ${Math.round(F.tail_loss*100)}% each. Tighten the stop`,
+  sizing_cov:F=>`Your position size swings wildly (CoV ${F.sizing_cov.toFixed(1)}). Standardize your unit`,
+  max_drawdown:F=>`Your equity curve drew down ${Math.round(F.max_drawdown*100)}%. Reduce size to smooth it`,
+  turnover:F=>`You churned ${Math.round(F.turnover)}× your account in volume. Fees and slippage compound against you`
+};
+
+/* ---------------------------------------------------------------------------
+   PRIVILEGES by tier — the venue economics.
+   ------------------------------------------------------------------------- */
+const LEV_BY_TIER={A:4,B:3,C:3,D:2,E:2};
+function privileges(t){
+  const disc=Math.round((1-t.mult)*100);
+  const good=[
+    disc>0?`${disc}% less margin posted (${t.mult}× multiplier)`:`Baseline margin (${t.mult}× multiplier)`,
+    `Up to ${LEV_BY_TIER[t.tier]}× leverage cap`,
+    t.tier<="B"?"Gentler liquidation priority in the sequenced reopen":"Standard liquidation priority",
+    t.tier<="B"?"Early mainnet access + larger OI allowance":"Standard OI allowance",
+    t.tier==="A"?"PVault Junior priority + fee rebates":"Standard fees"
+  ];
+  const locked=[];
+  if(t.tier>"A")locked.push("Lower margin multiplier (down to 0.75×)");
+  if(t.tier>"B")locked.push("Early mainnet access + larger OI allowance");
+  if(t.tier>"A")locked.push("Fee rebates + PVault Junior priority");
+  locked.push("Portable signed attestation (V3) · credit lines + cross-margin");
+  return {good,locked};
+}
+
+/* ===========================================================================
+   RENDER
+   ========================================================================= */
+let LAST=null; // {F,x,score,tier,arch,rts,account,estimated,radar,attr}
+
+function score(rts, opts){
+  opts=opts||{};
+  const account=opts.account||estimateAccount(rts._peakNotional||0, rts);
+  setEquity(rts, account);
+  const F=extractFeatures(rts);
+  const x=featVector(F);
+  const raw=rawPredict(x);
+  const sc=scoreOf(raw);
+  const t=tierOf(sc);
+  const arch=nearestArchetype(x);
+  const attr=attribution(x);
+  const radar=radarValues(F);
+  LAST={F,x,score:sc,tier:t,arch,rts,account,estimated:!opts.account,radar,attr,raw};
+  renderResults();
+}
+function estimateAccount(peak, rts){
+  if(peak&&peak>0)return peak;
+  // fallback: median notional * a modest breadth factor
+  const nots=rts.map(r=>r.notional).filter(x=>x>0);
+  return Math.max(1000, median(nots)*4);
+}
+
+function renderResults(){
+  document.getElementById('intake').style.display='none';
+  const R=document.getElementById('results'); R.style.display='block';
+  const {F,x,score:sc,tier:t,arch,rts,account,estimated,radar,attr}=LAST;
+
+  document.getElementById('score').textContent=Math.round(sc);
+  const tb=document.getElementById('tier'); tb.textContent="Tier "+t.tier;
+  const tcol={A:"#3ecf8e",B:"#8fbf6f",C:"#ffb454",D:"#ff8a5c",E:"#ff5566"}[t.tier];
+  tb.style.background="color-mix(in srgb,"+tcol+" 16%, transparent)"; tb.style.color=tcol; tb.style.border="1px solid "+tcol;
+  document.getElementById('arch').textContent=arch.name;
+  document.getElementById('read').textContent=arch.desc;
+  document.getElementById('src-line').innerHTML = `${rts.length} round-trips · ${new Set(rts.map(r=>r.symbol)).size} symbols · account ${estimated?'≈':''}$${fmt(account)}${estimated?' <span class="small">(estimated — <a href="#" onclick="editAccount();return false">set it</a>)</span>':''}`;
+
+  // confidence
+  const cov=F.regime_coverage; const conf=Math.max(0.15,Math.min(1, (Math.min(1,rts.length/60))*0.6 + cov*0.4));
+  document.getElementById('conf').style.width=Math.round(conf*100)+'%';
+  document.getElementById('conf-t').textContent=Math.round(conf*100)+'%';
+  const missing=[0,1,2,3].filter(r=>!new Set(rts.map(z=>z.vol_reg)).has(r)).map(r=>REGIME_META[r].name);
+  document.getElementById('conf-note').innerHTML = missing.length?`Thin regime coverage — you haven't been observed in: <b style="color:var(--mut)">${missing.join(", ")}</b>. A longer history sharpens the read.`:`Broad regime coverage — scored across calm through crisis.`;
+
+  drawGauge(sc,tcol); drawRadar(radar);
+
+  // helped / hurt (Saabas)
+  const idx=attr.map((a,j)=>({j,a,name:MODEL.features[j]}));
+  const helped=idx.filter(o=>o.a>0).sort((a,b)=>b.a-a.a).slice(0,5);
+  const hurt=idx.filter(o=>o.a<0).sort((a,b)=>a.a-b.a).slice(0,5);
+  const maxAbs=Math.max(1e-6,...idx.map(o=>Math.abs(o.a)));
+  document.getElementById('helped').innerHTML=helped.map(o=>factorRow(o,maxAbs,true)).join('')||'<div class="small">—</div>';
+  document.getElementById('hurt').innerHTML=hurt.map(o=>factorRow(o,maxAbs,false)).join('')||'<div class="small">Nothing dragged your score down materially.</div>';
+
+  // dollars
+  renderDollars();
+
+  // regime read
+  renderRegime();
+
+  // privileges
+  const pv=privileges(t);
+  document.getElementById('privs').innerHTML =
+    pv.good.map(g=>`<div class="priv"><span class="ic">✓</span><span>${g}</span></div>`).join('')+
+    pv.locked.slice(0,2).map(l=>`<div class="priv lock"><span class="ic">◌</span><span>${l} <span class="small">— higher tier</span></span></div>`).join('');
+
+  // improvements (top negative attributions -> counterfactual tier delta)
+  renderImprovements();
+
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function factorRow(o,maxAbs,pos){
+  const F=LAST.F; const pct=Math.round(Math.min(1,Math.abs(o.a)/maxAbs)*100);
+  const col=pos?"var(--green)":"var(--red)";
+  return `<div class="factor"><div class="fn">${FLABEL[o.name]||o.name}</div><div class="fb"><i style="width:${pct}%;background:${col}"></i></div><div class="fv">${pos?'+':''}${(o.a).toFixed(2)}</div></div>`;
+}
+
+function renderImprovements(){
+  const {x,attr,score:sc,tier:t}=LAST;
+  const negs=attr.map((a,j)=>({j,a,name:MODEL.features[j]})).filter(o=>o.a<0 && FIXES[o.name]).sort((a,b)=>a.a-b.a).slice(0,3);
+  const box=document.getElementById('improve');
+  if(!negs.length){box.innerHTML='<div class="small">No high-leverage behavioral fixes — your habits are already clean. Widen your regime coverage to lift confidence.</div>';return;}
+  box.innerHTML=negs.map(o=>{
+    // counterfactual: move this feature to a "good" target percentile, re-score
+    const knots=MODEL.featureKnots[o.name];
+    const sign=(MODEL.radarAxes["Discipline"].concat(...Object.values(MODEL.radarAxes)).find(p=>p[0]===o.name)||[null,-1])[1];
+    const target= sign<0 ? knots[Math.floor(knots.length*0.30)] : knots[Math.floor(knots.length*0.70)];
+    const x2=[...x]; x2[o.j]=target;
+    const ns=scoreOf(rawPredict(x2)); const nt=tierOf(ns);
+    const delta = nt.tier!==t.tier ? `<span class="delta">→ ${t.tier}→${nt.tier}</span>` : `<span class="delta">+${Math.max(0,Math.round(ns-sc))} pts</span>`;
+    return `<div class="improve"><div class="h">${FIXES[o.name](LAST.F)}. ${delta}</div></div>`;
+  }).join('');
+}
+
+function renderDollars(){
+  const {rts,tier:t,F}=LAST;
+  // alpha/beta dollar split
+  const eq=rts.map(r=>Math.max(1e-9,r.equity));
+  const ret=rts.map((r,i)=>r.pnl/eq[i]); const mkt=rts.map(r=>r.mkt_ret);
+  const vm=std(mkt)**2; let beta=0;
+  if(vm>1e-12){const mr=mean(ret),mm=mean(mkt);let cov=0;for(let i=0;i<rts.length;i++)cov+=(ret[i]-mr)*(mkt[i]-mm);cov/=Math.max(1,rts.length-1);beta=cov/vm;}
+  let dollarBeta=0,total=0;
+  rts.forEach((r,i)=>{ dollarBeta+=beta*mkt[i]*eq[i]; total+=r.pnl; });
+  const dollarIdio=total-dollarBeta;
+
+  // worst-habit bleed: revenge trades — sized up (>1.3x median) right after a loss.
+  // Matches the revenge_sizing feature (size after a loss), independent of the time gap.
+  const med=median(rts.map(r=>r.notional));
+  let revengeBleed=0, revCount=0;
+  for(let i=1;i<rts.length;i++){ if(rts[i-1].pnl<0 && rts[i].notional>1.3*med){ revengeBleed+=rts[i].pnl; revCount++; } }
+  // crisis oversizing loss
+  let crisisLoss=0; rts.forEach(r=>{ if(r.vol_reg===3 && r.pnl<0) crisisLoss+=r.pnl; });
+  // pick worst
+  let worst={v:revengeBleed,l:`bled by ${revCount} revenge trades`,src:'revenge'};
+  if(crisisLoss<worst.v)worst={v:crisisLoss,l:'lost sizing into crisis regimes',src:'crisis'};
+  const blowups=rts.filter(r=>r.pnl<-0.2*r.equity); let blowLoss=blowups.reduce((a,r)=>a+r.pnl,0);
+  if(blowLoss<worst.v)worst={v:blowLoss,l:`lost in ${blowups.length} blow-up trades (>20% each)`,src:'blowup'};
+
+  document.getElementById('d-bad').innerHTML = worst.v<0? `<span class="neg">−$${fmt(-worst.v)}</span>` : `<span class="pos">$0</span>`;
+  document.getElementById('d-bad-l').textContent = worst.v<0? worst.l : 'no material behavioral bleed detected';
+
+  // tier value: margin freed (good tier) or extra margin cost (bad tier), per typical position
+  const typ=median(rts.map(r=>r.notional));
+  const base=typ*0.3333;
+  if(t.mult<1.0){
+    const freed=base*(1.0-t.mult); const discPct=Math.round((1-t.mult)*100);
+    document.getElementById('d-tier').innerHTML=`<span class="pos">$${fmt(freed)}</span>`;
+    document.getElementById('d-tier-l').innerHTML=`less margin locked per $${fmt(typ)} position — ${discPct}% under a flat venue`;
+  } else if(t.mult>1.0){
+    const extra=base*(t.mult-0.75); const pct=Math.round((t.mult-0.75)/0.75*100);
+    document.getElementById('d-tier').innerHTML=`<span class="neg">−$${fmt(extra)}</span>`;
+    document.getElementById('d-tier-l').innerHTML=`<b>more</b> margin locked per $${fmt(typ)} position vs a tier-A trader — the cost of the score`;
+  } else {
+    document.getElementById('d-tier').innerHTML=`$${fmt(0)}`;
+    document.getElementById('d-tier-l').innerHTML=`baseline margin — a cleaner tier posts up to 25% less`;
+  }
+
+  // alpha/beta line
+  const ab=document.getElementById('alpha-beta');
+  const tsign=total>=0?'made':'lost';
+  let msg;
+  if(Math.abs(dollarBeta)>Math.abs(total)*0.15){
+    msg = `You ${tsign} <b class="${total>=0?'pos':'neg'}">$${fmt(Math.abs(total))}</b> overall. The market handed you <b>${dollarBeta>=0?'+':'−'}$${fmt(Math.abs(dollarBeta))}</b> of beta; your own decisions ${dollarIdio>=0?'<b class="pos">added':'<b class="neg">cost'} $${fmt(Math.abs(dollarIdio))}</b>.`;
+  } else {
+    msg = `You ${tsign} <b class="${total>=0?'pos':'neg'}">$${fmt(Math.abs(total))}</b> — and it was <b>your own edge</b>, not market beta (${Math.round(F.beta_share*100)}% beta reliance).`;
+  }
+  ab.innerHTML=`<div class="small" style="font-size:13px;line-height:1.6">${msg}</div>`;
+}
+
+function renderRegime(){
+  const {rts}=LAST;
+  const counts=[0,0,0,0]; rts.forEach(r=>counts[r.vol_reg]++);
+  const greyN=rts.filter(r=>r.grey).length;
+  const strip=document.getElementById('regime-strip');
+  strip.innerHTML=counts.map((c,i)=>{const w=Math.max(6,Math.round(100*c/rts.length));return `<div class="rc" style="flex:${Math.max(1,c)};background:${REGIME_META[i].col}" title="${REGIME_META[i].name}: ${c}">${c?REGIME_META[i].name:''}</div>`;}).join('');
+  // narrative — surface the sharpest regime signals for this trader
+  const F=LAST.F; const parts=[];
+  const tag=(bg,col,label,body)=>`<span class="regtag" style="background:${bg};color:${col}">${label}</span> ${body}`;
+  if(counts[3]===0)parts.push(tag('rgba(255,85,102,.15)','var(--red)','no crisis observed',`Your tier is provisional in stress — you've never been tested in a crisis tape. Connect a longer history to prove it.`));
+  else if(F.crisis_addrisk>0.15)parts.push(tag('rgba(255,85,102,.15)','var(--red)','crisis add-risk',`You sized <b>${Math.round(F.crisis_addrisk*100)}% larger</b> in crisis than in calm — risk you <b>chose</b> to take, not beta you were handed. That's what an underwriter fears most.`));
+  else parts.push(tag('rgba(62,207,142,.15)','var(--green)','crisis-tested',`You traded through ${counts[3]} crisis-regime sessions without sizing up — you've been stress-tested.`));
+  if(F.grey_restraint>0.12)parts.push(tag('rgba(62,207,142,.15)','var(--green)','grey-tape discipline',`You cut size when the tape turned choppy — knowing when <b>not</b> to trade is the rarest discipline, and most scores miss it entirely.`));
+  else if(greyN>2 && F.grey_restraint<-0.05)parts.push(tag('rgba(255,180,84,.15)','var(--amber)','grey-tape override',`You traded <b>bigger</b> in ${greyN} choppy/untradeable sessions. Grey tape is where accounts quietly bleed out.`));
+  if(F.beta_share>0.5)parts.push(tag('rgba(79,142,255,.15)','var(--blue)','beta-driven',`${Math.round(F.beta_share*100)}% of your P&L swing is just the market moving. Your idiosyncratic edge is thin — you're being carried by beta.`));
+  else if(F.regime_coverage>=1)parts.push(tag('rgba(62,207,142,.15)','var(--green)','through-the-cycle',`Scored across all four regimes, calm through crisis — this read is high-confidence.`));
+  document.getElementById('regime-read').innerHTML=parts.slice(0,3).map(p=>`<div style="font-size:13px;margin-bottom:8px;line-height:1.55">${p}</div>`).join('');
+}
+
+/* ---------- canvas: gauge + radar ---------- */
+function drawGauge(sc,col){
+  const c=document.getElementById('gauge'),g=c.getContext('2d');g.clearRect(0,0,460,460);
+  const cx=230,cy=230,r=180,lw=26;
+  g.lineCap='round';
+  g.beginPath();g.arc(cx,cy,r,0.75*Math.PI,2.25*Math.PI);g.strokeStyle='#1c1c1c';g.lineWidth=lw;g.stroke();
+  const a0=0.75*Math.PI,a1=a0+(sc/100)*1.5*Math.PI;
+  g.beginPath();g.arc(cx,cy,r,a0,a1);g.strokeStyle=col;g.lineWidth=lw;g.stroke();
+  // ticks
+  for(let i=0;i<=10;i++){const a=a0+(i/10)*1.5*Math.PI;const x1=cx+Math.cos(a)*(r-lw-6),y1=cy+Math.sin(a)*(r-lw-6),x2=cx+Math.cos(a)*(r-lw-14),y2=cy+Math.sin(a)*(r-lw-14);g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.strokeStyle='#33332c';g.lineWidth=2;g.stroke();}
+}
+function drawRadar(vals){
+  const c=document.getElementById('radar'),g=c.getContext('2d');const W=520,H=420;g.clearRect(0,0,W,H);
+  const cx=W/2,cy=H/2+6,R=140;const keys=Object.keys(vals);const N=keys.length;
+  for(let ring=1;ring<=4;ring++){g.beginPath();for(let i=0;i<=N;i++){const a=-Math.PI/2+(i%N)/N*2*Math.PI;const rr=R*ring/4;const x=cx+Math.cos(a)*rr,y=cy+Math.sin(a)*rr;i?g.lineTo(x,y):g.moveTo(x,y);}g.closePath();g.strokeStyle='#1f1f1b';g.lineWidth=1;g.stroke();}
+  g.beginPath();
+  keys.forEach((k,i)=>{const a=-Math.PI/2+i/N*2*Math.PI;const rr=R*Math.max(0.04,vals[k]/100);const x=cx+Math.cos(a)*rr,y=cy+Math.sin(a)*rr;i?g.lineTo(x,y):g.moveTo(x,y);});
+  g.closePath();g.fillStyle='rgba(255,180,84,.18)';g.strokeStyle='#ffb454';g.lineWidth=2;g.fill();g.stroke();
+  keys.forEach((k,i)=>{const a=-Math.PI/2+i/N*2*Math.PI;const x=cx+Math.cos(a)*(R+22),y=cy+Math.sin(a)*(R+22);g.fillStyle='#8a8a82';g.font='11px DM Mono';g.textAlign='center';g.textBaseline='middle';g.fillText(k,x,y);g.fillStyle='#f0ede8';g.font='bold 11px Syne';g.fillText(vals[k],cx+Math.cos(a)*(R*Math.max(0.04,vals[k]/100)),cy+Math.sin(a)*(R*Math.max(0.04,vals[k]/100)));});
+}
+
+function fmt(n){ n=Math.round(n); if(Math.abs(n)>=1e6)return (n/1e6).toFixed(2)+'M'; if(Math.abs(n)>=1e3)return (n/1e3).toFixed(1)+'k'; return String(n); }
+
+/* ---------------------------------------------------------------------------
+   INTAKE WIRING
+   ------------------------------------------------------------------------- */
+let PENDING=null; // {objects, adapter} awaiting mapping
+const file=document.getElementById('file'), dz=document.getElementById('dz');
+file.addEventListener('change',e=>{ if(e.target.files[0])readFile(e.target.files[0]); });
+['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag');}));
+dz.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f)readFile(f); });
+
+function status(m){document.getElementById('parse-status').innerHTML=m;}
+function perr(m){document.getElementById('parse-err').textContent=m||"";}
+
+function readFile(f){
+  perr("");status('<span class="spinner" style="display:inline-block;vertical-align:middle"></span> reading '+f.name+' …');
+  const rd=new FileReader();
+  rd.onload=()=>{ try{ handleCSV(rd.result); }catch(e){ perr("Couldn't parse that file: "+e.message); status(""); } };
+  rd.onerror=()=>{perr("Couldn't read the file.");status("");};
+  rd.readAsText(f);
+}
+function handleCSV(text){
+  const rows=parseCSV(text); const {headers,data}=toObjects(rows);
+  if(!data.length){perr("No rows found in that CSV.");status("");return;}
+  const adapter=detectAdapter(headers);
+  if(adapter){
+    status(`Detected <b>${adapter.name}</b> · ${data.length} rows`);
+    const fills=data.map(r=>adapter.map(r)).map(f=>({...f,assetClass:adapter.cls}));
+    finalizeFills(fills, adapter.name);
+  } else {
+    // generic mapper
+    PENDING={data,headers};
+    showMapper(headers);
+  }
+}
+function showMapper(headers){
+  status("");document.getElementById('mapper').classList.remove('hide');
+  const need=[["ts","Timestamp / date"],["symbol","Symbol / ticker"],["side","Side (buy/sell)"],["qty","Quantity"],["price","Price"],["fee","Fee (optional)"],["realizedPnl","Realized PnL (optional)"]];
+  const guess=(names)=>{for(const h of headers){const l=h.toLowerCase();if(names.some(n=>l.includes(n)))return h;}return "";};
+  const guesses={ts:guess(["time","date"]),symbol:guess(["symbol","ticker","instrument","coin","contract","pair"]),side:guess(["side","direction","action","type","dir"]),qty:guess(["qty","quantity","size","amount","filled","contracts"]),price:guess(["price","fill","avg","px"]),fee:guess(["fee","comm"]),realizedPnl:guess(["realized","pnl","p&l","profit","closed"])};
+  document.getElementById('map-fields').innerHTML=need.map(([k,lbl])=>`<label class="field"><span>${lbl}</span><select id="map-${k}"><option value="">— none —</option>${headers.map(h=>`<option ${guesses[k]===h?'selected':''}>${h}</option>`).join('')}</select></label>`).join('');
+  document.getElementById('mapper').scrollIntoView({behavior:'smooth'});
+}
+function applyMapping(){
+  const g=k=>document.getElementById('map-'+k).value;
+  const m={ts:g('ts'),symbol:g('symbol'),side:g('side'),qty:g('qty'),price:g('price'),fee:g('fee'),realizedPnl:g('realizedPnl')};
+  if(!m.ts||!m.symbol||!m.qty||!m.price){perr("Need at least timestamp, symbol, quantity and price.");return;}
+  const fills=PENDING.data.map(r=>({
+    ts:parseTs(r[m.ts]),symbol:norm(r[m.symbol]),assetClass:"generic",
+    side:m.side?(/buy|long|b$|bto/i.test(r[m.side])||num(r[m.side])>0?1:-1):1,
+    qty:Math.abs(num(r[m.qty])),price:num(r[m.price]),
+    fee:m.fee?Math.abs(num(r[m.fee])||0):0, realizedPnl:m.realizedPnl?num(r[m.realizedPnl]):null
+  }));
+  document.getElementById('mapper').classList.add('hide');
+  finalizeFills(fills,"your CSV");
+}
+function finalizeFills(fills, srcName){
+  // peak concurrent notional for account estimate (computed during reconstruct)
+  const {rts,peak}=reconstructWithPeak(fills);
+  if(rts.length<6){perr(`Only ${rts.length} closed round-trips reconstructed — need at least ~6. Make sure the export has entries AND exits (buys and sells).`);status("");return;}
+  rts._peakNotional=peak;
+  SRC=srcName;
+  score(rts,{});
+}
+function reconstructWithPeak(fills){
+  // wrap reconstruct but also track peak concurrent deployed notional
+  const valid=fills.filter(f=>f&&!isNaN(f.ts)&&f.qty>0&&isFinite(f.price)&&f.price>0).sort((a,b)=>a.ts-b.ts);
+  // peak concurrent: net position notional over time across symbols
+  let openNot={}, peak=0;
+  for(const f of valid){ const s=f.symbol; openNot[s]=(openNot[s]||0)+f.side*f.qty*f.price; let tot=0; for(const k in openNot)tot+=Math.abs(openNot[k]); peak=Math.max(peak,tot); }
+  const rts=reconstruct(valid);
+  return {rts,peak};
+}
+
+let SRC="";
+function editAccount(){
+  const v=prompt("Your approximate account size (USD) when trading this history:", Math.round(LAST.account));
+  if(v&&!isNaN(parseFloat(v))){ score(LAST.rts,{account:Math.abs(parseFloat(v))}); }
+}
+function resetApp(){ document.getElementById('results').style.display='none'; document.getElementById('intake').style.display='block'; status("");perr("");file.value=""; window.scrollTo({top:0}); }
+
+/* ---------------------------------------------------------------------------
+   SAMPLE TRADER — generate fills for a revenge-prone trader and run the REAL
+   pipeline (reconstruction included) so the demo exercises the true path.
+   ------------------------------------------------------------------------- */
+function runSample(){
+  let seed=19771010; const rnd=()=>{seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff;};
+  const gauss=()=>{let s=0;for(let i=0;i<6;i++)s+=rnd();return (s-3)/1.5;};
+  const syms=["BTC","ETH","SOL","NVDA","AAPL"]; const px={BTC:38000,ETH:2400,SOL:95,NVDA:70,AAPL:170};
+  const fills=[]; let t=Date.parse("2019-08-05T14:30:00Z"); const account=42000; let lastLoss=false, lossStreak=0;
+  for(let i=0;i<150;i++){
+    t += (2+rnd()*22)*86400000; const sym=syms[Math.floor(rnd()*syms.length)]; const p0=px[sym];
+    const reg=regimeAt(t);
+    let sz=0.05+Math.abs(gauss())*0.04;
+    if(lastLoss)sz*=(1.9+0.9*lossStreak);          // revenge: escalates with the streak
+    if(reg.vol_reg>=2)sz*=1.6;                       // sizes INTO vol (reckless)
+    if(reg.grey)sz*=1.4;                             // overrides the grey tape
+    sz=Math.min(sz,0.9); const size=account*sz;
+    const qty=+(size/p0).toPrecision(3); const side=rnd()<0.55?1:-1;
+    const hold=Math.max(0.15,Math.exp(gauss()*0.7)); const drift=(reg.vol_reg>=2?-0.012:0.003);
+    let move=drift+gauss()*(reg.av/Math.sqrt(252))*Math.sqrt(hold*4);
+    if(reg.vol_reg===3 && rnd()<0.4) move-=Math.abs(gauss())*0.12;   // blows through in crisis (no stop)
+    const exitP=Math.max(p0*0.1,p0*(1+move)); const pnl=side*(exitP-p0)*qty;
+    if(pnl<0){lastLoss=true;lossStreak++;}else{lastLoss=false;lossStreak=0;}
+    fills.push({ts:t,symbol:sym,side:side>0?1:-1,qty,price:p0,fee:size*0.0006,realizedPnl:null,assetClass:"crypto"});
+    fills.push({ts:t+hold*86400000,symbol:sym,side:side>0?-1:1,qty,price:+exitP.toPrecision(6),fee:size*0.0006,realizedPnl:+pnl.toFixed(2),assetClass:"crypto"});
+  }
+  const {rts,peak}=reconstructWithPeak(fills); rts._peakNotional=peak; SRC="sample trader (revenge-prone)";
+  score(rts,{account});
+}
+
+/* ---------- share card ---------- */
+function downloadCard(){
+  const {score:sc,tier:t,arch,radar,F,rts}=LAST;
+  const c=document.createElement('canvas');c.width=1200;c.height=630;const g=c.getContext('2d');
+  g.fillStyle='#080808';g.fillRect(0,0,1200,630);
+  const grd=g.createRadialGradient(300,120,20,300,120,600);grd.addColorStop(0,'rgba(255,180,84,.12)');grd.addColorStop(1,'transparent');g.fillStyle=grd;g.fillRect(0,0,1200,630);
+  g.fillStyle='#ffb454';g.font='800 30px Syne';g.fillText('◈ PERPIFY',60,80);
+  g.fillStyle='#55554e';g.font='500 16px DM Mono';g.fillText('TRADER DNA',60,106);
+  g.fillStyle='#8a8a82';g.font='400 20px DM Mono';g.fillText('My trading archetype',60,190);
+  g.fillStyle='#f0ede8';g.font='800 64px Syne';g.fillText(arch.name,58,258);
+  g.fillStyle='#8a8a82';g.font='400 19px DM Mono';wrap(g,arch.desc,60,300,520,26);
+  // score dial
+  const cx=940,cy=250,r=130;g.lineWidth=22;g.lineCap='round';
+  g.beginPath();g.arc(cx,cy,r,0.75*Math.PI,2.25*Math.PI);g.strokeStyle='#1c1c1c';g.stroke();
+  const tcol={A:'#3ecf8e',B:'#8fbf6f',C:'#ffb454',D:'#ff8a5c',E:'#ff5566'}[t.tier];
+  g.beginPath();g.arc(cx,cy,r,0.75*Math.PI,0.75*Math.PI+sc/100*1.5*Math.PI);g.strokeStyle=tcol;g.stroke();
+  g.fillStyle='#f0ede8';g.font='800 66px Syne';g.textAlign='center';g.fillText(Math.round(sc),cx,cy+8);
+  g.fillStyle='#8a8a82';g.font='400 15px DM Mono';g.fillText('/100',cx,cy+34);
+  g.fillStyle=tcol;g.font='800 26px Syne';g.fillText('TIER '+t.tier,cx,cy+r+56);g.textAlign='left';
+  // killer stat
+  g.fillStyle='#151515';g.fillRect(60,430,1080,120);g.strokeStyle='#262622';g.strokeRect(60,430,1080,120);
+  const med=median(rts.map(x=>x.notional));let bleed=0;for(let i=1;i<rts.length;i++){if(rts[i-1].pnl<0&&rts[i].notional>1.3*med)bleed+=rts[i].pnl;}
+  g.fillStyle='#8a8a82';g.font='400 18px DM Mono';
+  if(bleed<0){g.fillText('My revenge trades bled',88,478);g.fillStyle='#ff5566';g.font='800 46px Syne';g.fillText('−$'+fmt(-bleed),88,528);}
+  else{g.fillText('Regime coverage',88,478);g.fillStyle='#3ecf8e';g.font='800 46px Syne';g.fillText(Math.round(F.regime_coverage*100)+'% of market states',88,528);}
+  g.fillStyle='#55554e';g.font='400 17px DM Mono';g.textAlign='right';g.fillText('score.perpify.trade · scored through the cycle',1130,528);g.textAlign='left';
+  const url=c.toDataURL('image/png');const a=document.createElement('a');a.href=url;a.download='trader-dna-'+t.tier+'.png';a.click();
+}
+function wrap(g,text,x,y,maxW,lh){const words=String(text).split(' ');let line='',yy=y;for(const w of words){if(g.measureText(line+w).width>maxW){g.fillText(line,x,yy);line=w+' ';yy+=lh;}else line+=w+' ';}g.fillText(line,x,yy);}
+
+/* ---------- connect modal ---------- */
+function openConnect(){document.getElementById('connect-bg').style.display='flex';}
+function closeConnect(){document.getElementById('connect-bg').style.display='none';}
+document.getElementById('connect-bg').addEventListener('click',e=>{if(e.target.id==='connect-bg')closeConnect();});
+function joinWaitlist(){const v=document.getElementById('wl').value.trim();if(!v){return;}document.getElementById('wl-done').textContent='On the list — you\'ll get the verified-tier connect flow first. (Stored locally in this demo.)';}
+
+/* ---------- boot ---------- */
+loadModel().then(()=>{
+  document.getElementById('nav-model').textContent=MODEL.modelVersion;
+  document.getElementById('foot-model').textContent=MODEL.modelVersion+' · '+MODEL.nTrainingTraders.toLocaleString()+' synthetic traders';
+}).catch(e=>{ document.getElementById('parse-err').textContent="Model failed to load: "+e.message; });
+</script>
+</body>
+</html>
