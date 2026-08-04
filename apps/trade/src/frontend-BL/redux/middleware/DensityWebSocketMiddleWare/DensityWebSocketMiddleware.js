@@ -392,6 +392,16 @@ const densitySocketMiddleware = () => {
       store.dispatch({ type: "SESSION_INFO_UPDATE", payload: JSON.parse(event.data) });
       return;
     }
+    // PERPIFY: order/trade history over the socket (no REST history endpoint). SNAPSHOT paints
+    // recent fills/cancels on connect (survives refresh); APPEND streams each new fill/cancel.
+    if (JSON.parse(event.data).type === "ORDER_HISTORY_SNAPSHOT") {
+      store.dispatch({ type: "PERPIFY_HISTORY_SNAPSHOT", payload: JSON.parse(event.data).records });
+      return;
+    }
+    if (JSON.parse(event.data).type === "ORDER_HISTORY_APPEND") {
+      store.dispatch({ type: "PERPIFY_HISTORY_APPEND", payload: JSON.parse(event.data).record });
+      return;
+    }
     const payload = JSON.parse(event.data).eventData;
     const eventType = JSON.parse(event.data).eventType;
 

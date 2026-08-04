@@ -1,73 +1,74 @@
-import { showSnackBar } from "@/frontend-BL/redux/actions/Internal/GlobalErrorHandler.ac";
-import { fetchOrderHistory } from "@/frontend-api-service/Api/OrderHistory/OrderHistory";
-// import { SymbolPrecisionHelper } from "@/helpers";
+/**
+ * FETCH_ORDER_HISTORY — Perpify testnet.
+ *
+ * The Perpify engine has no REST order-history endpoint; history arrives over the account
+ * WebSocket and is accumulated in the `perpifyHistory` redux slice (snapshot on connect +
+ * live appends, so it survives refresh). This thunk reads that slice, applies the tab's
+ * filters, maps each engine record to the row shape the Order History table expects, and
+ * paginates — returning the same `{ requiredData, total }` the tab already consumes, so the
+ * hook and row components are unchanged.
+ *
+ * Engine record shape: { orderId, symbol, side (BUY|SELL), type (MARKET|LIMIT), price, qty,
+ *   status (FILLED|PARTIALLY_FILLED|CANCELED), realizedPnl, fee, reduceOnly, time (ms) }.
+ */
 import store from "../../store/configureStore";
-const getFormatedTrade = (trade, symbolBaseAsset) => {
-  let executionTime = trade?.tradeTime;
-  executionTime = new Date(executionTime).getTime();
-  const exeQty = parseFloat(trade?.qty) * parseFloat(trade?.price);
-  const tradeFeePercentage = (trade.commission.toFixed(5) / exeQty.toFixed(5)) * 100;
+
+const isSet = (v, placeholder) => v !== undefined && v !== null && v !== "" && v !== placeholder;
+
+const mapRecord = (r) => {
+  const price = Number(r.price) || 0;
+  const qty = Number(r.qty) || 0;
+  const pnl = Number(r.realizedPnl) || 0;
+  const fee = Number(r.fee) || 0;
   return {
-    tradeID: trade?.ID,
-    executionTime,
-    executionPrice: trade?.price,
-    executedQuantity: `${exeQty?.toFixed(3)} USDT | ${trade?.qty?.toFixed(3)} ${symbolBaseAsset}`,
-    PnL: trade?.realizedPnl?.toFixed(4),
-    role: trade?.maker ? "MAKER" : "TAKER",
-    tradingFee: `${trade?.commission.toFixed(4)} | ${tradeFeePercentage?.toFixed(2)}%`
+    orderId: r.orderId,
+    time: r.time,
+    updatedTime: r.time,
+    symbol: r.symbol,
+    type: r.type,
+    side: r.side === "BUY" ? "LONG" : "SHORT",
+    avgPrice: price,
+    reduceOnly: r.reduceOnly ? "YES" : "NO",
+    status: r.status,
+    executedQtyInUSDT: qty * price,
+    executedQty: qty,
+    totalPnL: pnl.toFixed(4),
+    trades: [],
+    showOrderTriggerCondition: undefined,
+    stopPrice: "0",
+    totalFee: fee.toFixed(4),
+    totalFeePercentage: "0.00",
+    isForcedOrder: false,
+    forcedOrderType: undefined
   };
 };
 
-export const FETCH_ORDER_HISTORY = (data) => (dispatch) => {
-  const allowedShowTriggerCondtions = ["STOP_LIMIT", "STOP_MARKET", "TAKE_PROFIT"];
-  const symbolPrecisionList = store.getState().tradablesymbolList.tradablesymbolList;
-  return fetchOrderHistory(data)
-    .then((successResponse) => {
-      const { orders: orderData, totalCount: total } = successResponse;
+export const FETCH_ORDER_HISTORY =
+  (data = {}) =>
+  () => {
+    const records = store.getState().perpifyHistory?.records || [];
+    const { startTime, endTime, symbol, type, side, reduceOnly, status, size = 5, start = 1 } = data;
 
-      const requiredData = orderData?.map((order) => {
-        const totalFee = order?.trades?.reduce((agg, trade) => agg + parseFloat(trade.commission), 0);
-        const totalPnL = order?.trades?.reduce((agg, trade) => agg + trade?.realizedPnl, 0);
-        const priceToTake = parseFloat(order?.price) === 0 ? order?.averagePrice : order?.price;
-        const eqty = order.executedQuantity * priceToTake;
-        const totalFeePercentage = (totalFee / eqty) * 100;
-        const symbolPrecisiondata = symbolPrecisionList.find((data) => data.symbol === order?.symbol);
-        const symbolBaseAsset = symbolPrecisiondata && symbolPrecisiondata.baseAsset ? symbolPrecisiondata.baseAsset : "--";
-        let executionTime = order?.createdAt;
-        executionTime = new Date(executionTime).getTime();
-        const trades = order?.trades?.map((trade) => getFormatedTrade(trade, symbolBaseAsset));
-        return {
-          orderId: order?.ID,
-          time: executionTime,
-          updatedTime: new Date(order?.updatedAt).getTime(),
-          symbol: order?.symbol,
-          type: order?.type,
-          side: order?.side === "BUY" ? "LONG" : "SHORT",
-          avgPrice: order?.averagePrice || order?.price,
-          reduceOnly: order?.reduceOnly ? "YES" : "NO",
-          status: order?.status,
-          executedQtyInUSDT: eqty,
-          executedQty: order?.executedQuantity,
-          totalPnL: totalPnL.toFixed(4),
-          trades,
-          showOrderTriggerCondition: allowedShowTriggerCondtions.find((type) => order?.type === type),
-          stopPrice: order?.stopPrice,
-          totalFee: totalFee.toFixed(4),
-          totalFeePercentage: totalFeePercentage.toFixed(2),
-          isForcedOrder: data?.type === "Liquidation",
-          forcedOrderType: order?.forcedOrderType
-        };
-      });
-      requiredData.sort((a, b) => b.updatedTime - a.updatedTime);
-      return { requiredData, total };
-    })
-    .catch((errorResponse) => {
-      dispatch(
-        showSnackBar({
-          src: "FETCH_ORDER_HISTORY_FAIL",
-          message: errorResponse.response.details,
-          type: "failure"
-        })
-      );
+    const filtered = records.filter((r) => {
+      if (isSet(symbol, "Symbol") && (r.symbol || "").toUpperCase() !== String(symbol).toUpperCase()) return false;
+      if (isSet(type, "Order Type") && (r.type || "").toUpperCase() !== String(type).toUpperCase()) return false;
+      // the tab shows side as LONG/SHORT; engine stores BUY/SELL
+      if (isSet(side, "Side")) {
+        const wantBuy = /BUY|LONG/i.test(String(side));
+        const isBuy = r.side === "BUY";
+        if (wantBuy !== isBuy) return false;
+      }
+      if (isSet(status, "Status") && !String(r.status || "").toLowerCase().includes(String(status).toLowerCase().replace(/\s+/g, "_"))) return false;
+      if (isSet(reduceOnly, "Reduce Only")) {
+        const wantRO = /yes|true/i.test(String(reduceOnly));
+        if (!!r.reduceOnly !== wantRO) return false;
+      }
+      if (startTime && endTime && (r.time < Number(startTime) || r.time > Number(endTime))) return false;
+      return true;
     });
-};
+
+    const total = filtered.length;
+    const pageStart = (Math.max(1, Number(start)) - 1) * Number(size);
+    const requiredData = filtered.slice(pageStart, pageStart + Number(size)).map(mapRecord);
+    return Promise.resolve({ requiredData, total });
+  };

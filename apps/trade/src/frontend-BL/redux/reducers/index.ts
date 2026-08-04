@@ -39,7 +39,9 @@ import SignalTrading from "./SignalTrading/SignalTrading.r";
 import FallbackHandler from "./Internal/FallbackHandler.r";
 import sessionInfo from "./Internal/SessionInfo.r";
 import liquidation from "./Internal/Liquidation.r";
+import perpifyHistory from "./Internal/PerpifyHistory.r";
 const appReducer = combineReducers({
+  perpifyHistory,
   futures,
   dateSelection,
   wsConnection,
