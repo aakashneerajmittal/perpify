@@ -122,118 +122,37 @@ export const useExitLimitMarketModal = ({
 
     if (isValidationSuccessful.current === false) return;
     setExitPositionApiResponseStatus(true);
+    // PERPIFY: exit over the account WebSocket as a REDUCE-ONLY order (there is no REST order
+    // endpoint). MARKET = marketable IOC that crosses the book (±5% slippage cap); LIMIT = a
+    // resting GTC reduce-only order at the chosen price. Fill/close flows back as
+    // ORDER_TRADE_UPDATE / ACCOUNT_UPDATE on the same socket. (Previously this called the REST
+    // createOrder, which the engine doesn't serve, so the exit modal silently did nothing.)
+    const closeSide = positionEntry.getPositionSide === "BUY" ? "sell" : "buy";
+    const ref = Number(LastTradedPrice) || 0;
+    const baseId = `exit-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
     if (orderType === "MARKET") {
-      createOrder({
-        symbol,
-        side: positionEntry.getPositionSide === "BUY" ? "SELL" : "BUY",
-        type: "MARKET",
-        quantity: size.toString(),
-        reduceOnly: true
-      })
-        .then((response: { status: number; data: { order: any } }) => {
-          if (response.status === 200) {
-            recordCleverTapEvent("CLOSE_AT_MARKET_SUCCESS", {
-              symbol,
-              side: positionEntry?.getPositionSide === "LONG" ? "SELL" : "BUY",
-              type: "MARKET",
-              quantity: size.toString(),
-              reduceOnly: true
-            });
-            setExitPositionApiResponseStatus(false);
-            close();
-
-            dispatch(
-              showSnackBar({
-                src: EXIT_ORDER_SUCCESS,
-                message: EXIT_LIMIT_MARKET_CONSTANTS.EXIT_ORDER_SUCCESSFUL_SNACKBAR_LABEL,
-                type: "success"
-              })
-            );
-            dispatch({
-              type: DENSITY_WS_SUBSCRIBE_CLOSE_ORDER,
-              payload: {
-                data: [response?.data?.order],
-                type: "MARKET",
-                eventType: "CLOSE_ORDER"
-              }
-            });
-          }
-        })
-        .catch((err: { response: { data: { details: any } } }) => {
-          setExitPositionApiResponseStatus(false);
-          recordCleverTapEvent("CLOSE_AT_MARKET_FAILED", {
-            symbol,
-            side: positionEntry?.getPositionSide === "LONG" ? "SELL" : "BUY",
-            type: "MARKET",
-            quantity: size.toString(),
-            reduceOnly: true,
-            error: err.response.data.details
-          });
-          dispatch(
-            showSnackBar({
-              src: EXIT_ORDER_FAIL,
-              message: err.response.data.details,
-              type: "failure"
-            })
-          );
-        });
+      const px = closeSide === "sell" ? ref * 0.95 : ref * 1.05; // cross the book
+      dispatch({
+        type: "PERPIFY_PLACE_ORDER",
+        payload: { type: "place_order", id: baseId, symbol, side: closeSide, qty: Number(size), price: Number(px.toFixed(2)), tif: "IOC", reduceOnly: true }
+      });
+      recordCleverTapEvent("CLOSE_AT_MARKET_SUCCESS", { symbol, side: closeSide.toUpperCase(), type: "MARKET", quantity: size.toString(), reduceOnly: true });
     } else {
-      createOrder({
-        symbol,
-        side: positionEntry.getPositionSide === "BUY" ? "SELL" : "BUY",
-        type: "LIMIT",
-        quantity: size.toString(),
-        price: limitPrice.toString(),
-        reduceOnly: true
-      })
-        .then((response: { status: number; data: { order: any } }) => {
-          if (response.status === 200) {
-            setExitPositionApiResponseStatus(false);
-            close();
-            recordCleverTapEvent("CLOSE_AT_LIMIT_SUCCESS", {
-              symbol,
-              side: positionEntry?.getPositionSide === "LONG" ? "SELL" : "BUY",
-              type: "LIMIT",
-              quantity: size.toString(),
-              price: limitPrice.toString(),
-              reduceOnly: true
-            });
-            dispatch(
-              showSnackBar({
-                src: EXIT_ORDER_SUCCESS,
-                message: EXIT_LIMIT_MARKET_CONSTANTS.EXIT_ORDER_SUCCESSFUL_SNACKBAR_LABEL,
-                type: "success"
-              })
-            );
-            dispatch({
-              type: DENSITY_WS_SUBSCRIBE_CREATE_ORDER,
-              payload: {
-                data: [response?.data?.order],
-                type: "LIMIT"
-              }
-            });
-          }
-        })
-        .catch((err: { response: { data: { details: any } } }) => {
-          recordCleverTapEvent("CLOSE_AT_LIMIT_FAILED", {
-            symbol,
-            side: positionEntry?.getPositionSide === "LONG" ? "SELL" : "BUY",
-            type: "LIMIT",
-            quantity: size.toString(),
-            price: limitPrice.toString(),
-            reduceOnly: true,
-            error: err.response.data.details
-          });
-          setExitPositionApiResponseStatus(false);
-          dispatch(
-            showSnackBar({
-              src: EXIT_ORDER_FAIL,
-              message: err.response.data.details,
-              type: "failure"
-            })
-          );
-        });
+      dispatch({
+        type: "PERPIFY_PLACE_ORDER",
+        payload: { type: "place_order", id: baseId, symbol, side: closeSide, qty: Number(size), price: Number(Number(limitPrice).toFixed(2)), tif: "GTC", reduceOnly: true }
+      });
+      recordCleverTapEvent("CLOSE_AT_LIMIT_SUCCESS", { symbol, side: closeSide.toUpperCase(), type: "LIMIT", quantity: size.toString(), price: limitPrice.toString(), reduceOnly: true });
     }
+    setExitPositionApiResponseStatus(false);
+    close();
+    dispatch(
+      showSnackBar({
+        src: EXIT_ORDER_SUCCESS,
+        message: EXIT_LIMIT_MARKET_CONSTANTS.EXIT_ORDER_SUCCESSFUL_SNACKBAR_LABEL,
+        type: "success"
+      })
+    );
   };
 
   const handleLimitPriceChange = (event: { target: { value: any } }) => {
