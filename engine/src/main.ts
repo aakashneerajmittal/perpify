@@ -27,6 +27,7 @@ import { ChainClient } from "./chain.js";
 import { checkConservation, stateRoot, MARKET_IDS } from "./state.js";
 import { px8 as toPx8 } from "./fixed.js";
 import { computeGapReading, gapScaleFor } from "./risk/gapCoefficient.js";
+import { loadPublishedRegime, type Regime } from "./risk/regime.js";
 import { VaultRuntime } from "./vault/runtime.js";
 import type { Command, MarketId } from "./types.js";
 
@@ -227,11 +228,24 @@ async function main() {
   // reading drives every market — each gets its own signed RiskReading so per-market
   // margin, maker spread and the header all glide into the dark together. A market pinned
   // by the demo-weekend toggle is skipped so its override holds.
+  // Live market regime, sourced from the risk pipeline's published reading (real SPY vol).
+  // Re-read periodically so a republish (e.g. the market moving into stress) is picked up
+  // without a restart. Falls back to "normal" — the v0 default — if the artifact is absent.
+  let liveRegime: Regime = "normal";
+  const refreshRegime = () => {
+    const p = loadPublishedRegime(repoRoot);
+    if (p) liveRegime = p.regime;
+  };
+  refreshRegime();
+  console.log(`[risk] live gap regime: ${liveRegime} (from published reading; elevates the coefficient under real stress)`);
+  every(300_000, refreshRegime); // re-check the published regime every 5 min
+
   const refreshReadings = () => {
     for (const id of MARKET_IDS) {
       if (server.demoWeekendMarkets.has(id)) continue;
-      // per-symbol dark premium: single stocks gap wider than the index (vol-scaled v0)
-      const g = computeGapReading(new Date(), "normal", gapScaleFor(id));
+      // per-symbol dark premium: single stocks gap wider than the index (vol-scaled v0);
+      // regime is the live published market regime (was pinned to "normal" in v0).
+      const g = computeGapReading(new Date(), liveRegime, gapScaleFor(id));
       dispatch({
         kind: "RiskReading",
         reading: {

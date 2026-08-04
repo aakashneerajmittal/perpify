@@ -9,8 +9,9 @@
  *
  * During market hours the coefficient is 1.0 until PRECLOSE_RAMP_HOURS before the
  * close, then ramps to the upcoming dark period's opening value ("the Friday 4pm
- * rule"). Regime is held at "normal" for v0 (the model holds regime through the dark
- * period; live regime from realized vol is a v0.1+ item).
+ * rule"). The `regime` argument is now supplied live by main.ts from the risk
+ * pipeline's published reading (risk/risk/regime.ts) — real SPY vol, not pinned — so
+ * the premium elevates in genuine stress; it defaults to "normal" if unsupplied.
  *
  * Params are the calibrated gap-v0.1 fit (31y SPY, risk/gap/params/gap-v0.1.json).
  */
