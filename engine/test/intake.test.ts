@@ -77,8 +77,10 @@ describe("browser order intake (investor demo path)", () => {
   it("demo connect → SESSION_INFO + funded ACCOUNT_UPDATE snapshot", async () => {
     const { ws, msgs } = await openBuffered(`ws://127.0.0.1:${port}/v1/order-and-account-updates?token=${INVESTOR}`);
     const info = await waitFor(msgs, (m) => m.type === "SESSION_INFO");
-    expect(info.tier).toBe("B");
-    expect(info.tierMult).toBeCloseTo(0.9, 6);
+    // demo policy: fresh wallets cold-start in the generous tiers (A/B/C), never the punitive
+    // D/E premium (only ever earned later by observed behavior). This investor address → A.
+    expect(info.tier).toBe("A");
+    expect(info.tierMult).toBeCloseTo(0.75, 6);
     expect(info.baseImBps).toBeGreaterThan(0);
     const snap = await waitFor(msgs, (m) => m.eventType === "ACCOUNT_UPDATE");
     expect(Number(snap.eventData.balances[0].walletBalance)).toBeCloseTo(100_000, 0);

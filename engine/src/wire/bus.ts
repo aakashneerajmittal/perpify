@@ -17,12 +17,16 @@ import {
   type WireMessage,
 } from "./density.js";
 
+const f8 = (v: bigint): string => (Number(v) / 1e8).toFixed(8);
+const f6 = (v: bigint): string => (Number(v) / 1e6).toFixed(6);
+
 export type OwnerListener = (msg: WireMessage) => void;
 
 export class EngineBus {
   state: EngineState;
   private orderMeta = new Map<string, OrderMeta>();
   private listeners = new Map<string, Set<OwnerListener>>(); // owner -> listeners
+  private orderHistory = new Map<string, Array<Record<string, unknown>>>(); // owner -> recent fills/cancels (most recent first)
 
   constructor(params?: EngineParams[], insuranceSeed6?: bigint) {
     this.state = createEngine(params, insuranceSeed6);
@@ -42,10 +46,15 @@ export class EngineBus {
   /** apply a command and translate the resulting events onto the wire */
   dispatch(cmd: Command): EngineEvent[] {
     const balBefore = new Map<string, bigint>();
-    for (const [owner, a] of this.state.accounts) balBefore.set(owner, a.free);
+    const realizedBefore = new Map<string, bigint>();
+    for (const [owner, a] of this.state.accounts) {
+      balBefore.set(owner, a.free);
+      realizedBefore.set(owner, a.realizedPnl6);
+    }
 
     const events = apply(this.state, cmd);
     const touched = new Set<string>();
+    const newHistory: Array<{ owner: string; rec: Record<string, unknown> }> = []; // fills/cancels this command
 
     for (const ev of events) {
       switch (ev.kind) {
@@ -78,6 +87,22 @@ export class EngineBus {
           if (meta) {
             meta.status = "CANCELED";
             this.emitTo(meta.owner, toOrderTradeUpdate(ev.orderId, meta, null, 0n));
+            newHistory.push({
+              owner: meta.owner,
+              rec: {
+                orderId: ev.orderId,
+                symbol: meta.market,
+                side: meta.side.toUpperCase(),
+                type: meta.tif === "IOC" ? "MARKET" : "LIMIT",
+                price: f8(meta.price ?? 0n),
+                qty: f8(meta.qty),
+                status: "CANCELED",
+                realizedPnl: "0.000000",
+                fee: "0.000000",
+                reduceOnly: false,
+                time: Date.now(),
+              },
+            });
           }
           break;
         }
@@ -93,6 +118,22 @@ export class EngineBus {
             meta.status = meta.filled >= meta.qty ? "FILLED" : "PARTIALLY_FILLED";
             this.emitTo(meta.owner, toOrderTradeUpdate(orderId, meta, t, 0n));
             touched.add(meta.owner);
+            newHistory.push({
+              owner: meta.owner,
+              rec: {
+                orderId,
+                symbol: meta.market,
+                side: meta.side.toUpperCase(),
+                type: meta.tif === "IOC" ? "MARKET" : "LIMIT",
+                price: f8(t.price),
+                qty: f8(t.qty),
+                status: meta.status,
+                realizedPnl: "0.000000", // set below from the per-command realized delta
+                fee: "0.000000",
+                reduceOnly: false,
+                time: Date.now(),
+              },
+            });
             void isTaker;
           }
           touched.add(t.maker);
@@ -171,6 +212,35 @@ export class EngineBus {
         default:
           break;
       }
+    }
+
+    // Attribute each owner's realized-PnL delta this command to their last non-cancel fill
+    // record (the closing fill) so Order/PnL History shows realized PnL, then commit the records
+    // to the per-owner ring buffer and stream the appends.
+    for (const owner of touched) {
+      const a = this.state.accounts.get(owner.toLowerCase());
+      if (!a) continue;
+      const delta = a.realizedPnl6 - (realizedBefore.get(owner.toLowerCase()) ?? 0n);
+      if (delta !== 0n) {
+        for (let i = newHistory.length - 1; i >= 0; i--) {
+          if (newHistory[i]!.owner.toLowerCase() === owner.toLowerCase() && newHistory[i]!.rec.status !== "CANCELED") {
+            newHistory[i]!.rec.realizedPnl = f6(delta);
+            break;
+          }
+        }
+      }
+    }
+    for (const { owner, rec } of newHistory) {
+      const key = owner.toLowerCase();
+      let arr = this.orderHistory.get(key);
+      if (!arr) {
+        arr = [];
+        this.orderHistory.set(key, arr);
+      }
+      arr.unshift(rec);
+      if (arr.length > 200) arr.length = 200;
+      // top-level `type` message (like SESSION_INFO/snapshots) rather than an eventType wire msg
+      this.emitTo(owner, { type: "ORDER_HISTORY_APPEND", record: rec } as unknown as WireMessage);
     }
 
     // one ACCOUNT_UPDATE per touched owner per command — coalesced like Density's stream
@@ -262,6 +332,12 @@ export class EngineBus {
       }
     }
     return out;
+  }
+
+  /** recent order history (fills + cancels, most recent first) for a trader — painted on connect
+   *  so the Order History / PnL tabs survive a refresh (there is no REST history endpoint). */
+  orderHistorySnapshot(owner: string): Array<Record<string, unknown>> {
+    return (this.orderHistory.get(owner.toLowerCase()) ?? []).slice(0, 200);
   }
 
   /** static params + this trader's live tier for one market — lets the UI render the margin

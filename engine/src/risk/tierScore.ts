@@ -22,8 +22,12 @@ export interface TierResult {
 
 /**
  * Provisional behavioral tier derived deterministically from the wallet address. Stands in
- * for the behavioral inference engine until real history exists; distribution skews to B/C
- * like a real book.
+ * for the behavioral inference engine until real history exists.
+ *
+ * DEMO POLICY: a fresh wallet has no track record to hold against it, so cold-start skews to
+ * the *generous* tiers (A/B, with a little C for spread). A new trader therefore starts with
+ * good leverage and a margin discount — never the punitive D/E premium, which is only ever
+ * *earned* later by observed behavior (liquidations, over-sizing) via scoreTier() below.
  */
 export function demoTierForAddress(addr: string): {
   tier: TierCode;
@@ -34,7 +38,7 @@ export function demoTierForAddress(addr: string): {
   let acc = 0;
   for (let i = 0; i < h.length; i++) acc = (acc * 31 + (parseInt(h[i]!, 16) || 0)) >>> 0;
   const bucket = acc % 100;
-  if (bucket < 12)
+  if (bucket < 78)
     return {
       tier: "A",
       tierMult: 0.75,
@@ -44,7 +48,7 @@ export function demoTierForAddress(addr: string): {
         { name: "tenure", contribution: 0.25 },
       ],
     };
-  if (bucket < 42)
+  if (bucket < 97)
     return {
       tier: "B",
       tierMult: 0.9,
@@ -53,24 +57,7 @@ export function demoTierForAddress(addr: string): {
         { name: "low-drawdown-response", contribution: 0.45 },
       ],
     };
-  if (bucket < 72) return { tier: "C", tierMult: 1.0, factors: [{ name: "provisional-baseline", contribution: 1.0 }] };
-  if (bucket < 90)
-    return {
-      tier: "D",
-      tierMult: 1.2,
-      factors: [
-        { name: "elevated-volatility-response", contribution: 0.6 },
-        { name: "sizing-variance", contribution: 0.4 },
-      ],
-    };
-  return {
-    tier: "E",
-    tierMult: 1.45,
-    factors: [
-      { name: "prior-liquidations", contribution: 0.68 },
-      { name: "oversizing", contribution: 0.32 },
-    ],
-  };
+  return { tier: "C", tierMult: 1.0, factors: [{ name: "provisional-baseline", contribution: 1.0 }] };
 }
 
 /** normalize factor magnitudes to sum ~1 for display */
