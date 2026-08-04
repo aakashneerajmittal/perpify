@@ -108,11 +108,12 @@ const PassportChip: React.FC = () => {
         </Typography>
         <Box sx={{ display: "flex", gap: "8px", mt: "14px" }}>
           <Box
-            component="a"
-            href="https://score.perpify.trade"
-            target="_blank"
-            rel="noreferrer"
-            sx={{ px: "16px", py: "10px", borderRadius: "10px", background: "#ffb454", color: "#160f04", fontWeight: 600, fontFamily: MONO_FAMILY, fontSize: "13px", textDecoration: "none" }}
+            component="button"
+            onClick={() => {
+              // full navigation to the bundled, venue-branded Trader DNA app (same domain).
+              window.location.href = "/dna/";
+            }}
+            sx={{ px: "16px", py: "10px", borderRadius: "10px", background: "#ffb454", color: "#160f04", fontWeight: 600, fontFamily: MONO_FAMILY, fontSize: "13px", border: "none", cursor: "pointer" }}
           >
             Open full Trader DNA →
           </Box>

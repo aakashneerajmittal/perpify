@@ -37,6 +37,10 @@ button{font-family:var(--mono);cursor:pointer;border:none;background:none;color:
 
 /* nav */
 nav{position:sticky;top:0;z-index:40;backdrop-filter:blur(10px);background:rgba(8,8,8,.72);border-bottom:1px solid var(--line)}
+/* embed mode: rendered inside the venue (/trader-dna route) — the venue supplies its own chrome */
+.embed nav{display:none}
+.embed .hero{padding-top:30px}
+.embed{background:transparent}
 nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
 .brand{display:flex;align-items:center;gap:11px;font-family:var(--disp);font-weight:800;letter-spacing:.02em}
 .brand .mk{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--amber),#ff8a3d);display:grid;place-items:center;color:#160f04;font-size:15px}
@@ -141,8 +145,9 @@ canvas{max-width:100%}
 </head>
 <body>
 <nav><div class="wrap">
-  <div class="brand"><span class="mk">◈</span> PERPIFY <small>· Trader DNA</small></div>
+  <a class="brand" href="/" style="text-decoration:none;color:inherit" title="Back to trading"><span class="mk">◈</span> PERPIFY <small>· Trader DNA</small></a>
   <div style="display:flex;gap:10px;align-items:center">
+    <a class="btn btn-ghost" href="/" style="padding:8px 14px;text-decoration:none">← Trade</a>
     <span class="pill"><span class="dot" style="background:var(--green)"></span> model <span class="tnum" id="nav-model">dna-v0.1</span></span>
     <button class="btn btn-ghost" style="padding:8px 14px" onclick="openConnect()">Connect API</button>
   </div>
@@ -1044,6 +1049,8 @@ document.getElementById('connect-bg').addEventListener('click',e=>{if(e.target.i
 function joinWaitlist(){const v=document.getElementById('wl').value.trim();if(!v){return;}document.getElementById('wl-done').textContent='On the list — you\'ll get the verified-tier connect flow first. (Stored locally in this demo.)';}
 
 /* ---------- boot ---------- */
+// embed mode: when framed inside the venue (/trader-dna), hide the standalone nav/bg.
+if(new URLSearchParams(location.search).has('embed'))document.body.classList.add('embed');
 loadModel().then(()=>{
   document.getElementById('nav-model').textContent=MODEL.modelVersion;
   document.getElementById('foot-model').textContent=MODEL.modelVersion+' · '+MODEL.nTrainingTraders.toLocaleString()+' synthetic traders';
