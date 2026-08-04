@@ -48,29 +48,26 @@ const OpenOrders = () => {
   const trueFalseMap = (val) => {
     return val === false ? "No" : "Yes";
   };
-  function closeOrder(orderId, symbol) {
-    cancelOrderApi(symbol, orderId)
-      .then(() => {
-        setCancelOrderApiStatus(false);
-        dispatch(fetchFutureAccountDetails());
-        dispatch(
-          showSnackBar({
-            src: ORDER_CREATION_SUCESS,
-            message: "Your order has been cancelled successfully",
-            type: "success"
-          })
-        );
+  function closeOrder(orderId, symbol, isTrigger) {
+    // PERPIFY: cancel over the account WebSocket (there is no REST cancel endpoint). A resting
+    // limit order → cancel; a conditional (TP/SL/stop) order → cancel_trigger. The engine's
+    // ORDER_TRADE_UPDATE(CANCELED) / CONDITIONAL_ORDER_UPDATE(CANCELED) flows back on the same
+    // socket and removes the row. (Previously this called cancelOrderApi — a REST endpoint the
+    // engine doesn't serve — so the Cancel button silently did nothing.)
+    if (isTrigger) {
+      dispatch({ type: "PERPIFY_CANCEL_TRIGGER", payload: { triggerId: orderId, symbol } });
+    } else {
+      dispatch({ type: "PERPIFY_CANCEL_ORDER", payload: { orderId, symbol } });
+    }
+    setCancelOrderApiStatus(false);
+    dispatch(fetchFutureAccountDetails());
+    dispatch(
+      showSnackBar({
+        src: ORDER_CREATION_SUCESS,
+        message: "Cancel request sent",
+        type: "success"
       })
-      .catch(() => {
-        setCancelOrderApiStatus(false);
-        dispatch(
-          showSnackBar({
-            src: ORDER_CREATION_FAIL,
-            message: "Order could not be cancelled. We apologize!",
-            type: "failure"
-          })
-        );
-      });
+    );
   }
   const handleChange = (data) => {
     navigator.clipboard.writeText(data);
@@ -408,7 +405,7 @@ const OpenOrders = () => {
                 loadingTextDisable={true}
                 onClick={() => {
                   setCancelOrderApiStatus(true);
-                  closeOrder(rowData.c, rowData.s);
+                  closeOrder(rowData.c, rowData.s, rowData.isTrigger);
                 }}
               />
             </TableCell>

@@ -84,6 +84,34 @@ const densitySocketMiddleware = () => {
     store.dispatch({ type: DENSITY_WS_CONNECT }); // idempotent — no-op if already up/connecting
   };
 
+  // Map an engine conditional order (TP/SL/stop trigger) to an OpenOrdersStream row so it shows
+  // under Open Orders alongside limit orders. `isTrigger` makes the Cancel button route to
+  // cancel_trigger; the price column shows the trigger price for a stop-market (which has no
+  // limit price). Engine trigger fields: {id, symbol, side, triggerPrice, triggerAbove, qty,
+  // limitPrice, reduceOnly}.
+  const triggerToOpenOrder = (t) => {
+    const hasLimit = Number(t.limitPrice) > 0;
+    return {
+      T: Date.now(),
+      s: t.symbol,
+      S: t.side,
+      q: String(t.qty),
+      p: String(hasLimit ? t.limitPrice : t.triggerPrice),
+      sp: String(t.triggerPrice),
+      o: hasLimit ? "STOP" : "STOP_MARKET",
+      ot: hasLimit ? "STOP" : "STOP_MARKET",
+      X: "NEW",
+      x: "NEW",
+      c: t.id,
+      i: t.id,
+      R: !!t.reduceOnly,
+      ap: "0",
+      z: "0",
+      isTrigger: true,
+      triggerAbove: t.triggerAbove
+    };
+  };
+
   const getWebSocketUrl = () =>
     GENERATE_TOKEN("websocket")
       .then(
@@ -402,6 +430,14 @@ const densitySocketMiddleware = () => {
       store.dispatch({ type: "PERPIFY_HISTORY_APPEND", payload: JSON.parse(event.data).record });
       return;
     }
+    // PERPIFY: armed conditional orders (TP/SL/stop) painted on connect. Replace any existing
+    // trigger rows with the snapshot so they show under Open Orders and survive refresh.
+    if (JSON.parse(event.data).type === "CONDITIONAL_ORDERS_SNAPSHOT") {
+      const triggers = (JSON.parse(event.data).orders || []).map(triggerToOpenOrder);
+      const nonTrigger = (store.getState().OpenOrdersStream.OpenOrdersStream || []).filter((o) => !o.isTrigger);
+      store.dispatch({ type: OPEN_ORDERS_UPDATE_SIZE_STREAM, payload: [...nonTrigger, ...triggers] });
+      return;
+    }
     const payload = JSON.parse(event.data).eventData;
     const eventType = JSON.parse(event.data).eventType;
 
@@ -490,6 +526,20 @@ const densitySocketMiddleware = () => {
         // liquidated: tier, gap coeff, oracle confidence, equity<MM, proof hash).
         store.dispatch({ type: "LIQUIDATION_EXPLAINER", payload });
         break;
+      case "CONDITIONAL_ORDER_UPDATE": {
+        // PERPIFY: a TP/SL/stop trigger armed (add to Open Orders), fired, or was canceled
+        // (remove it). Without this the trigger reached the engine but never showed in the UI.
+        const st = payload?.status;
+        const cur = store.getState().OpenOrdersStream.OpenOrdersStream || [];
+        if (st === "ARMED") {
+          if (!cur.some((o) => o.c === payload.id)) {
+            store.dispatch({ type: OPEN_ORDERS_WEB_STREAM, payload: triggerToOpenOrder(payload) });
+          }
+        } else if (st === "FIRED" || st === "CANCELED") {
+          store.dispatch({ type: OPEN_ORDERS_UPDATE_SIZE_STREAM, payload: cur.filter((o) => o.c !== payload.id) });
+        }
+        break;
+      }
       case "ORDER_UPDATE":
         // PERPIFY: the engine sends a bare ORDER_UPDATE when it REJECTS an order outright
         // (e.g. "insufficient collateral" once the gap/tier-adjusted initial margin exceeds
