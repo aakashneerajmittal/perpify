@@ -60,6 +60,13 @@ export class EngineBus {
             status: "NEW",
             price: ev.order.price,
           });
+          // PERPIFY: announce a RESTING order so it appears under Open Orders. Density's stream
+          // sent this NEW event; our engine previously only stored meta here and emitted nothing,
+          // so resting limit orders were invisible to the client. IOC never rests, so skip it
+          // (it only ever produces TradeExecuted or OrderRejected).
+          if (ev.order.tif !== "IOC") {
+            this.emitTo(ev.order.owner, toOrderTradeUpdate(ev.order.id, this.orderMeta.get(ev.order.id)!, null, 0n));
+          }
           break;
         }
         case "OrderRejected": {
@@ -229,6 +236,29 @@ export class EngineBus {
           limitPrice: (Number(t.limitPx) / 1e8).toFixed(2),
           reduceOnly: t.reduceOnly,
         });
+      }
+    }
+    return out;
+  }
+
+  /** resting (open) limit orders for a trader across all markets, each as an ORDER_TRADE_UPDATE
+   *  with status NEW — the exact shape the client already routes into Open Orders. Painted on
+   *  connect so open orders survive a page refresh (there is no REST open-orders endpoint). */
+  restingOrders(owner: string): WireMessage[] {
+    const o = owner.toLowerCase();
+    const out: WireMessage[] = [];
+    for (const [market, mkt] of this.state.markets) {
+      for (const ord of mkt.book.byId.values()) {
+        if (ord.owner !== o) continue;
+        const filled = ord.qty - ord.remaining;
+        out.push(
+          toOrderTradeUpdate(
+            ord.id,
+            { owner: ord.owner, market, side: ord.side, tif: ord.tif, qty: ord.qty, filled, status: "NEW", price: ord.price },
+            null,
+            0n,
+          ),
+        );
       }
     }
     return out;

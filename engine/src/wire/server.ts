@@ -412,6 +412,8 @@ export class WireServer {
       this.send(ws, this.bus.traderInfo(owner));
       this.send(ws, this.bus.accountSnapshot(owner));
       this.send(ws, { type: "CONDITIONAL_ORDERS_SNAPSHOT", orders: this.bus.openTriggers(owner) });
+      // resting limit orders, each as an ORDER_TRADE_UPDATE(NEW) — so open orders survive refresh
+      for (const msg of this.bus.restingOrders(owner)) this.send(ws, msg);
       return;
     }
 
