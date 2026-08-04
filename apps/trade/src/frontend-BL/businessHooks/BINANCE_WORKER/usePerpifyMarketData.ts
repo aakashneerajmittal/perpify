@@ -23,6 +23,9 @@ const DEFAULT_SYMBOL = "SPX-PERP";
 export default function usePerpifyMarketData({ tradeScreen }: { tradeScreen?: boolean } = {}) {
   const dispatch = useDispatch();
   const selectedSymbol = useSelector((state: any) => state?.selectSymbol?.selectedSymbol) || DEFAULT_SYMBOL;
+  // the engine's tier-gated leverage cap (SESSION_INFO.maxLeverage), used to clamp the seeded
+  // order-form leverage so buying power / size validation match what the venue will actually accept.
+  const engineMaxLeverage = useSelector((state: any) => Number(state?.sessionInfo?.maxLeverage) || 0);
   const selectedRef = useRef<string>(selectedSymbol);
   selectedRef.current = selectedSymbol;
 
@@ -186,4 +189,18 @@ export default function usePerpifyMarketData({ tradeScreen }: { tradeScreen?: bo
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSymbol]);
+
+  // ---- clamp order-form leverage to the engine's tier-gated maxLeverage ----
+  // The markets are seeded at 10× (above), but SESSION_INFO caps leverage per behavioral tier
+  // (a tier-D wallet is 2×). The buying-power display and size validation multiply balance by
+  // this leverage, so without the clamp the form offered ~5× too much headroom and orders that
+  // looked affordable were rejected by the venue as "insufficient collateral" — with no position
+  // shown. Clamp every market down to the engine cap the moment SESSION_INFO arrives.
+  useEffect(() => {
+    if (!engineMaxLeverage) return;
+    for (const s of PERPIFY_SYMBOLS) {
+      dispatch({ type: "SET_LEVERAGE_POS_RISK", payload: { sym: s.symbol, leverage: engineMaxLeverage } });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engineMaxLeverage]);
 }

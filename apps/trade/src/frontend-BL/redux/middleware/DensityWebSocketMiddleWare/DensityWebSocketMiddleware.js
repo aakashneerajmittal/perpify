@@ -31,6 +31,7 @@ import { deleteApiOrderIdFromStore } from "../../../redux/actions/Futures/saveOr
 import { GENERATE_TOKEN } from "../../actions/User/GenerateToken.ac";
 import { fetchFutureAccountDetails, applyPerpifyAccountBalances } from "../../actions/Futures/Futures.ac";
 import { fetchAccountPositionInfo } from "../../actions/User/AccountInfo.ac";
+import { showSnackBar } from "../../actions/Internal/GlobalErrorHandler.ac";
 import { posthog } from "posthog-js";
 import { mergeArraysWithoutCommonElements } from "./DensityWebSocketHelper";
 import { setPerpifySocket } from "../../../../frontend-api-service/perpifyWsBridge";
@@ -444,6 +445,24 @@ const densitySocketMiddleware = () => {
         // PERPIFY: signed liquidation explainer — surfaced as a modal (why you were
         // liquidated: tier, gap coeff, oracle confidence, equity<MM, proof hash).
         store.dispatch({ type: "LIQUIDATION_EXPLAINER", payload });
+        break;
+      case "ORDER_UPDATE":
+        // PERPIFY: the engine sends a bare ORDER_UPDATE when it REJECTS an order outright
+        // (e.g. "insufficient collateral" once the gap/tier-adjusted initial margin exceeds
+        // free collateral). The Density stream never sent these, so this case did not exist and
+        // the rejection was silently dropped — the trader saw the optimistic "order sent" toast
+        // but got no fill, no position, and no reason ("order doesn't show under positions").
+        // Surface it so the trader knows to reduce size / lower leverage.
+        if (payload?.orderStatus === "REJECTED") {
+          const reason = (payload?.statusRemarks || "insufficient collateral").toString();
+          store.dispatch(
+            showSnackBar({
+              src: "PERPIFY_ORDER_REJECTED",
+              message: `Order rejected: ${reason}. Try a smaller size or lower leverage.`,
+              type: "failure"
+            })
+          );
+        }
         break;
       default:
     }
