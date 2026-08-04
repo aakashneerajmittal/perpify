@@ -680,6 +680,30 @@ const densitySocketMiddleware = () => {
         // closing a position matters as much as opening one — queue-and-flush so a close placed
         // during a reconnect still lands. symbol present → that market; absent → every position.
         sendOrQueue(store, { type: "market_close", symbol: payload?.symbol });
+        // Cancel the reduce-only brackets (TP/SL) attached to the position(s) being closed.
+        // The engine's market_close only flattens the position; it leaves resting triggers armed,
+        // so they used to orphan in Open Orders after the position went flat (and the Close-All
+        // modal explicitly promises to cancel them). We cancel only reduce-only orders here so an
+        // intentional resting *entry* order (a plain limit/stop the trader placed) is left alone.
+        // symbol present → just that market's brackets; absent (Close All) → every held market's.
+        // Mirrors the per-order cancel path (direct send, not queued: a stale cancel after a
+        // reconnect could target an already-filled order).
+        if (socket && socket.readyState === 1) {
+          try {
+            const openOrders = store.getState()?.OpenOrdersStream?.OpenOrdersStream || [];
+            const only = payload?.symbol;
+            openOrders.forEach((o) => {
+              const osym = o?.s;
+              if (only && osym !== only) return; // symbol given → scope to that market
+              if (!o?.R) return; // reduce-only brackets only — leave resting entry orders intact
+              const id = o?.i || o?.c;
+              if (!id) return;
+              socket.send(JSON.stringify(o?.isTrigger ? { type: "cancel_trigger", triggerId: id, symbol: osym } : { type: "cancel", orderId: id, symbol: osym }));
+            });
+          } catch (e) {
+            // non-fatal: the close itself was already sent above
+          }
+        }
         break;
       }
       case "PERPIFY_PLACE_TRIGGER": {
