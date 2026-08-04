@@ -5,9 +5,6 @@ import {
   DENSITY_WS_DISCONNECT,
   DENSITY_WS_OPENED,
   OPEN_ORDERS_WEB_STREAM,
-  GLOBAL_ERROR_ADD,
-  GLOBAL_ERROR_REMOVE,
-  DENSITY_WEBSOCKET_CONNECTION,
   WS_ORDER_TRIGGER,
   DENSITY_WS_SUBSCRIBE_CREATE_ORDER,
   DENSITY_WS_SUBSCRIBE_CLOSE_ORDER,
@@ -42,14 +39,47 @@ const densitySocketMiddleware = () => {
   let socket = null;
   let PongRecived = false;
   let pingTimerRef = null; // the heartbeat interval, so it can be cleared on death/reconnect
+  let connecting = false; // a connect (async token/url fetch → new WebSocket) is in flight
+  let outbox = []; // orders placed while the socket was down — flushed in order on (re)open
   let ReConnectWhenWsconnectionBreak = 0;
   let ApiPollingLimit = 0;
-  let socketConnectionCount = 0;
   let ApiPollingPongRecived = false;
   let symbolList = [];
   let OrderIdList = [];
   let OrderIdListFromStream = [];
   let EventType = "";
+
+  // Flush any orders that were queued while the account socket was down. Called on every
+  // (re)open so an order the trader placed during a reconnect actually reaches the engine
+  // instead of being silently dropped ("order doesn't show under positions").
+  const flushOutbox = () => {
+    if (!(socket && socket.readyState === 1) || outbox.length === 0) return;
+    const pending = outbox;
+    outbox = [];
+    for (const msg of pending) {
+      try {
+        socket.send(JSON.stringify(msg));
+      } catch {
+        outbox.push(msg); // still not sendable — requeue and wait for the next open
+      }
+    }
+  };
+
+  // Send an order now if the socket is OPEN; otherwise queue it and ensure a connect is in
+  // flight so it flushes the moment the socket opens. This is what makes order intake robust
+  // to the live network's half-open / reconnecting states.
+  const sendOrQueue = (store, msg) => {
+    if (socket && socket.readyState === 1) {
+      try {
+        socket.send(JSON.stringify(msg));
+        return;
+      } catch {
+        /* fall through to queue + reconnect */
+      }
+    }
+    if (outbox.length < 25) outbox.push(msg); // bound the queue; drop only under absurd spam
+    store.dispatch({ type: DENSITY_WS_CONNECT }); // idempotent — no-op if already up/connecting
+  };
 
   const getWebSocketUrl = () =>
     GENERATE_TOKEN("websocket")
@@ -86,7 +116,7 @@ const densitySocketMiddleware = () => {
   };
   function startApiPollingWhenStreamNotConnected(store, callback) {
     // sending ping before creating a new order  for check stream is connected or not
-    socket.send(JSON.stringify({ type: "ping" }));
+    if (socket && socket.readyState === 1) socket.send(JSON.stringify({ type: "ping" }));
     // wait for pong  if recievied then wait for a stream event else disconnect ws stream and start polling;
 
     const ApiPollingPongTimer = setTimeout(() => {
@@ -220,15 +250,27 @@ const densitySocketMiddleware = () => {
     }
   }
 
-  const onOpen = (store) => () => {
+  const onOpen = (store, ws) => () => {
+    if (ws !== socket) {
+      // a newer socket already replaced this one (fast reconnect) — let the stale one die
+      try {
+        ws.close();
+      } catch {
+        /* noop */
+      }
+      return;
+    }
     posthog?.capture("WEBSCOKET_OPEN", {
       event_time: new Date().toUTCString()
     });
+    connecting = false;
+    ReConnectWhenWsconnectionBreak = 0; // a fresh healthy open refreshes the reconnect budget
     startPongTimer(store);
     store.dispatch({
       type: DENSITY_WS_OPENED,
       payload: { connecting: false, opened: true }
     });
+    flushOutbox(); // deliver any orders queued while we were reconnecting
   };
 
   function startPongTimer(store) {
@@ -245,102 +287,86 @@ const densitySocketMiddleware = () => {
       clearInterval(pingTimerRef);
       pingTimerRef = null;
     }
-    if (ReConnectWhenWsconnectionBreak < 10) {
-      PongRecived = false;
+    PongRecived = false;
+    try {
+      socket.send(JSON.stringify({ type: "ping" }));
+    } catch {
+      /* socket already dead — the watchdog below will reconnect */
+    }
+    pingTimerRef = setInterval(() => {
+      PongRecived = false; // reset before every ping so each cycle is judged fresh
       try {
         socket.send(JSON.stringify({ type: "ping" }));
       } catch {
-        /* socket already dead — the watchdog below will reconnect */
+        /* dead socket send throws — fall through to the pong check */
       }
-      pingTimerRef = setInterval(() => {
-        PongRecived = false; // reset before every ping so each cycle is judged fresh
-        try {
-          socket.send(JSON.stringify({ type: "ping" }));
-        } catch {
-          /* dead socket send throws — fall through to the pong check */
-        }
-        setTimeout(() => {
-          if (PongRecived !== true) {
-            // no pong within the window → the connection is dead. Stop this timer and drop the
-            // socket; DENSITY_WS_DISCONNECT closes it, which fires onClose → single reconnect.
-            if (pingTimerRef) {
-              clearInterval(pingTimerRef);
-              pingTimerRef = null;
-            }
-            store.dispatch({ type: DENSITY_WS_DISCONNECT });
-            store.dispatch(fetchAccountPositionInfo());
-            store.dispatch(fetchFutureAccountDetails());
-            fetchAllOpenOrdersApi().then((openOrders) => {
-              store.dispatch({ type: OPEN_ORDERS_UPDATE_SIZE_STREAM, payload: [] });
-              store.dispatch({ type: CLEAR_UNREALISED_PROFITLOSS });
-              store.dispatch({ type: OPEN_ORDERS_FETCH_SUCCESS, payload: openOrders.data.data });
-            });
+      setTimeout(() => {
+        if (PongRecived !== true) {
+          // no pong within the window → the connection is half-open/dead. Stop this timer and
+          // close the socket; its onClose is the single reconnect authority and opens a fresh
+          // one. (We deliberately do NOT dispatch DISCONNECT here — that path is for intentional
+          // teardown and does not auto-reconnect.) Refresh the account snapshot meanwhile.
+          if (pingTimerRef) {
+            clearInterval(pingTimerRef);
+            pingTimerRef = null;
           }
-        }, 5000); // allow for live wss round-trip latency (was 1s, too tight)
-      }, 15000);
-    } else {
-      store.dispatch({ type: DENSITY_WS_DISCONNECT });
-      ReConnectWhenWsconnectionBreak = 0;
-    }
+          try {
+            socket && socket.close();
+          } catch {
+            /* onClose handles the reconnect */
+          }
+          store.dispatch(fetchAccountPositionInfo());
+          store.dispatch(fetchFutureAccountDetails());
+          fetchAllOpenOrdersApi().then((openOrders) => {
+            store.dispatch({ type: OPEN_ORDERS_UPDATE_SIZE_STREAM, payload: [] });
+            store.dispatch({ type: CLEAR_UNREALISED_PROFITLOSS });
+            store.dispatch({ type: OPEN_ORDERS_FETCH_SUCCESS, payload: openOrders.data.data });
+          });
+        }
+      }, 5000); // allow for live wss round-trip latency (was 1s, too tight)
+    }, 15000);
   }
 
-  const onError = (store) => (e) => {
+  const onError = (store, ws) => () => {
     posthog?.capture("WEBSCOKET_ERROR", {
       event_time: new Date().toUTCString()
     });
-    if (ReConnectWhenWsconnectionBreak < 5) {
-      // eslint-disable-next-line no-unused-vars
-      const PongTimer = setTimeout(() => {
-        store.dispatch({ type: DENSITY_WS_DISCONNECT });
-        store.dispatch(fetchAccountPositionInfo());
-        store.dispatch(fetchFutureAccountDetails());
-        fetchAllOpenOrdersApi().then((openOrders) => {
-          store.dispatch({
-            type: OPEN_ORDERS_UPDATE_SIZE_STREAM,
-            payload: []
-          });
-          store.dispatch({ type: CLEAR_UNREALISED_PROFITLOSS });
-          store.dispatch({
-            type: OPEN_ORDERS_FETCH_SUCCESS,
-            payload: openOrders.data.data
-          });
-        });
-        store.dispatch({ type: DENSITY_WS_CONNECT });
-      }, 3000 * ReConnectWhenWsconnectionBreak);
-    } else {
-      store.dispatch({ type: DENSITY_WS_DISCONNECT });
-      ReConnectWhenWsconnectionBreak = 0;
-      // window.location.reload();
+    if (ws !== socket) return; // stale socket's error — ignore
+    // A ws error is (almost) always immediately followed by onClose. Let onClose be the single
+    // reconnect authority: just ensure this socket is closing. We deliberately do NOT raise the
+    // "server is facing some issues" snackbar here — on a flaky live network transient errors are
+    // routine and self-heal via reconnect; a scary popup on every blip is worse than silence.
+    try {
+      ws.close();
+    } catch {
+      /* onClose reconnects */
     }
-    store.dispatch({
-      type: GLOBAL_ERROR_ADD,
-      payload: {
-        src: DENSITY_WEBSOCKET_CONNECTION,
-        errorMessage: `Our server is facing some issues `,
-        dialogType: "failure",
-        errorUi: "SNACKBAR",
-        errorHandlerForReduxStateUpdation: () =>
-          store.dispatch({
-            type: GLOBAL_ERROR_REMOVE,
-            payload: { src: DENSITY_WEBSOCKET_CONNECTION }
-          })
-      }
-    });
   };
 
-  const onClose = (store) => (e) => {
+  const onClose = (store, ws) => () => {
     posthog?.capture("WEBSCOKET_CLOSE", {
       event_time: new Date().toUTCString()
     });
-    // stop the heartbeat for the dead socket and reconnect, so a detected close recovers instead
-    // of leaving the account stream permanently down (no orders, no fills, stale balance).
+    if (ws !== socket) return; // a newer socket already replaced this one — ignore the stale close
+    // This is the SINGLE reconnect authority for an *unexpected* close. Stop the dead socket's
+    // heartbeat, clear it, mark the connection closed (which also nudges the SideBar effect to
+    // re-connect), and schedule one bounded/backing-off reconnect. The retry budget resets to 0
+    // on every healthy open (onOpen), so it only exhausts if the engine is genuinely unreachable.
     if (pingTimerRef) {
       clearInterval(pingTimerRef);
       pingTimerRef = null;
     }
-    store.dispatch({ type: DENSITY_WS_DISCONNECT });
-    if (ReConnectWhenWsconnectionBreak < 10) {
-      setTimeout(() => store.dispatch({ type: DENSITY_WS_CONNECT }), 1500);
+    connecting = false;
+    socket = null;
+    setPerpifySocket(null);
+    store.dispatch({
+      type: DENSITY_WS_CLOSED,
+      payload: { connecting: false, opened: false }
+    });
+    if (ReConnectWhenWsconnectionBreak < 12) {
+      ReConnectWhenWsconnectionBreak++;
+      const delay = Math.min(1500 * ReConnectWhenWsconnectionBreak, 8000);
+      setTimeout(() => store.dispatch({ type: DENSITY_WS_CONNECT }), delay);
     }
   };
 
@@ -427,69 +453,84 @@ const densitySocketMiddleware = () => {
   return (store) => (next) => (action) => {
     const { type, payload } = action;
     switch (type) {
-      case DENSITY_WS_CONNECT:
-        socketConnectionCount++;
-        if (socket !== null) {
-          socket.close();
-          // socket.terminate();
+      case DENSITY_WS_CONNECT: {
+        // Idempotent connect. Guard on the socket's ACTUAL state — never on a hand-maintained
+        // counter. If a socket is already CONNECTING or OPEN (or a connect's async token/url
+        // fetch is already in flight), this is a no-op. Otherwise open a fresh socket and bind
+        // its handlers to THIS instance, so a stale socket's late events can't clobber it.
+        //
+        // This replaces the previous `socketConnectionCount === 1` guard, which could wedge the
+        // account stream permanently: DISCONNECT only reset the counter inside `if (socket !==
+        // null)`, so a disconnect-while-null (routine in the live reconnect race) left the counter
+        // stuck >= 2. The guard then never equalled 1 again, NO new socket was ever created, and
+        // every order hit `socket.readyState !== 1` and was silently dropped — exactly the
+        // "order doesn't show under positions" bug, with balance/positions frozen at funding.
+        if (connecting) break;
+        if (socket && (socket.readyState === 0 || socket.readyState === 1)) break;
+        if (socket) {
+          try {
+            socket.close();
+          } catch {
+            /* noop */
+          }
         }
-        // connect to the remote host
-        // TODO : Optimize this approach
-        if (socketConnectionCount === 1) {
-          getWebSocketUrl().then((url) => {
-            socket = new WebSocket(url);
-            setPerpifySocket(socket); // expose to API-layer order/cancel helpers
-            // const webWorker = new CreateWebWorker();
-            // socket = webWorker?.worker;
-
-            socket.addEventListener("message", function (event) {
-              const { type, action } = event.data;
-              if (type === "websocket") {
-                // Handle WebSocket messages received from the web worker
-                switch (action) {
-                  case "open":
-                    onOpen(store)();
-                    break;
-                  case "onmessage":
-                    onMessage(store)(event?.data);
-                    break;
-                  case "onerror":
-                    onError(store)(event?.data?.error);
-                    break;
-                  case "onclose":
-                    onClose(store)();
-                    break;
-                }
-              }
-            });
-
-            // socket.postMessage({ type: "websocket", payload: { url } });
-
-            // websocket handlers
-            socket.onmessage = onMessage(store);
-            socket.onclose = onClose(store);
-            socket.onopen = onOpen(store);
-            socket.onerror = onError(store);
-            return Promise.resolve();
+        connecting = true;
+        getWebSocketUrl()
+          .then((url) => {
+            let ws;
+            try {
+              ws = new WebSocket(url);
+            } catch {
+              connecting = false;
+              return;
+            }
+            socket = ws;
+            setPerpifySocket(ws); // expose to API-layer order/cancel helpers
+            ws.onmessage = onMessage(store);
+            ws.onclose = onClose(store, ws);
+            ws.onopen = onOpen(store, ws);
+            ws.onerror = onError(store, ws);
+          })
+          .catch(() => {
+            // token/url fetch failed — clear the in-flight flag and schedule a bounded retry so
+            // a transient auth/network hiccup at connect time still recovers on its own.
+            connecting = false;
+            if (ReConnectWhenWsconnectionBreak < 12) {
+              ReConnectWhenWsconnectionBreak++;
+              setTimeout(() => store.dispatch({ type: DENSITY_WS_CONNECT }), 2000);
+            }
           });
-        }
         break;
+      }
 
-      case DENSITY_WS_DISCONNECT:
-        if (socket !== null) {
-          ReConnectWhenWsconnectionBreak++;
-          socket.close();
-          store.dispatch({
-            type: DENSITY_WS_CLOSED,
-            payload: { connecting: false, opened: false }
-          });
-          //  socket.terminate();
-          socketConnectionCount = 0;
-          PongRecived = false;
+      case DENSITY_WS_DISCONNECT: {
+        // Intentional teardown (offline, logout, unmount). ALWAYS fully reset — never gate the
+        // reset on socket being non-null (that omission was the counter-wedge bug). We null
+        // `socket` BEFORE closing the old one so its onClose sees a stale instance and does NOT
+        // auto-reconnect. Marking the connection closed also nudges the SideBar effect, which
+        // re-dispatches CONNECT whenever it should be online — so recovery is never lost.
+        if (pingTimerRef) {
+          clearInterval(pingTimerRef);
+          pingTimerRef = null;
         }
+        connecting = false;
+        PongRecived = false;
+        const dead = socket;
         socket = null;
         setPerpifySocket(null);
+        if (dead) {
+          try {
+            dead.close();
+          } catch {
+            /* noop */
+          }
+        }
+        store.dispatch({
+          type: DENSITY_WS_CLOSED,
+          payload: { connecting: false, opened: false }
+        });
         break;
+      }
       case DENSITY_WS_SUBSCRIBE_CREATE_ORDER: {
         if (payload?.type === "MARKET") {
           const symbolList3 = payload.data.map((item) => item?.symbol);
@@ -510,32 +551,39 @@ const densitySocketMiddleware = () => {
       }
       // PERPIFY: order intake flows over the SAME authenticated account socket the fills
       // arrive on. The engine replies with ORDER_TRADE_UPDATE / ACCOUNT_UPDATE (handled above).
+      // Placements go through sendOrQueue: if the socket is momentarily down/reconnecting the
+      // order is queued and flushed the instant it opens, instead of being silently dropped.
       case "PERPIFY_PLACE_ORDER": {
-        if (socket && socket.readyState === 1) socket.send(JSON.stringify(payload));
+        sendOrQueue(store, payload);
         break;
       }
       case "PERPIFY_PLACE_ORDER_SIGNED": {
         // EIP-712 wallet-signed order — payload is the ready {type:"place_order_signed",...} wire
         // msg (owner/qty8/price8/nonce/expiry/signature). Engine verifies before it touches the book.
-        if (socket && socket.readyState === 1) socket.send(JSON.stringify(payload));
-        break;
-      }
-      case "PERPIFY_CANCEL_ORDER": {
-        if (socket && socket.readyState === 1) socket.send(JSON.stringify({ type: "cancel", orderId: payload?.orderId, symbol: payload?.symbol }));
+        sendOrQueue(store, payload);
         break;
       }
       case "PERPIFY_MARKET_CLOSE": {
-        // symbol present → close that market's position; absent → close every open position
-        if (socket && socket.readyState === 1) socket.send(JSON.stringify({ type: "market_close", symbol: payload?.symbol }));
+        // closing a position matters as much as opening one — queue-and-flush so a close placed
+        // during a reconnect still lands. symbol present → that market; absent → every position.
+        sendOrQueue(store, { type: "market_close", symbol: payload?.symbol });
         break;
       }
       case "PERPIFY_PLACE_TRIGGER": {
         // conditional order (TP/SL/stop) — payload is already the {type:"place_trigger",...} wire msg
-        if (socket && socket.readyState === 1) socket.send(JSON.stringify(payload));
+        sendOrQueue(store, payload);
+        break;
+      }
+      case "PERPIFY_CANCEL_ORDER": {
+        // cancels aren't queued (a stale cancel after reconnect could target a filled order) —
+        // send if the socket is up, else kick a reconnect so the next action has a live socket.
+        if (socket && socket.readyState === 1) socket.send(JSON.stringify({ type: "cancel", orderId: payload?.orderId, symbol: payload?.symbol }));
+        else store.dispatch({ type: DENSITY_WS_CONNECT });
         break;
       }
       case "PERPIFY_CANCEL_TRIGGER": {
         if (socket && socket.readyState === 1) socket.send(JSON.stringify({ type: "cancel_trigger", triggerId: payload?.triggerId, symbol: payload?.symbol }));
+        else store.dispatch({ type: DENSITY_WS_CONNECT });
         break;
       }
       default:
