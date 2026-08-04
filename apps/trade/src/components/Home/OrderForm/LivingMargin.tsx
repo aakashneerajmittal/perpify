@@ -44,10 +44,11 @@ const LivingMargin: React.FC = () => {
   const gap = num(gapRaw) > 0 ? num(gapRaw) : 1.0;
   const tierMult = num(tierMultRaw) > 0 ? num(tierMultRaw) : 1.0;
 
-  // notional from the order form: USDT-denominated size is already notional; contract size × price.
+  // state.size is ALWAYS the contract quantity (base units); sizeToggle only switches the
+  // display unit (contracts vs quote), so notional is size × price regardless of the toggle.
   const px = state?.OrderType === 1 && num(state?.limitPrice) > 0 ? num(state.limitPrice) : num(lastPx);
   const sizeNum = num(state?.size);
-  const notional = state?.sizeToggle === "USDT" ? sizeNum : sizeNum * px;
+  const notional = sizeNum * px;
 
   const im = notional * BASE_IM * gap * tierMult;
   const flat = notional * BASE_IM * 1.0 * 1.0; // a venue that prices everyone the same
