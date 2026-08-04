@@ -20,6 +20,7 @@ import BuySellToggle from "@/components/Home/OrderForm/BuySellToggle";
 import GapCoefficient from "./GapCoefficient";
 import ReduceOnlyChip from "./ReduceOnlyChip";
 import ConnectButton from "@/components/Wallet/ConnectButton";
+import PassportChip from "./PassportChip";
 interface Props {
   showOrderForm: { expand: boolean; side: string };
   setShowOrderForm: () => void;
@@ -183,6 +184,11 @@ const MarketSegment = ({ showOrderForm, setShowOrderForm }: Props) => {
       {isLargeScreen && (
         <Box className="productTour__step2" sx={{ flexShrink: 0 }}>
           <BuySellToggle showOrderForm={showOrderForm} setShowOrderForm={setShowOrderForm} Side={"BUY"} />
+        </Box>
+      )}
+      {isLargeScreen && (
+        <Box sx={{ flexShrink: 0, pr: 0.5 }}>
+          <PassportChip />
         </Box>
       )}
       {isLargeScreen && (

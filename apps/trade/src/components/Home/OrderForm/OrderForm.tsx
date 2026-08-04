@@ -15,6 +15,7 @@ import LockedOutScreen from "./LockedOutScreen";
 import SignalTradingSwicth from "./SignalTradingSwicth";
 import CustomDivider from "../../UI/Divider/CustomDivider";
 import TierCard from "@/components/Tier/TierCard";
+import LivingMargin from "./LivingMargin";
 
 interface OrderFormProps {
   Side: string;
@@ -69,6 +70,10 @@ function OrderForm({ Side }: OrderFormProps) {
 
                 <Grid container item justifyContent={"space-between"} gap={1} xs={12}>
                   <TakeProfitStopLoss />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <LivingMargin />
                 </Grid>
               </Grid>
             </Box>
