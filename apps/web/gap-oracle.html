@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Gap Oracle — Perpify</title>
+<meta name="description" content="Perpify prices the dark. The Gap Oracle shows the live overnight/weekend gap coefficient and its 7-day forward curve — the margin the market will demand before the gap, not after."/>
+<meta property="og:title" content="Gap Oracle — Perpify prices the dark"/>
+<meta property="og:description" content="Every other perp venue runs a static margin number and lets the overnight gap hit you at the reopen. Perpify prices the dark before it happens."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#070707;--bg1:#0d0d0d;--bg2:#131313;--bg3:#1b1b18;--line:#242420;--ink:#f0ede8;--mut:#8a8a82;--dim:#55554e;--amber:#ffb454;--blue:#4f8eff;--green:#3ecf8e;--red:#ff5566;--mono:'DM Mono',monospace;--disp:'Syne',sans-serif;--serif:'Instrument Serif',serif}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:15px;line-height:1.5}
+.wrap{max-width:1120px;margin:0 auto;padding:0 22px}
+h1,h2,h3{font-family:var(--disp);font-weight:700;letter-spacing:-.01em;margin:0}
+.tnum{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+a{color:var(--amber);text-decoration:none}
+button{font-family:var(--mono);cursor:pointer;border:none;background:none;color:inherit}
+nav{position:sticky;top:0;z-index:20;background:rgba(7,7,7,.8);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:58px}
+.brand{display:flex;align-items:center;gap:11px;font-family:var(--disp);font-weight:800;letter-spacing:.02em}
+.brand .mk{width:25px;height:25px;border-radius:7px;background:linear-gradient(135deg,var(--amber),#ff8a3d);display:grid;place-items:center;color:#160f04;font-size:14px}
+.brand small{font-weight:500;color:var(--mut);font-family:var(--mono);letter-spacing:.06em;font-size:11px;text-transform:uppercase}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:11px;letter-spacing:.03em;border:1px solid var(--line);color:var(--mut);background:var(--bg1)}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.hero{padding:34px 0 8px}
+.hero h1{font-size:clamp(28px,4.6vw,46px);line-height:1.03;font-weight:800;letter-spacing:-.02em;max-width:20ch}
+.hero h1 em{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--amber)}
+.hero p{color:var(--mut);max-width:64ch;margin:14px 0 0;font-size:15px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:22px 0 6px}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg1)}
+.seg button{padding:8px 12px;font-size:12.5px;color:var(--mut);border-right:1px solid var(--line)}
+.seg button:last-child{border-right:none}
+.seg button.on{background:var(--bg3);color:var(--ink)}
+.lbl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-right:4px}
+.hgrid{display:grid;grid-template-columns:1.05fr 1fr 1fr;gap:14px;margin-top:14px}
+@media(max-width:820px){.hgrid{grid-template-columns:1fr}}
+.card{background:var(--bg1);border:1px solid var(--line);border-radius:16px;padding:20px}
+.now-coeff{display:flex;flex-direction:column;gap:2px}
+.now-coeff .big{font-family:var(--disp);font-weight:800;font-size:60px;line-height:1;letter-spacing:-.03em}
+.now-coeff .big .x{font-size:26px;color:var(--mut);font-weight:600}
+.sess{display:inline-flex;align-items:center;gap:7px;font-size:12px;padding:4px 10px;border-radius:999px;width:fit-content;margin-top:6px}
+.count .t{font-family:var(--disp);font-weight:800;font-size:34px;letter-spacing:-.01em}
+.count .l,.jump .l{font-size:12px;color:var(--mut)}
+.jump .t{font-family:var(--disp);font-weight:800;font-size:34px;letter-spacing:-.01em}
+.jump .arrow{color:var(--amber)}
+.curve-card{margin-top:14px;position:relative}
+.curve-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;flex-wrap:wrap;gap:6px}
+.section-t{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+canvas{display:block;width:100%}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font-size:11.5px;color:var(--mut)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:12px;height:4px;border-radius:2px;display:inline-block}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+@media(max-width:820px){.two{grid-template-columns:1fr}}
+.calc label{font-size:12px;color:var(--mut);display:block;margin-bottom:5px}
+.calc input,.calc select{width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:11px 12px;color:var(--ink);font-family:var(--mono);font-size:15px}
+.impact{display:flex;align-items:baseline;gap:8px;margin-top:14px}
+.impact .big{font-family:var(--disp);font-weight:800;font-size:38px;letter-spacing:-.02em;color:var(--amber)}
+.mtable{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
+.mtable td{padding:7px 0;border-bottom:1px solid var(--bg3);color:var(--mut)}
+.mtable td:last-child{text-align:right;color:var(--ink);font-variant-numeric:tabular-nums}
+.mtable tr:last-child td{border-bottom:none}
+.why{margin-top:14px;background:linear-gradient(180deg,rgba(255,180,84,.05),transparent);border:1px solid #2a2419;border-radius:16px;padding:22px}
+.why h3{font-size:19px}.why p{color:var(--mut);margin:8px 0 0;font-size:14px;max-width:80ch}
+.why .row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:16px}
+@media(max-width:820px){.why .row{grid-template-columns:1fr}}
+.why .row .b{border-left:2px solid var(--amber);padding-left:12px}
+.why .row .b b{font-family:var(--disp)}
+.why .row .b span{color:var(--mut);font-size:13px}
+footer{border-top:1px solid var(--line);margin-top:44px;padding:26px 0;color:var(--dim);font-size:12px}
+.scrub{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:12px;color:var(--mut)}
+.scrub input[type=range]{flex:1;accent-color:var(--amber)}
+</style>
+</head>
+<body>
+<nav><div class="wrap">
+  <div class="brand"><span class="mk">◈</span> PERPIFY <small>· Gap Oracle</small></div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <span class="pill" id="clock"><span class="dot" style="background:var(--green)"></span> —</span>
+    <span class="pill">model <span id="mv">gap-v0.1</span></span>
+  </div>
+</div></nav>
+
+<div class="wrap">
+  <div class="hero">
+    <span class="pill" style="margin-bottom:14px"><span class="dot" style="background:var(--amber)"></span> the margin no other venue shows you</span>
+    <h1>Perpify prices <em>the dark.</em></h1>
+    <p>Markets close. Risk doesn't. Every night and weekend, price gaps while you can't trade — and every other perp venue runs a <b style="color:var(--ink)">static</b> margin number and lets that gap hit you at the reopen. The Gap Oracle is Perpify's live model of overnight &amp; weekend gap risk: it charges for the dark <b style="color:var(--ink)">before</b> it happens, and sequences the reopen. This is that model, live.</p>
+  </div>
+
+  <div class="controls">
+    <span class="lbl">Market</span>
+    <div class="seg" id="sym"></div>
+    <span class="lbl" style="margin-left:8px">Regime</span>
+    <div class="seg" id="reg"></div>
+  </div>
+
+  <div class="hgrid">
+    <div class="card now-coeff">
+      <div class="section-t">Live gap coefficient</div>
+      <div class="big tnum"><span id="coeff">1.00</span><span class="x">×</span></div>
+      <div class="sess" id="sess"><span class="dot"></span><span id="sess-t">—</span></div>
+      <div style="font-size:12px;color:var(--mut);margin-top:8px" id="coeff-sub">Margin is multiplied by this, live.</div>
+    </div>
+    <div class="card count">
+      <div class="section-t">Countdown to dark</div>
+      <div class="t tnum" id="cd">—</div>
+      <div class="l" id="cd-l">until the market goes dark</div>
+    </div>
+    <div class="card jump">
+      <div class="section-t">Coefficient at the dark open</div>
+      <div class="t tnum"><span class="arrow">→</span> <span id="jump">—</span>×</div>
+      <div class="l" id="jump-l">what your margin becomes</div>
+    </div>
+  </div>
+
+  <div class="card curve-card">
+    <div class="curve-head">
+      <div class="section-t">7-day forward curve — what the model will charge, hour by hour</div>
+      <div style="font-size:12px;color:var(--mut)" id="curve-note"></div>
+    </div>
+    <canvas id="curve" height="620"></canvas>
+    <div class="legend">
+      <span><i class="sw" style="background:#3ecf8e"></i> market open (1.00×)</span>
+      <span><i class="sw" style="background:#ffb454"></i> overnight / weekend dark (priced)</span>
+      <span><i class="sw" style="background:#4f8eff"></i> pre-close ramp — the "Friday 4pm rule"</span>
+      <span><i class="sw" style="background:#f0ede8;opacity:.6"></i> now</span>
+    </div>
+    <div class="scrub">
+      <span>Time machine</span>
+      <input id="scrub" type="range" min="0" max="167" value="0" step="0.25"/>
+      <span id="scrub-t" class="tnum" style="min-width:150px;text-align:right">now</span>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="card calc">
+      <div class="section-t" style="margin-bottom:12px">What the dark costs your position</div>
+      <label>Position size (USD notional)</label>
+      <input id="size" type="text" value="50,000"/>
+      <div class="impact"><div class="big" id="imp">+$0</div><div style="color:var(--mut);font-size:13px" id="imp-l">more margin when the dark opens</div></div>
+      <table class="mtable">
+        <tr><td>Margin now (<span id="t-now">1.00</span>× · open)</td><td id="m-now">$0</td></tr>
+        <tr><td>Margin at the dark open (<span id="t-dark">1.00</span>×)</td><td id="m-dark">$0</td></tr>
+        <tr><td>Priced <b style="color:var(--amber)">before</b> the gap, not after</td><td id="m-extra" style="color:var(--amber)">$0</td></tr>
+      </table>
+      <div style="font-size:11.5px;color:var(--dim);margin-top:10px">Assumes 33% base initial margin × tier 1.0× (your behavioral tier moves this). Single stocks gap wider than the index — NVDA is scaled 2×.</div>
+    </div>
+    <div class="why">
+      <h3>Why this isn't another DEX</h3>
+      <p>A crypto perp DEX runs 24/7, so it never has to think about the gap — one static maintenance-margin number covers everything. Perpify lists <b style="color:var(--ink)">equity</b> perps, which go dark every night and weekend. That's a different risk, and it needs a different engine.</p>
+      <div class="row">
+        <div class="b"><b>Prices the dark</b><br/><span>Gap risk is charged on a live model before the close — not discovered at the reopen.</span></div>
+        <div class="b"><b>Sequences the reopen</b><br/><span>The book reopens in a controlled auction, not a chaotic first-print stampede.</span></div>
+        <div class="b"><b>Underwrites the trader</b><br/><span>Your behavioral tier scales this coefficient — discipline literally pays less margin.</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer><div class="wrap" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px">
+  <div>PERPIFY · Gap Oracle — "prices the dark, clears the reopen." Coefficient model <span id="foot-mv">gap-v0.1</span> (31-yr SPY calibration).</div>
+  <div>illustrative · not investment advice</div>
+</div></footer>
+
+<script>
+"use strict";
+/* ===== gap model (verified-identical copy of apps/trade gapModel.ts / engine) ===== */
+const RMS={"extended|calm":0.0045786,"extended|crisis":0.01635319,"extended|elevated":0.01025528,"extended|normal":0.00618733,"weeknight|calm":0.00351759,"weeknight|crisis":0.01535142,"weeknight|elevated":0.00842219,"weeknight|normal":0.00532147};
+const RMS_REF=0.00532147,ALPHA=0.168812,FLOOR=1.0,CAP=2.5,RAMP_H=2.0,EXT_MIN=39.0;
+const SCALE={"SPX-PERP":1.0,"NVDA-PERP":2.0,"AAPL-PERP":1.35,"MSFT-PERP":1.3,"GOOGL-PERP":1.5,"AMZN-PERP":1.6};
+const OPEN=9.5,CLOSE=16.0;
+function coefficient(dark,reg,dTot,dRem){const base=(RMS[dark+"|"+reg]??RMS_REF)/RMS_REF;const r=Math.max(0,Math.min(dRem,dTot));if(r<=0||dTot<=0)return FLOOR;return Math.min(CAP,Math.max(FLOOR,base*Math.pow(r/dTot,ALPHA)));}
+function etParts(now){const p=new Intl.DateTimeFormat("en-US",{timeZone:"America/New_York",weekday:"short",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).formatToParts(now);const m={};for(const q of p)m[q.type]=q.value;const dows=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];const dow=dows.indexOf(m.weekday||"");let hh=parseInt(m.hour||"0",10);if(hh===24)hh=0;return{dow,hour:hh+(+m.minute||0)/60+(+m.second||0)/3600};}
+function reading(now,reg,scale){const{dow,hour}=etParts(now);const w=dow*24+hour;const os=[1,2,3,4,5].map(d=>d*24+OPEN);const ce=[1,2,3,4,5].map(d=>d*24+CLOSE);const oi=os.findIndex((o,i)=>w>=o&&w<ce[i]);const isOpen=oi>=0;const oc=[...os,...os.map(o=>o+168)];const cc=[...ce.map(c=>c-168),...ce];const nextOpen=Math.min(...oc.filter(o=>o>w));const lastClose=Math.max(...cc.filter(c=>c<=w));const dTot=nextOpen-lastClose;const dRem=nextOpen-w;const dark=dTot>=EXT_MIN?"extended":"weeknight";
+  if(isOpen){const closeAt=ce[oi];const h2c=closeAt-w;if(h2c<=RAMP_H){const un=Math.min(...oc.filter(o=>o>closeAt));const ut=un-closeAt;const ud=ut>=EXT_MIN?"extended":"weeknight";const init=1+(coefficient(ud,reg,ut,ut)-1)*scale;const ramp=(RAMP_H-h2c)/RAMP_H;return{coeff:Math.min(CAP,1+ramp*(init-1)),session:"open",dark:ud,dRem:0,preclose:true};}return{coeff:1.0,session:"open",dark:null,dRem:0,preclose:false};}
+  const coeff=Math.min(CAP,1+(coefficient(dark,reg,dTot,dRem)-1)*scale);return{coeff,session:dark==="extended"?"weekend":"weeknight",dark,dRem,preclose:false};}
+function forwardCurve(now,H,stepMin,reg,scale){const out=[];const t0=now.getTime();const s=stepMin*60000;const n=Math.floor(H*60/stepMin);for(let i=0;i<=n;i++){const ms=t0+i*s;const r=reading(new Date(ms),reg,scale);out.push({ms,h:i*stepMin/60,coeff:r.coeff,session:r.session,preclose:r.preclose});}return out;}
+function nextDark(now,reg,scale){const t0=now.getTime();const here=reading(now,reg,scale);if(here.session!=="open")return{h:0,ms:t0,dark:here.dark||"weeknight",coeff:here.coeff,label:here.session==="weekend"?"this weekend":"tonight"};for(let i=1;i<=8*1440;i++){const ms=t0+i*60000;const r=reading(new Date(ms),reg,scale);if(r.session!=="open")return{h:(ms-t0)/3600000,ms,dark:r.dark||"weeknight",coeff:r.coeff,label:r.session==="weekend"?"the Friday close":"tonight's close"};}return null;}
+
+/* ===== state + controls ===== */
+const SYMS=[["SPX-PERP","SPX"],["NVDA-PERP","NVDA"],["AAPL-PERP","AAPL"],["MSFT-PERP","MSFT"],["GOOGL-PERP","GOOGL"],["AMZN-PERP","AMZN"]];
+const REGS=[["calm","Calm"],["normal","Normal"],["elevated","Elevated"],["crisis","Crisis"]];
+let SYM="SPX-PERP", REG="normal", SCRUB=0;
+function scale(){return SCALE[SYM]||1;}
+function segBtns(el,items,getCur,on){el.innerHTML=items.map(([v,l])=>`<button data-v="${v}" class="${v===getCur()?'on':''}">${l}</button>`).join('');el.querySelectorAll('button').forEach(b=>b.onclick=()=>{on(b.dataset.v);el.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.v===getCur()));});}
+segBtns(document.getElementById('sym'),SYMS,()=>SYM,v=>{SYM=v;render();});
+segBtns(document.getElementById('reg'),REGS,()=>REG,v=>{REG=v;render();});
+document.getElementById('scrub').addEventListener('input',e=>{SCRUB=parseFloat(e.target.value);render();});
+document.getElementById('size').addEventListener('input',()=>renderImpact());
+
+function baseNow(){return new Date();}
+function scrubNow(){return new Date(baseNow().getTime()+SCRUB*3600000);}
+function fmt(n){n=Math.round(n);if(Math.abs(n)>=1e6)return (n/1e6).toFixed(2)+'M';if(Math.abs(n)>=1e3)return (n/1e3).toFixed(1)+'k';return String(n);}
+function fmtHrs(h){if(h<=0)return "now";const d=Math.floor(h/24),hh=Math.floor(h%24),mm=Math.floor((h*60)%60),ss=Math.floor((h*3600)%60);if(d>0)return `${d}d ${hh}h ${mm}m`;return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;}
+
+/* ===== render ===== */
+function render(){
+  document.getElementById('curve-note').textContent = SYM+" · "+REGS.find(r=>r[0]===REG)[1].toLowerCase()+" regime · ×"+scale().toFixed(2)+" symbol scale";
+  const now=scrubNow();
+  const r=reading(now,REG,scale());
+  document.getElementById('coeff').textContent=r.coeff.toFixed(2);
+  const sess=document.getElementById('sess'), st=document.getElementById('sess-t'), dot=sess.querySelector('.dot');
+  const map={open:["#3ecf8e","MARKET OPEN — continuous"],weeknight:["#ffb454","DARK — overnight gap priced"],weekend:["#ff5566","DARK — weekend gap priced"]};
+  const [c,l]=map[r.session];sess.style.background=c+"22";sess.style.color=c;dot.style.background=c;st.textContent=r.preclose?"PRE-CLOSE RAMP — pricing tonight's gap":l;
+  document.getElementById('coeff-sub').textContent = r.session==="open"&&!r.preclose ? "1.00× — continuous session, no gap to price right now." : (((r.coeff-1)*100).toFixed(0)+"% gap premium on your margin, live.");
+
+  const nd=nextDark(now,REG,scale());
+  if(nd){document.getElementById('cd').textContent=fmtHrs(nd.h);document.getElementById('cd-l').textContent=nd.h<=0?("dark now · "+nd.label):("until "+nd.label);document.getElementById('jump').textContent=nd.coeff.toFixed(2);document.getElementById('jump-l').textContent=nd.dark==="extended"?"weekend dark — the big one":"overnight dark";}
+  const sc=document.getElementById('scrub-t');
+  sc.textContent = SCRUB===0?"now":("+"+fmtHrs(SCRUB).replace(/:\d\d$/,'')+" ahead");
+  drawCurve();
+  renderImpact(nd);
+}
+let LAST_ND=null;
+function renderImpact(nd){
+  nd=nd||nextDark(scrubNow(),REG,scale());LAST_ND=nd;
+  const size=parseFloat((document.getElementById('size').value||"0").replace(/[,$\s]/g,''))||0;
+  const now=scrubNow();const rNow=reading(now,REG,scale());
+  const bIM=0.3333,tier=1.0;
+  const mNow=size*bIM*rNow.coeff*tier, mDark=size*bIM*(nd?nd.coeff:rNow.coeff)*tier;
+  document.getElementById('t-now').textContent=rNow.coeff.toFixed(2);
+  document.getElementById('t-dark').textContent=(nd?nd.coeff:rNow.coeff).toFixed(2);
+  document.getElementById('m-now').textContent="$"+fmt(mNow);
+  document.getElementById('m-dark').textContent="$"+fmt(mDark);
+  const extra=mDark-mNow;
+  document.getElementById('m-extra').textContent=(extra>=0?"+$":"-$")+fmt(Math.abs(extra));
+  document.getElementById('imp').textContent=(extra>=0?"+$":"-$")+fmt(Math.abs(extra));
+  document.getElementById('imp-l').textContent = extra>1 ? "more margin when the dark opens — priced in advance" : "you're already in the dark window";
+}
+
+function drawCurve(){
+  const cv=document.getElementById('curve');const dpr=Math.min(2,window.devicePixelRatio||1);
+  const W=cv.clientWidth, H=620;cv.width=W*dpr;cv.height=H*dpr;cv.style.height=H+'px';
+  const g=cv.getContext('2d');g.scale(dpr,dpr);g.clearRect(0,0,W,H);
+  const now=baseNow();
+  const curve=forwardCurve(now,168,15,REG,scale());
+  const maxC=Math.max(1.05,...curve.map(p=>p.coeff));
+  const yMax=Math.ceil(maxC*20)/20; const yMin=1.0;
+  const padL=52,padR=14,padT=18,padB=42;const plotW=W-padL-padR,plotH=H-padT-padB;
+  const X=h=>padL+(h/168)*plotW;
+  const Y=c=>padT+plotH*(1-(c-yMin)/(yMax-yMin));
+  // dark-period shading
+  for(let i=0;i<curve.length-1;i++){const p=curve[i];if(p.session!=="open"){g.fillStyle=p.session==="weekend"?"rgba(255,85,102,.05)":"rgba(255,180,84,.045)";g.fillRect(X(p.h),padT,Math.max(1,X(curve[i+1].h)-X(p.h))+.5,plotH);}}
+  // y gridlines
+  g.font="10px DM Mono";g.textAlign="right";g.textBaseline="middle";
+  for(let c=yMin;c<=yMax+1e-9;c+=0.1){g.strokeStyle="#17170f";g.lineWidth=1;g.beginPath();g.moveTo(padL,Y(c));g.lineTo(W-padR,Y(c));g.stroke();g.fillStyle="#55554e";g.fillText(c.toFixed(2)+"×",padL-8,Y(c));}
+  // day boundaries + labels
+  const dayNames=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  g.textAlign="center";g.textBaseline="top";
+  for(let h=0;h<=168;h+=24){const d=new Date(now.getTime()+h*3600000);const nm=new Intl.DateTimeFormat("en-US",{timeZone:"America/New_York",weekday:"short"}).format(d);g.strokeStyle="#201f18";g.beginPath();g.moveTo(X(h),padT);g.lineTo(X(h),padT+plotH);g.stroke();if(h<168){g.fillStyle="#6a6a60";g.fillText(nm,X(h+12),padT+plotH+8);}}
+  // area fill under curve
+  const grad=g.createLinearGradient(0,padT,0,padT+plotH);grad.addColorStop(0,"rgba(255,180,84,.28)");grad.addColorStop(1,"rgba(255,180,84,.02)");
+  g.beginPath();g.moveTo(X(0),Y(curve[0].coeff));for(const p of curve)g.lineTo(X(p.h),Y(p.coeff));g.lineTo(X(curve[curve.length-1].h),Y(yMin));g.lineTo(X(0),Y(yMin));g.closePath();g.fillStyle=grad;g.fill();
+  // colored line by session
+  g.lineWidth=2.4;g.lineJoin="round";
+  for(let i=0;i<curve.length-1;i++){const p=curve[i],q=curve[i+1];const col=p.preclose?"#4f8eff":p.session==="open"?"#3ecf8e":p.session==="weekend"?"#ff8a5c":"#ffb454";g.strokeStyle=col;g.beginPath();g.moveTo(X(p.h),Y(p.coeff));g.lineTo(X(q.h),Y(q.coeff));g.stroke();}
+  // now marker (scrubbed)
+  const nx=X(SCRUB);g.strokeStyle="rgba(240,237,232,.6)";g.lineWidth=1.2;g.setLineDash([4,4]);g.beginPath();g.moveTo(nx,padT);g.lineTo(nx,padT+plotH);g.stroke();g.setLineDash([]);
+  const rNow=reading(scrubNow(),REG,scale());const py=Y(rNow.coeff);g.fillStyle="#f0ede8";g.beginPath();g.arc(nx,py,4.5,0,7);g.fill();
+  g.fillStyle="#0a0a0a";g.beginPath();g.arc(nx,py,2,0,7);g.fill();
+  // peak annotation
+  const peak=curve.reduce((a,b)=>b.coeff>a.coeff?b:a,curve[0]);
+  if(peak.coeff>1.03){const px=X(peak.h),py2=Y(peak.coeff);g.fillStyle="#ffb454";g.font="bold 11px Syne";g.textAlign="center";g.textBaseline="bottom";g.fillText(peak.coeff.toFixed(2)+"× weekend peak",Math.min(W-60,Math.max(60,px)),py2-8);}
+}
+
+/* ===== live clock + ticking ===== */
+function tickClock(){
+  const now=new Date();const r=reading(now,REG,scale());
+  const et=new Intl.DateTimeFormat("en-US",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit",weekday:"short",hour12:false}).format(now);
+  const cl=document.getElementById('clock');const open=r.session==="open"&&!r.preclose;
+  cl.querySelector('.dot').style.background=open?"var(--green)":"var(--amber)";
+  cl.childNodes[1].nodeValue=" "+(open?"US MKT OPEN":"US MKT DARK")+" · "+et+" ET";
+}
+document.getElementById('mv').textContent="gap-v0.1";document.getElementById('foot-mv').textContent="gap-v0.1";
+window.addEventListener('resize',drawCurve);
+render();tickClock();
+setInterval(()=>{ if(SCRUB===0){render();} else {drawCurve();} tickClock(); },1000);
+</script>
+</body>
+</html>

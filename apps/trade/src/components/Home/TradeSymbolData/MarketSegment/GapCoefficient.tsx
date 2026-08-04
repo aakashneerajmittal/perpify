@@ -11,9 +11,11 @@ import TextView from "@/components/UI/TextView/TextView";
 import { MONO_FAMILY } from "@/assets/Theme/typography";
 import { perpifyWsSend } from "@/frontend-api-service/perpifyWsBridge";
 import { useCheckLoginStatus } from "@/frontend-BL/services/ThirdPartyServices/SuperTokens/SuperTokenHelper";
+import { useNavigate } from "react-router-dom";
 
 const GapCoefficient = () => {
   const { isLoggedIn } = useCheckLoginStatus();
+  const navigate = useNavigate();
   const selectedSymbol = useSelector((state: any) => state?.selectSymbol?.selectedSymbol) || "SPX-PERP";
   const gapRaw = useSelector((state: any) => state?.BinanceStreamData?.binanceData?.[`${selectedSymbol.toLowerCase()}@gapCoefficient`]);
   const gap = Number(gapRaw);
@@ -35,8 +37,14 @@ const GapCoefficient = () => {
         />
       }
     >
-      <Box sx={{ minWidth: { sm: "120px", xs: "90px" } }}>
-        <TextView component={"h5"} variant={"Medium_11"} color={"text.regular"} text={raised ? "Gap Coeff · pricing the dark" : "Gap Coefficient"} />
+      <Box
+        onClick={(e) => {
+          e.stopPropagation();
+          navigate("/oracle");
+        }}
+        sx={{ minWidth: { sm: "120px", xs: "90px" }, cursor: "pointer" }}
+      >
+        <TextView component={"h5"} variant={"Medium_11"} color={"text.regular"} text={raised ? "Gap Coeff · pricing the dark" : "Gap Coefficient →"} />
         <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.5 }}>
           <TextView component={"p"} variant={"SemiBold_16"} style={{ color, fontFamily: MONO_FAMILY }} text={has ? gap.toFixed(2) : "--"} />
           {has && <TextView component={"p"} variant={"Regular_11"} style={{ color, opacity: 0.7 }} text={"×"} />}

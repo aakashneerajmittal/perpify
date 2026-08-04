@@ -55,6 +55,11 @@ export default function NavigationBar({ state, setState }: { state: boolean; set
               <ListItemText sx={{ fontSize: "12px" }} primary={"Orders"} />
             </ListItemButton>
           </ListItem>{" "}
+          <ListItem disablePadding onClick={() => navigate("/oracle")}>
+            <ListItemButton>
+              <ListItemText sx={{ fontSize: "12px" }} primary={"Gap Oracle"} />
+            </ListItemButton>
+          </ListItem>{" "}
           {isEnabled("fiat") && (
             <ListItem disablePadding onClick={() => navigate("/wallet")}>
               <ListItemButton>

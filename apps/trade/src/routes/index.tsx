@@ -43,6 +43,7 @@ import { UserReferralAndRebate } from "@/pages/UserProfile/ReferralAndRebate/Use
 import KYCHome from "@/pages/UserVerification/KYCVerification/KYCHome";
 import RouteNotFound from "@/pages/ErrorHandlerAuxiliary/RouteNotFound";
 import Portfolio from "@/pages/Portfolio/Portfolio";
+import GapOracle from "@/components/GapOracle/GapOracle";
 export default function AppRouter() {
   const mobile = useMediaQuery("(max-width:768px)");
   // const { isLoggedIn } = useCheckLoginStatus();
@@ -111,6 +112,7 @@ export default function AppRouter() {
           />
           <Route path="/" element={<Home />}>
             <Route path="/" element={<TradeScreen />} />
+            <Route path="/oracle" element={<GapOracle />} />
             <Route path="/market" element={<MarketScreen />} />
             <Route path="/leaderboard" element={<LeaderBoard />} />
             <Route
