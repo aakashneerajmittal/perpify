@@ -173,22 +173,25 @@ export function nextDark(now: Date, regime = "normal", darkScale = 1.0): NextDar
       label: here.session === "weekend" ? "this weekend" : "tonight",
     };
   }
-  // step forward until the session flips to dark (the close)
-  const stepMs = 60000; // 1-min resolution
-  for (let i = 1; i <= 8 * 24 * 60; i++) {
-    const ms = t0 + i * stepMs;
-    const r = computeGapReading(new Date(ms), regime, darkScale);
-    if (r.session !== "open") {
-      return {
-        opensInHours: (ms - t0) / 3600000,
-        opensAtMs: ms,
-        darkType: r.darkType ?? "weeknight",
-        coeffAtDark: r.gapCoefficient,
-        label: r.session === "weekend" ? "the Friday close" : "tonight's close",
-      };
-    }
-  }
-  return null;
+  // In an open session the next dark opens at the next market close — compute it directly from
+  // the ET week-clock (O(1)) instead of minute-stepping over 8 days (which created ~11.5k
+  // Intl.DateTimeFormat objects per call and janked the header on every stream tick). One
+  // reading just after that close gives the dark window's opening coefficient.
+  const { dow, hour } = etParts(now);
+  const w = dow * 24 + hour;
+  const closeEnds = [1, 2, 3, 4, 5].map((d) => d * 24 + CLOSE_HOUR);
+  const closeCands = [...closeEnds, ...closeEnds.map((c) => c + 168)];
+  const nextClose = Math.min(...closeCands.filter((c) => c > w));
+  const opensInHours = nextClose - w;
+  const opensAtMs = t0 + opensInHours * 3600000;
+  const r = computeGapReading(new Date(opensAtMs + 60000), regime, darkScale);
+  return {
+    opensInHours,
+    opensAtMs,
+    darkType: r.darkType ?? "weeknight",
+    coeffAtDark: r.gapCoefficient,
+    label: r.session === "weekend" ? "the Friday close" : "tonight's close",
+  };
 }
 
 /**

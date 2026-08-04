@@ -1,33 +1,31 @@
-import { setLeverageApi } from "@/frontend-api-service/Api";
-import { SET_LEVERAGE_SUCCESS, SET_LEVERAGE_FAIL, SET_LEVERAGE_POS_RISK } from "../../../redux/constants/Constants";
+import { SET_LEVERAGE_SUCCESS, SET_LEVERAGE_POS_RISK } from "../../../redux/constants/Constants";
 import { showSnackBar } from "../Internal/GlobalErrorHandler.ac";
+
+/**
+ * PERPIFY: leverage is a CLIENT-SIDE preference. The engine enforces the tier-gated cap
+ * (SESSION_INFO.maxLeverage) via collateral = max(IM, notional/maxLeverage) and exposes no
+ * REST "set leverage" endpoint — so the old setLeverageApi() call never resolved, and its
+ * catch dereferenced error.response.data on a network failure (throwing), which is why the
+ * Confirm button did nothing. We store the chosen leverage in positionsDirectory.leverage
+ * (what the order-form cost/margin calc reads), snackbar, and confirm.
+ */
 export const changeLeverage = (symbol, leverage, errorCallBack, successCallBack) => (dispatch) => {
-  return setLeverageApi(symbol, leverage)
-    .then((data) => {
-      dispatch({
-        type: SET_LEVERAGE_POS_RISK,
-        payload: {
-          sym: symbol.toUpperCase(),
-          leverage: data.data.leverage
-        }
-      });
-      dispatch(
-        showSnackBar({
-          src: SET_LEVERAGE_SUCCESS,
-          message: `Leverage is set to ${data.data.leverage}x for ${symbol.toUpperCase()} symbol`,
-          type: "success"
-        })
-      );
-      successCallBack();
-    })
-    .catch((error) => {
-      dispatch(
-        showSnackBar({
-          src: SET_LEVERAGE_FAIL,
-          message: error.response.data.details,
-          type: "failure"
-        })
-      );
-      errorCallBack(error.response.data.details); // eslint-disable-next-line no-unused-expressions
+  try {
+    const lev = Number(leverage) || 1;
+    dispatch({
+      type: SET_LEVERAGE_POS_RISK,
+      payload: { sym: symbol.toUpperCase(), leverage: lev }
     });
+    dispatch(
+      showSnackBar({
+        src: SET_LEVERAGE_SUCCESS,
+        message: `Leverage set to ${lev}x for ${symbol.toUpperCase()}`,
+        type: "success"
+      })
+    );
+    if (successCallBack) successCallBack();
+  } catch (e) {
+    if (errorCallBack) errorCallBack((e && e.message) || "Could not set leverage");
+  }
+  return Promise.resolve();
 };
