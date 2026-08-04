@@ -138,9 +138,23 @@ export const useExitLimitMarketModal = ({
       });
       recordCleverTapEvent("CLOSE_AT_MARKET_SUCCESS", { symbol, side: closeSide.toUpperCase(), type: "MARKET", quantity: size.toString(), reduceOnly: true });
     } else {
+      // The engine (v0) requires reduce-only orders to be IOC, so a resting reduce-only limit is
+      // invalid. "Close at a limit price" is therefore armed as a reduce-only TRIGGER that fires a
+      // market close when the mark reaches that price — it shows under Open Orders (like TP/SL) and
+      // closes the position on cross.
       dispatch({
-        type: "PERPIFY_PLACE_ORDER",
-        payload: { type: "place_order", id: baseId, symbol, side: closeSide, qty: Number(size), price: Number(Number(limitPrice).toFixed(2)), tif: "GTC", reduceOnly: true }
+        type: "PERPIFY_PLACE_TRIGGER",
+        payload: {
+          type: "place_trigger",
+          id: baseId,
+          symbol,
+          side: closeSide,
+          qty: Number(size),
+          triggerPx: Number(Number(limitPrice).toFixed(2)),
+          triggerAbove: Number(limitPrice) >= ref,
+          limitPx: 0,
+          reduceOnly: true
+        }
       });
       recordCleverTapEvent("CLOSE_AT_LIMIT_SUCCESS", { symbol, side: closeSide.toUpperCase(), type: "LIMIT", quantity: size.toString(), price: limitPrice.toString(), reduceOnly: true });
     }
