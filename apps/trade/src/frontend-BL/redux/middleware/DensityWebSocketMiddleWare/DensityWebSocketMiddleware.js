@@ -11,7 +11,9 @@ import {
   ERASE_POSITION_DIRECTORY,
   OPEN_ORDERS_UPDATE_SIZE_STREAM,
   OPEN_ORDERS_FETCH_SUCCESS,
-  CLEAR_UNREALISED_PROFITLOSS
+  CLEAR_UNREALISED_PROFITLOSS,
+  CREATE_POSIITON_ACCOUNT_INFO,
+  REMOVE_POSITIONS_QUANT
 } from "../../../redux/constants/Constants";
 import {
   accountUpdateHandler,
@@ -432,15 +434,47 @@ const densitySocketMiddleware = () => {
         }
         break;
 
-      case WS_MESSAGESS.ACCOUNT_UPDATE:
-        // PERPIFY: engine streams the full balance here (no REST account endpoint on testnet).
-        // positions[] carries EVERY open position across markets (empty right after funding),
-        // so refresh each one's margin/isolated-wallet — not just the first.
-        if (Array.isArray(payload?.positions)) {
-          for (const p of payload.positions) accountUpdateHandler(p, store);
+      case WS_MESSAGESS.ACCOUNT_UPDATE: {
+        // PERPIFY: this is the AUTHORITATIVE full account snapshot — balance + EVERY open
+        // position across markets — sent on connect and after every fill/close. Density
+        // repopulated the positions table from a REST snapshot on page load; our engine has no
+        // such endpoint, so the table must be rebuilt from THIS message. Without it, positions
+        // vanished on refresh (the connect ACCOUNT_UPDATE only updated margin, never the rows)
+        // and a closed position could linger. It is also the tail message of every command
+        // (emitted after the ORDER_TRADE_UPDATEs), so treating its positions as absolute truth
+        // corrects any drift from the incremental fill path.
+        const acctPositions = Array.isArray(payload?.positions) ? payload.positions : [];
+        const liveSyms = new Set();
+        for (const p of acctPositions) {
+          accountUpdateHandler(p, store); // margin type + isolated wallet (unchanged)
+          const qty = Number(p?.quantity ?? p?.pa ?? 0);
+          const sym = (p?.symbol ?? p?.s ?? "").toString();
+          if (!sym || !(Math.abs(qty) > 0)) continue;
+          liveSyms.add(sym.toUpperCase());
+          const lev = (store.getState().positionsDirectory.leverage || []).find((l) => l?.sym?.toUpperCase() === sym.toUpperCase());
+          store.dispatch({
+            type: CREATE_POSIITON_ACCOUNT_INFO,
+            payload: {
+              sym,
+              side: qty >= 0 ? "BUY" : "SELL",
+              entryPrice: Number(p?.entryPrice ?? p?.ep ?? 0),
+              posAmt: qty,
+              leverage: lev ? Number(lev.leverage) : 0,
+              marginType: (p?.marginType ?? "isolated").toString().toUpperCase(),
+              isolatedWallet: Number(p?.isolatedWallet ?? p?.iw ?? 0)
+            }
+          });
+        }
+        // remove any rows the snapshot no longer contains (position closed → drop from the table)
+        const currentRows = store.getState().positionsDirectory.currentPositions || [];
+        for (const row of currentRows) {
+          if (row?.sym && !liveSyms.has(row.sym.toUpperCase())) {
+            store.dispatch({ type: REMOVE_POSITIONS_QUANT, payload: row.sym });
+          }
         }
         store.dispatch(applyPerpifyAccountBalances(payload));
         break;
+      }
       case "LIQUIDATION_EXPLAINER":
         // PERPIFY: signed liquidation explainer — surfaced as a modal (why you were
         // liquidated: tier, gap coeff, oracle confidence, equity<MM, proof hash).
