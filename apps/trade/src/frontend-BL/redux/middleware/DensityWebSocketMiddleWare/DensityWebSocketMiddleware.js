@@ -41,6 +41,7 @@ import { setPerpifySocket } from "../../../../frontend-api-service/perpifyWsBrid
 const densitySocketMiddleware = () => {
   let socket = null;
   let PongRecived = false;
+  let pingTimerRef = null; // the heartbeat interval, so it can be cleared on death/reconnect
   let ReConnectWhenWsconnectionBreak = 0;
   let ApiPollingLimit = 0;
   let socketConnectionCount = 0;
@@ -231,38 +232,53 @@ const densitySocketMiddleware = () => {
   };
 
   function startPongTimer(store) {
+    // Heartbeat + dead-connection watchdog for the account socket. A wss connection can go
+    // "half-open" on the live network (Render / proxies / mobile): readyState stays OPEN but no
+    // bytes flow — the browser never fires onclose, so nothing reconnects and the UI freezes
+    // (mark price stops, orders never send → "order doesn't show under positions"). Each cycle
+    // we clear the pong flag, ping, and if no pong comes back in time we force a reconnect.
+    //
+    // The critical bug this fixes: PongRecived used to be set true on the first pong and never
+    // reset before subsequent pings, so after one pong the check `PongRecived !== true` was
+    // permanently false and a dead socket was NEVER detected or reconnected.
+    if (pingTimerRef) {
+      clearInterval(pingTimerRef);
+      pingTimerRef = null;
+    }
     if (ReConnectWhenWsconnectionBreak < 10) {
-      socket.send(JSON.stringify({ type: "ping" }));
-      // Initial ping
-      // eslint-disable-next-line no-unused-vars
-      const pingTimer = setInterval(() => {
+      PongRecived = false;
+      try {
         socket.send(JSON.stringify({ type: "ping" }));
-
-        const PongTimer = setTimeout(() => {
+      } catch {
+        /* socket already dead — the watchdog below will reconnect */
+      }
+      pingTimerRef = setInterval(() => {
+        PongRecived = false; // reset before every ping so each cycle is judged fresh
+        try {
+          socket.send(JSON.stringify({ type: "ping" }));
+        } catch {
+          /* dead socket send throws — fall through to the pong check */
+        }
+        setTimeout(() => {
           if (PongRecived !== true) {
+            // no pong within the window → the connection is dead. Stop this timer and drop the
+            // socket; DENSITY_WS_DISCONNECT closes it, which fires onClose → single reconnect.
+            if (pingTimerRef) {
+              clearInterval(pingTimerRef);
+              pingTimerRef = null;
+            }
             store.dispatch({ type: DENSITY_WS_DISCONNECT });
-
             store.dispatch(fetchAccountPositionInfo());
             store.dispatch(fetchFutureAccountDetails());
             fetchAllOpenOrdersApi().then((openOrders) => {
-              store.dispatch({
-                type: OPEN_ORDERS_UPDATE_SIZE_STREAM,
-                payload: []
-              });
+              store.dispatch({ type: OPEN_ORDERS_UPDATE_SIZE_STREAM, payload: [] });
               store.dispatch({ type: CLEAR_UNREALISED_PROFITLOSS });
-              store.dispatch({
-                type: OPEN_ORDERS_FETCH_SUCCESS,
-                payload: openOrders.data.data
-              });
+              store.dispatch({ type: OPEN_ORDERS_FETCH_SUCCESS, payload: openOrders.data.data });
             });
-            store.dispatch({ type: DENSITY_WS_CONNECT });
-          } else {
-            clearTimeout(PongTimer);
           }
-        }, 1000);
+        }, 5000); // allow for live wss round-trip latency (was 1s, too tight)
       }, 15000);
     } else {
-      // window.location.reload();
       store.dispatch({ type: DENSITY_WS_DISCONNECT });
       ReConnectWhenWsconnectionBreak = 0;
     }
@@ -316,7 +332,16 @@ const densitySocketMiddleware = () => {
     posthog?.capture("WEBSCOKET_CLOSE", {
       event_time: new Date().toUTCString()
     });
+    // stop the heartbeat for the dead socket and reconnect, so a detected close recovers instead
+    // of leaving the account stream permanently down (no orders, no fills, stale balance).
+    if (pingTimerRef) {
+      clearInterval(pingTimerRef);
+      pingTimerRef = null;
+    }
     store.dispatch({ type: DENSITY_WS_DISCONNECT });
+    if (ReConnectWhenWsconnectionBreak < 10) {
+      setTimeout(() => store.dispatch({ type: DENSITY_WS_CONNECT }), 1500);
+    }
   };
 
   const WS_MESSAGESS = {
@@ -328,6 +353,7 @@ const densitySocketMiddleware = () => {
     if (JSON.parse(event.data).type === "pong") {
       PongRecived = true;
       ApiPollingPongRecived = true;
+      ReConnectWhenWsconnectionBreak = 0; // a confirmed round-trip = healthy; reset the retry budget
     }
     // PERPIFY: SESSION_INFO carries the trader's behavioral tier, tierMult (margin
     // multiplier), tier-gated maxLeverage, base margin bps, gap coefficient and the

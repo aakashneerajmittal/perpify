@@ -56,6 +56,7 @@ export default function PerpifyChart() {
     let closed = false;
     let cur: Bar | null = null; // the live (current-interval) candle
     let lastGap = 1;
+    let lastMsg = Date.now(); // last mark-stream message time, for the dead-connection watchdog
     let ticksSeen = 0;
     let hasData = false;
     const bucket = (tSec: number) => Math.floor(tSec / INTERVAL_SEC) * INTERVAL_SEC;
@@ -121,7 +122,9 @@ export default function PerpifyChart() {
         return;
       }
       wsRef.current = ws;
+      lastMsg = Date.now();
       ws.onmessage = (ev) => {
+        lastMsg = Date.now();
         let m: any;
         try { m = JSON.parse(ev.data); } catch { return; }
         if (m?.e !== "markPriceUpdate") return;
@@ -140,8 +143,19 @@ export default function PerpifyChart() {
     // start the live tape; the first tick backfills history, then keeps the current candle live.
     connect();
 
+    // dead-connection watchdog: the mark stream pushes ~1/s, so >20s of silence means the socket
+    // went half-open (readyState OPEN but no data, no onclose) — close it to force a reconnect so
+    // the live candle never freezes. A ping keeps proxies warm.
+    const heartbeat = setInterval(() => {
+      const ws = wsRef.current;
+      if (!ws || ws.readyState !== 1) return;
+      if (Date.now() - lastMsg > 20000) { try { ws.close(); } catch { /* reconnect */ } return; }
+      try { ws.send(JSON.stringify({ type: "ping" })); } catch { /* noop */ }
+    }, 8000);
+
     return () => {
       closed = true;
+      clearInterval(heartbeat);
       window.removeEventListener("resize", resize);
       try { wsRef.current?.close(); } catch { /* noop */ }
       chart.remove();

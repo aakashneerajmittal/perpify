@@ -53,12 +53,29 @@ export default function usePerpifyMarketData({ tradeScreen }: { tradeScreen?: bo
     const open = (path: string, onMsg: (m: any) => void, onOpen?: (ws: WebSocket) => void) => {
       let ws: WebSocket;
       try { ws = new WebSocket(wsBase + path); } catch { return; }
+      (ws as any)._last = Date.now();
       sockets.push(ws);
-      ws.onopen = () => onOpen?.(ws);
-      ws.onmessage = (ev) => { try { onMsg(JSON.parse(ev.data)); } catch {} };
+      ws.onopen = () => { (ws as any)._last = Date.now(); onOpen?.(ws); };
+      ws.onmessage = (ev) => { (ws as any)._last = Date.now(); try { onMsg(JSON.parse(ev.data)); } catch {} };
       ws.onclose = () => { if (!closed) setTimeout(() => open(path, onMsg, onOpen), 2000); };
       ws.onerror = () => { try { ws.close(); } catch {} };
     };
+
+    // Heartbeat + dead-connection watchdog. A wss stream can go "half-open" on the live network
+    // (readyState stays OPEN but no data flows and onclose never fires), which froze the mark
+    // price and the whole market-data feed. These streams push ~1/s, so >20s of silence means the
+    // socket is dead: close it to trigger the reconnect above. A periodic ping keeps proxies warm.
+    const heartbeat = setInterval(() => {
+      const now = Date.now();
+      for (const ws of sockets) {
+        if (ws.readyState !== 1) continue;
+        if (now - ((ws as any)._last || now) > 20000) {
+          try { ws.close(); } catch { /* triggers reconnect */ }
+          continue;
+        }
+        try { ws.send(JSON.stringify({ type: "ping" })); } catch { /* noop */ }
+      }
+    }, 8000);
 
     const handleMark = (sym: string, m: any) => {
       const key = sym.toLowerCase();
@@ -152,6 +169,7 @@ export default function usePerpifyMarketData({ tradeScreen }: { tradeScreen?: bo
 
     return () => {
       closed = true;
+      clearInterval(heartbeat);
       for (const ws of sockets) { try { ws.close(); } catch {} }
       bookWsRef.current = null;
     };

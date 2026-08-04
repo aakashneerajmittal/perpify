@@ -36,7 +36,7 @@ const TableHeadWrapperForAsksBids = () => {
           component={"h4"}
           color={"text.regular"}
         >
-          {`SIZE (${ChangeInAsset ? selectedSymbol.toUpperCase().replace("USDT", "") : "USDT"})`}
+          {`SIZE (${ChangeInAsset ? selectedSymbol.toUpperCase().replace("-PERP", "") : "USDC"})`}
         </TextView>
       </Grid>
       <Grid item xs={4}>
@@ -52,7 +52,7 @@ const TableHeadWrapperForAsksBids = () => {
           component={"h4"}
           color={"text.regular"}
         >
-          {`SUM (${ChangeInAsset ? selectedSymbol.toUpperCase().replace("USDT", "") : "USDT"})`}
+          {`SUM (${ChangeInAsset ? selectedSymbol.toUpperCase().replace("-PERP", "") : "USDC"})`}
         </TextView>
       </Grid>
     </Grid>

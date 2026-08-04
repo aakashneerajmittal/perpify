@@ -76,7 +76,12 @@ const OrderBookAndDepthBookChartContainer: React.FC = () => {
       worker.postMessage({
         type: "ORDER_BOOK",
         payload: {
-          currentLevel: state.depthChart,
+          // PERPIFY: the engine streams a FULL order-book snapshot every tick (not Binance-style
+          // deltas). Merging snapshots into the accumulated `currentLevel` left stale price levels
+          // behind as the book drifted, so the book showed duplicated/interleaved rows and the
+          // depth chart became a sawtooth. Feeding an empty currentLevel makes the worker treat
+          // each snapshot as a clean replace.
+          currentLevel: { asks: [], bids: [] },
           latestOrder: { asks: OrderBookl.asks, bids: OrderBookl.bids },
           ticket: state.ticket
         }
