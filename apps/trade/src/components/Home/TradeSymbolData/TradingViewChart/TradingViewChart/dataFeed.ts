@@ -5,7 +5,15 @@ import { configurationData } from "./helpers";
 import chartWS from "./streaming";
 const { binanceBaseUrl } = BASE_URL();
 const lastBarsCache = new Map();
-let allSymbols = JSON.parse((window as any).localStorage.getItem("tradablesymbolList"));
+// Guard this module-level parse: it runs at import time, before React mounts. A stale/bad cached
+// value (notably the literal string "undefined", which JSON.stringify(undefined) can write) made
+// JSON.parse throw here and white-screened the whole app to the boot fallback. Never let it crash.
+let allSymbols: any = [];
+try {
+  allSymbols = JSON.parse((window as any).localStorage.getItem("tradablesymbolList") as string) || [];
+} catch {
+  allSymbols = [];
+}
 let lastStartTime: any;
 const getBinanceKlines = (symbol: string, interval: any, startTime: any, endTime: any, limit: number) => {
   if (lastStartTime && startTime === lastStartTime) {

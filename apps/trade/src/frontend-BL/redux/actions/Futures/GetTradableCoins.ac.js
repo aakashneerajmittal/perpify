@@ -5,7 +5,9 @@ export const getTradableCoins = () => (dispatch) => {
   topXTradableSymbolListApi()
     .then((res) => {
       const tradablesymbolList = res?.data?.symbols;
-      localStorage.setItem("tradablesymbolList", JSON.stringify(tradablesymbolList));
+      // Never cache an undefined list: JSON.stringify(undefined) writes the literal string
+      // "undefined", which then crashes JSON.parse at chart-datafeed load. Only cache a real list.
+      if (Array.isArray(tradablesymbolList)) localStorage.setItem("tradablesymbolList", JSON.stringify(tradablesymbolList));
       dispatch({
         type: SET_TRADABLE_SYMBOL_LIST_SUCCESS,
         payload: {

@@ -16,13 +16,17 @@ import SideMenuPercentage from "./SideMenuPercentage";
 import TextView from "../../UI/TextView/TextView";
 const SideMenuRow = (props) => {
   const { isLoggedIn } = useCheckLoginStatus();
-  const { symbol, index } = props;
+  const { symbol, index, cb } = props;
   const dispatch = useDispatch();
   const handleChangeSelect = useCallback(
     (symbol) => {
       NavigateToTradeScreenWithSelectedSymbol(symbol);
+      // Close the drawer after picking a market. On mobile the drawer covers the screen, so
+      // without this the symbol switched underneath but the list stayed up — it read as "the
+      // links don't do anything." (No-op when there's no drawer, e.g. the desktop rail.)
+      if (typeof cb === "function") cb();
     },
-    [symbol]
+    [symbol, cb]
   );
 
   const isFavouriteSymbol = useSelector((state) => state.favouriteSymbols && state.favouriteSymbols.favouriteSymbols && state.favouriteSymbols.favouriteSymbols.includes(symbol));

@@ -72,17 +72,22 @@ const OrderBookAndDepthBookChartContainer: React.FC<{ ladderOnly?: boolean }> = 
   }, [OrderBookl.loading]);
 
   useEffect(() => {
-    if (!OrderBookl.loading && (state.depthChart.asks.length > 0 || state.depthChart.bids.length > 0)) {
+    // Gate on the SOURCE book (OrderBookl.asks/bids), not on state.depthChart. depthChart is set
+    // asynchronously by the effect above, so on the first tick after mount its closure was still
+    // empty — the book then posted an empty payload and (for a static book that doesn't re-tick)
+    // never recovered. This was invisible while the book only mounted on its tab (data already
+    // flowing); as an always-on column it mounts before the first snapshot and lost the race.
+    const bookAsks = OrderBookl.asks || [];
+    const bookBids = OrderBookl.bids || [];
+    if (!OrderBookl.loading && (bookAsks.length > 0 || bookBids.length > 0)) {
       worker.postMessage({
         type: "ORDER_BOOK",
         payload: {
           // PERPIFY: the engine streams a FULL order-book snapshot every tick (not Binance-style
-          // deltas). Merging snapshots into the accumulated `currentLevel` left stale price levels
-          // behind as the book drifted, so the book showed duplicated/interleaved rows and the
-          // depth chart became a sawtooth. Feeding an empty currentLevel makes the worker treat
-          // each snapshot as a clean replace.
+          // deltas). Feeding an empty currentLevel makes the worker treat each snapshot as a clean
+          // replace, so stale price levels don't accumulate.
           currentLevel: { asks: [], bids: [] },
-          latestOrder: { asks: OrderBookl.asks, bids: OrderBookl.bids },
+          latestOrder: { asks: bookAsks, bids: bookBids },
           ticket: state.ticket
         }
       });
@@ -90,7 +95,7 @@ const OrderBookAndDepthBookChartContainer: React.FC<{ ladderOnly?: boolean }> = 
       worker.postMessage({
         type: "ORDER_BOOK",
         payload: {
-          currentLevel: [],
+          currentLevel: { asks: [], bids: [] },
           latestOrder: { asks: [], bids: [] },
           ticket: state.ticket
         }
