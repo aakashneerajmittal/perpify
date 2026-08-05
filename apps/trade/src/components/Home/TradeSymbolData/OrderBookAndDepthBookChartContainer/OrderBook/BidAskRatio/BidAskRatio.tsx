@@ -2,28 +2,26 @@ import React, { memo, useEffect, useState } from "react";
 import { Box } from "@mui/system";
 import { useSelector } from "react-redux";
 import OuickOrder from "@/components/Home/OrderForm/QuickOrder/OuickOrder";
-import { getQuickOrderDataApi } from "@/frontend-api-service/Api";
 import TextView from "@/components/UI/TextView/TextView";
 
 const BidAskRatio = () => {
   const [ratio, SetRatio] = useState({ ask: "", bid: "" });
   const [QuickTradeActive, SetQuickTradeActive] = useState(false);
   const symbol = useSelector((state: any) => state.selectSymbol.selectedSymbol);
+  // Market Sentiment = live buy/sell pressure from the order book (bid vs ask resting size).
+  // The old getQuickOrderDataApi (Density REST longAccount/shortAccount) isn't served by the
+  // Perpify engine, so the call always failed and the bar rendered empty "%". Deriving it from
+  // the streamed book gives a real, always-available number.
+  const orderBook = useSelector((state: any) => state.OrderBook);
   useEffect(() => {
-    if (symbol) {
-      getQuickOrderDataApi(symbol.toUpperCase())
-        .then((response: { data: any[] }) => {
-          const data = response.data[0];
-          SetRatio({
-            bid: Number(data.longAccount * 100).toFixed(2),
-            ask: Number(data.shortAccount * 100).toFixed(2)
-          });
-        })
-        .catch((error: any) => {
-          console.log(error, "market sentiment api error");
-        });
+    const sumSize = (levels: any[]) => (levels || []).reduce((t, lvl) => t + (Number(lvl && lvl[1]) || 0), 0);
+    const bidVol = sumSize(orderBook?.bids);
+    const askVol = sumSize(orderBook?.asks);
+    const total = bidVol + askVol;
+    if (total > 0) {
+      SetRatio({ bid: ((bidVol / total) * 100).toFixed(0), ask: ((askVol / total) * 100).toFixed(0) });
     }
-  }, [symbol]);
+  }, [orderBook, symbol]);
   return (
     <>
       {QuickTradeActive && <OuickOrder SetQuickTradeActive={SetQuickTradeActive} />}
