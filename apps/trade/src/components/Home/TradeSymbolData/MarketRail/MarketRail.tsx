@@ -9,7 +9,7 @@ import React from "react";
 import { Box } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import { selectedSymbol as selectSymbolAction } from "@/frontend-BL/redux/actions/Internal/SetSelectedSymbol.ac";
-import { getCurrencyUrl } from "@/helpers/CurrencyLogo";
+import { getCurrencyUrl, FALLBACK_ICON } from "@/helpers/CurrencyLogo";
 import TextView from "@/components/UI/TextView/TextView";
 
 const shortName = (s: string) => String(s).replace(/-PERP$/i, "");
@@ -74,6 +74,7 @@ const MarketRail: React.FC = () => {
               <Box
                 component="img"
                 src={getCurrencyUrl(shortName(sym).toLowerCase())}
+                onError={(e: any) => { e.currentTarget.src = FALLBACK_ICON; }}
                 alt=""
                 sx={{ width: 18, height: 18, borderRadius: "50%", backgroundColor: "white", flexShrink: 0 }}
               />

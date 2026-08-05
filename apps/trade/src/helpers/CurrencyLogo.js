@@ -6,6 +6,17 @@ import { Format } from "./String";
 const ICON_URL = "/symbol-icons/{0}.svg";
 export const FALLBACK_ICON = "/symbol-icons/default.svg";
 
-export const getCurrencyUrl = (symbol) => Format(ICON_URL, String(symbol || "").toLowerCase());
+// Normalize any market form to the short ticker so every caller resolves the same file:
+//   "SPX-PERP" / "SPXUSDT" / "SPX"  ->  spx  ->  /symbol-icons/spx.svg
+// (MarketRail strips -PERP; the SideMenu rows don't — this makes both agree.)
+export const getCurrencyUrl = (symbol) => {
+  const key = String(symbol || "")
+    .toLowerCase()
+    .replace(/-perp$/, "")
+    .replace(/-usd$/, "")
+    .replace(/usdt$/, "")
+    .trim();
+  return Format(ICON_URL, key || "default");
+};
 
-/* Usage : Pass a currency/Symbol in lower case without the base asset. */
+/* Usage : Pass a currency/Symbol (with or without base asset / -PERP suffix). */

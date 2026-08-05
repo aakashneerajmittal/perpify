@@ -1,6 +1,6 @@
 import React, { memo, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getCurrencyUrl } from "@/helpers/CurrencyLogo";
+import { getCurrencyUrl, FALLBACK_ICON } from "@/helpers/CurrencyLogo";
 
 import PropTypes from "prop-types";
 import { SymbolWrapper } from "../../UI/SymbolWrapper/SymbolWrapper";
@@ -66,6 +66,7 @@ const SideMenuRow = (props) => {
             <Box
               component={"img"}
               src={symbolLogo}
+              onError={(e) => { e.currentTarget.src = FALLBACK_ICON; }}
               alt="symbolLogo"
               sx={{
                 height: { sm: 15, xs: 20 },

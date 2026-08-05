@@ -41,7 +41,7 @@ function TradeScreen() {
 
         {/* Elevated layout: [markets rail | chart | order book | order ticket].
             Rail + book are large-screen only; the chart flexes to fill the middle. */}
-        <Box sx={{ display: "flex", gap: 0.5, height: "calc(100% - 60px)" }}>
+        <Box sx={{ display: "flex", gap: 0.5, flex: 1, minHeight: 0 }}>
           {isLargeScreen && <MarketRail />}
           <TradeSymbolData />
           {isLargeScreen && <OrderBookColumn />}

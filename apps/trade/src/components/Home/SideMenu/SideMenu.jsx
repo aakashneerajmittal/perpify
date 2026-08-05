@@ -21,7 +21,7 @@ import { CloseDrawer, OpenDrawer } from "BL/redux/actions/Internal/SideMenu.ac";
 import SideMenuSearch from "./SideMenuSearch";
 import SidemenuFilters from "./SidemenuFilters";
 import SideMenuALL from "./SideMenuALL";
-import { getCurrencyUrl } from "@/helpers/CurrencyLogo";
+import { getCurrencyUrl, FALLBACK_ICON } from "@/helpers/CurrencyLogo";
 
 const SideMenu = () => {
   const [selectedCoin, setSelectedCoin] = useState(SetSelectedSymbolHelper());
@@ -139,6 +139,7 @@ const SideMenu = () => {
               <Box
                 component={"img"}
                 src={symbolLogo}
+                onError={(e) => { e.currentTarget.src = FALLBACK_ICON; }}
                 alt="symbolLogo"
                 sx={{
                   height: { sm: 28, xs: 20 },

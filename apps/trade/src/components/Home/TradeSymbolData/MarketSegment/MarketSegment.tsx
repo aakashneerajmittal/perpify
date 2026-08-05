@@ -19,6 +19,7 @@ import GapCoefficient from "./GapCoefficient";
 import ReduceOnlyChip from "./ReduceOnlyChip";
 import ConnectButton from "@/components/Wallet/ConnectButton";
 import PassportChip from "./PassportChip";
+import { Logo } from "@/components/UI/Logo";
 const MarketSegment = () => {
   const symbol = useSelector((state: any) => state.selectSymbol.selectedSymbol);
   const isLargeScreen = useMediaQuery("(min-width:768px)");
@@ -165,26 +166,49 @@ const MarketSegment = () => {
     <Box
       sx={{
         backgroundColor: "background.primary",
-        display: "flex",
-        alignItems: "center",
-        gap: 1,
-        height: "60px",
         borderRadius: "8px",
-        p: { xs: 0.5 }
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        flexShrink: 0
       }}
     >
-      <SideMenu />
-      <Box sx={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center" }}>{marketSegmentData()}</Box>
-      {isLargeScreen && (
-        <Box sx={{ flexShrink: 0, pr: 0.5 }}>
-          <PassportChip />
-        </Box>
-      )}
-      {isLargeScreen && (
-        <Box sx={{ flexShrink: 0, pr: 0.5 }}>
-          <ConnectButton />
-        </Box>
-      )}
+      {/* Header row — brand + account, like the top nav on Binance / Coinbase. Keeps the
+          ticker line below it uncluttered. */}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 1,
+          height: "44px",
+          px: 1,
+          borderBottom: "1px solid",
+          borderColor: "background.tertiary"
+        }}
+      >
+        <Logo withName={true} style={{ fontSize: "18px" }} />
+        {isLargeScreen && (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexShrink: 0 }}>
+            <PassportChip />
+            <ConnectButton />
+          </Box>
+        )}
+      </Box>
+
+      {/* Ticker row — symbol selector + live market stats. */}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          height: "52px",
+          p: { xs: 0.5 }
+        }}
+      >
+        <SideMenu />
+        <Box sx={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center" }}>{marketSegmentData()}</Box>
+      </Box>
     </Box>
   );
 };
