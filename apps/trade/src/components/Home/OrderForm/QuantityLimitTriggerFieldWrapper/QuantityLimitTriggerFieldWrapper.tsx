@@ -1,22 +1,18 @@
 import useQuantityFieldhandler from "@/frontend-BL/businessHooks/ORDER_FORM/useQuantityFieldhandler";
 import { Grid } from "@mui/material";
-import React, { useContext, useEffect } from "react";
+import React, { useContext } from "react";
 import LimitPriceField from "./LimitPriceField";
 import QuantityField from "./SizeField";
 import TriggerPriceField from "./TriggerPriceField";
 import OrderFormContext from "../OrderFormNewWrapper";
-const QuantityLimitTriggerFieldWrapper = ({ side }: { side: string }) => {
+const QuantityLimitTriggerFieldWrapper = () => {
   const { state, dispatchOrderEvent } = useContext(OrderFormContext);
   const quantityFieldHook = useQuantityFieldhandler({
     state,
     dispatchOrderEvent
   });
-  useEffect(() => {
-    dispatchOrderEvent({
-      type: "UPDATE_SIDE",
-      payload: side
-    });
-  }, [side]);
+  // Side is now owned by the in-form <SideToggle/> (writes UPDATE_SIDE directly). The old
+  // Side-prop → UPDATE_SIDE bridge here overrode the toggle on every render, so it's removed.
 
   return (
     <>

@@ -1,5 +1,5 @@
 import React, { createContext, useEffect, useReducer } from "react";
-import { Grid } from "@mui/material";
+import { Box, Grid } from "@mui/material";
 import CustomDivider from "../../../UI/Divider/CustomDivider";
 import OrderBook from "./OrderBook/OrderBook";
 import DepthBookChart from "./DepthBookChart/DepthBookChart";
@@ -52,7 +52,7 @@ export const OrderBookAndDepthChartContext = createContext<{
   dispatchOrderBookEvent: () => null
 });
 
-const OrderBookAndDepthBookChartContainer: React.FC = () => {
+const OrderBookAndDepthBookChartContainer: React.FC<{ ladderOnly?: boolean }> = ({ ladderOnly = false }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const OrderBookl = useSelector((state: any) => state.OrderBook);
 
@@ -133,15 +133,22 @@ const OrderBookAndDepthBookChartContainer: React.FC = () => {
         dispatchOrderBookEvent: dispatch
       }}
     >
-      <Grid container height={"100%"} justifyContent={"space-between"}>
-        <Grid sx={{ display: { xs: "none", sm: "block" } }} sm={8.4} height={"100%"}>
-          <DepthBookChart />
-        </Grid>
-        <CustomDivider alignment={"vertical"} />
-        <Grid height={"100%"} xs={12} sm={3.5}>
+      {ladderOnly ? (
+        // narrow always-on column: just the bid/ask ladder, full width, no depth chart.
+        <Box height={"100%"} width={"100%"}>
           <OrderBook />
+        </Box>
+      ) : (
+        <Grid container height={"100%"} justifyContent={"space-between"}>
+          <Grid sx={{ display: { xs: "none", sm: "block" } }} sm={8.4} height={"100%"}>
+            <DepthBookChart />
+          </Grid>
+          <CustomDivider alignment={"vertical"} />
+          <Grid height={"100%"} xs={12} sm={3.5}>
+            <OrderBook />
+          </Grid>
         </Grid>
-      </Grid>
+      )}
     </OrderBookAndDepthChartContext.Provider>
   );
 };

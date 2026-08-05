@@ -34,7 +34,7 @@ const TradeSymbolData: React.FC = () => {
   const [tradeSymbolTabValue, setTradeSymbolTabValue] = useState<TradeSymbolTabType>("chart");
   const tradeSymbolTabs = [
     { id: "1", value: "chart", label: "Chart" },
-    { id: "2", value: "orderbook", label: "Order Book" },
+    // Order Book is now its own always-on column (OrderBookColumn), so it's no longer a tab here.
     // News is kept in code but switched off for the testnet phase (perpifyFeatures.news).
     ...(isEnabled("news") ? [{ id: "3", value: "news", label: "News" }] : [])
   ];

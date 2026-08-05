@@ -16,15 +16,15 @@ import SignalTradingSwicth from "./SignalTradingSwicth";
 import CustomDivider from "../../UI/Divider/CustomDivider";
 import TierCard from "@/components/Tier/TierCard";
 import LivingMargin from "./LivingMargin";
+import SideToggle from "./SideToggle";
 
-interface OrderFormProps {
-  Side: string;
-}
-function OrderForm({ Side }: OrderFormProps) {
+function OrderForm() {
   return (
     <OrderFormNewWrapper>
       <Box sx={[ORDERfORM]}>
         <TierCard />
+        {/* Buy/Long · Sell/Short lives at the top of the ticket now (moved out of the header). */}
+        <SideToggle />
         <Box
           sx={{
             p: "0px 8px 0px 8px",
@@ -66,7 +66,7 @@ function OrderForm({ Side }: OrderFormProps) {
           <Box height={"calc(100% - 92px)"} minHeight={"140px"} overflow={"auto"}>
             <Box sx={{ minHeight: "300px" }}>
               <Grid item xs={12} gap={1} justifyContent={"space-between"} container>
-                <QuantityLimitTriggerFieldWrapper side={Side} />
+                <QuantityLimitTriggerFieldWrapper />
 
                 <Grid container item justifyContent={"space-between"} gap={1} xs={12}>
                   <TakeProfitStopLoss />

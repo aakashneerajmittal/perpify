@@ -21,15 +21,23 @@ self.onmessage = function (event) {
  
 }
 function findAndDelete (currentLevels,orders,type) {
-  if(currentLevels){
+  // Guard the empty/undefined cases: the order book column now mounts on every load (not just
+  // when its tab is opened), so this worker runs before the first book snapshot arrives — and
+  // also in the brief window before data on the live site. Without these guards, an empty
+  // 'orders' (orders[orders.length-1] is undefined) or a missing currentLevels threw and the
+  // book failed to initialise.
+  if(!orders || orders.length === 0){
+    return currentLevels || [];
+  }
+  if(currentLevels && currentLevels.length){
     const index = type === "BIDS" ? currentLevels.findIndex((item) => Number(item[0]) <= Number(orders[orders.length - 1][0])) : currentLevels.findIndex((item) => Number(item[0]) >= Number(orders[orders.length - 1][0]))
     return orders.concat(currentLevels.slice(index + 1))
   }
-
+  return orders;
 }
 function addTotalSums(orders){
   let sum = 0;
-  return orders.map((item) => {
+  return (orders || []).map((item) => {
       sum += Number(item[1]);
       item[2] = sum
       return item;
