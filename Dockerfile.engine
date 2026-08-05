@@ -3,8 +3,10 @@
 #   /v1/order-and-account-updates?token=<addr>   · orders + fills + account
 #   /v1/ws/order-book                             · aggregated depth
 #   /marketDataStream                             · mark / index / gap coefficient
-# Runs the TypeScript directly via tsx. --offline skips chain calls; --fresh boots a clean
-# two-sided maker book; --demo funds each connecting address $100k.
+# Runs the TypeScript directly via tsx. --offline skips chain calls; --demo funds each connecting
+# address $100k. NO --fresh in production: the engine replays its durable command log on boot so
+# trader balances/positions survive restarts and redeploys (pair with a mounted PERPIFY_DATA_DIR
+# disk — see render.yaml). Pass --fresh manually for a clean local start.
 #
 # Build (from repo root):  docker build -f Dockerfile.engine -t perpify-engine .
 # Run:                     docker run -e ALLOWED_ORIGINS="https://app.perpify.trade,null" -p 8787:8787 perpify-engine
@@ -29,4 +31,4 @@ EXPOSE 8787
 #                      keeping `null` (covers non-browser clients). e.g.
 #                      "https://perpify.netlify.app,null". If unset, only localhost origins
 #                      connect and the deployed frontend's WebSocket is rejected (403).
-CMD ["npx", "tsx", "src/main.ts", "--demo", "--offline", "--fresh"]
+CMD ["npx", "tsx", "src/main.ts", "--demo", "--offline"]

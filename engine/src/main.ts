@@ -16,7 +16,7 @@
  *
  * Weekend-run instructions: docs/OPERATIONS.md.
  */
-import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { EngineBus } from "./wire/bus.js";
@@ -71,7 +71,10 @@ function botAddr(kind: number, marketIdx: number, slot = 0): string {
 
 // ---------- command-log persistence (replay-on-boot) ----------
 
-const logDir = join(repoRoot, "engine", "logs");
+// Persist the command log to a DURABLE location so replay-on-boot survives restarts/redeploys.
+// On Render, point PERPIFY_DATA_DIR at a mounted persistent disk (e.g. /data); locally it falls
+// back to engine/logs. Daily files rotate for easy inspection; replay reads them ALL, in order.
+const logDir = process.env.PERPIFY_DATA_DIR || join(repoRoot, "engine", "logs");
 mkdirSync(logDir, { recursive: true });
 const day = new Date().toISOString().slice(0, 10);
 const cmdLogPath = join(logDir, `commands-${day}.jsonl`);
@@ -85,10 +88,26 @@ function persist(cmd: Command): void {
 }
 
 function replayBootLog(bus: EngineBus): number {
-  if (!existsSync(cmdLogPath)) return 0;
-  const lines = readFileSync(cmdLogPath, "utf8").trim().split("\n").filter(Boolean);
-  for (const line of lines) bus.dispatch(JSON.parse(line, bigintParse) as Command);
-  return lines.length;
+  // Replay EVERY daily command log in chronological order (date-named files sort correctly), not
+  // just today's — so a restart on any later day rebuilds the full account/position/balance state
+  // instead of an empty book. A corrupt line is skipped rather than aborting the whole boot.
+  if (!existsSync(logDir)) return 0;
+  const files = readdirSync(logDir)
+    .filter((f) => /^commands-\d{4}-\d{2}-\d{2}\.jsonl$/.test(f))
+    .sort();
+  let n = 0;
+  for (const f of files) {
+    const lines = readFileSync(join(logDir, f), "utf8").trim().split("\n").filter(Boolean);
+    for (const line of lines) {
+      try {
+        bus.dispatch(JSON.parse(line, bigintParse) as Command);
+        n++;
+      } catch {
+        /* skip a corrupt line — keep replaying the rest */
+      }
+    }
+  }
+  return n;
 }
 
 // ---------- per-market runtime ----------
@@ -112,7 +131,7 @@ async function main() {
   };
 
   const replayed = FRESH ? 0 : replayBootLog(bus);
-  console.log(`[boot] venue service · ${FRESH ? "fresh start (log replay skipped)" : `replayed ${replayed} commands from today's log`} · port ${PORT} · ${MARKET_IDS.length} markets`);
+  console.log(`[boot] venue service · ${FRESH ? "fresh start (log replay skipped)" : `replayed ${replayed} commands from the durable log (${logDir})`} · port ${PORT} · ${MARKET_IDS.length} markets`);
 
   // On-chain settlement (Base Sepolia) is env-gated and crash-safe: with --offline, or if the
   // operator secrets aren't present, the venue runs fully off-chain (reliable demo default).

@@ -1,17 +1,29 @@
 # Render Blueprint — Perpify engine (one-click deploy).
 # In Render: New → Blueprint → pick the `perpify` repo → Apply. This creates the web
-# service fully configured (Docker build of Dockerfile.engine, free plan, health check,
-# allowed origins). No manual field entry.
+# service fully configured (Docker build of Dockerfile.engine, Starter plan, persistent disk
+# for the durable command log, health check, allowed origins). No manual field entry.
 services:
   - type: web
     name: perpify-engine
     runtime: docker
     dockerfilePath: ./Dockerfile.engine
     dockerContext: .
-    plan: free
+    # Starter (always-on) instead of free: free sleeps after ~15 min idle (cold-start for the
+    # next trader) AND has an ephemeral filesystem that would wipe the command log on every
+    # restart. Starter stays up and supports the persistent disk below.
+    plan: starter
     healthCheckPath: /
     autoDeploy: true
+    # Durable command log — the engine replays this on boot, so trader balances/positions survive
+    # restarts and redeploys. Written to PERPIFY_DATA_DIR (=/data) below.
+    disk:
+      name: perpify-data
+      mountPath: /data
+      sizeGB: 1
     envVars:
+      # Command log lives on the persistent disk (mountPath above) → replay-on-boot is durable.
+      - key: PERPIFY_DATA_DIR
+        value: /data
       # Must match the frontend's exact origin. demo.perpify.trade is the planned demo URL;
       # add/adjust here (comma-separated) if the frontend is served elsewhere. Keep `null`.
       - key: ALLOWED_ORIGINS
