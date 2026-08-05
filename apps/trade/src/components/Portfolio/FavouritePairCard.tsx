@@ -42,7 +42,7 @@ const FavouritePairCard = ({ refreshState }: { refreshState: boolean }) => {
       if (index === 0) {
         color = "#A044FE";
       } else if (index === 1) {
-        color = "#C0DF5A";
+        color = "#4F8EFF";
       } else if (index === 2) {
         color = "#EBB62F";
       } else {

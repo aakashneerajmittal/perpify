@@ -29,7 +29,7 @@ export const buttonStyles = {
 };
 
 export const selectButtonStyles = {
-  color: "#e2ff6f",
+  color: "#4F8EFF",
   "font-weight": "400",
   "font-size": "13px",
   "line-height": "13px",
@@ -72,7 +72,7 @@ export const datePickerPopperProps = {
 export const useDatePickerStyles = makeStyles((theme) => ({
   root: {
     "& .MuiFormLabel-root": {
-      color: "#E2FF6F"
+      color: "#4F8EFF"
     },
     "& .css-giflsp-MuiFormLabel-root-MuiInputLabel-root": {
       color: "#9d9d9d",

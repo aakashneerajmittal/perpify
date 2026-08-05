@@ -125,7 +125,7 @@ const MIsolatedToCrossWallet = ({ setMarginType, marginType, symbol = "BTCUSDT",
                 id="Cross-Card"
                 sx={{
                   backgroundColor: "background.secondary",
-                  border: marginTypeValue === "CROSS" ? "1px solid #E2FF6F" : "none",
+                  border: marginTypeValue === "CROSS" ? "1px solid #4F8EFF" : "none",
                   cursor: "pointer"
                 }}
                 onClick={() => setMarginTypeValue("CROSS")}
@@ -246,7 +246,7 @@ const MIsolatedToCrossWallet = ({ setMarginType, marginType, symbol = "BTCUSDT",
               <Card
                 sx={{
                   backgroundColor: "background.secondary",
-                  border: marginTypeValue === "ISOLATED" ? "1px solid #E2FF6F" : "none",
+                  border: marginTypeValue === "ISOLATED" ? "1px solid #4F8EFF" : "none",
                   cursor: "pointer"
                 }}
                 onClick={() => setMarginTypeValue("ISOLATED")}

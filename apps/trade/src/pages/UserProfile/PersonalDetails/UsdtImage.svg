@@ -81,11 +81,11 @@
 <ellipse cx="40.7835" cy="1.76397" rx="1.32451" ry="1.32452" fill="#33B568"/>
 <defs>
 <linearGradient id="paint0_linear_1343_46376" x1="36.5451" y1="12.3821" x2="13.3675" y2="45.0427" gradientUnits="userSpaceOnUse">
-<stop stop-color="#EBFF25"/>
+<stop stop-color="#4F8EFF"/>
 <stop offset="1" stop-color="#44D66D"/>
 </linearGradient>
 <linearGradient id="paint1_linear_1343_46376" x1="36.5451" y1="4.26748" x2="36.5451" y2="44.3409" gradientUnits="userSpaceOnUse">
-<stop offset="0.34375" stop-color="#D4F938"/>
+<stop offset="0.34375" stop-color="#4F8EFF"/>
 <stop offset="1" stop-color="#44D66D"/>
 </linearGradient>
 </defs>

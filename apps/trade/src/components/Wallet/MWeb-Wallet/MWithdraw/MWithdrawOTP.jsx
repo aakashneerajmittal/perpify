@@ -76,7 +76,7 @@ export const MWithDrawOTP = ({ SETFORMDATA, formData, helperTextForOTP, openOTPM
               Resend
             </Typography>
           ) : (
-            <OtpTimer textColor={"#E2FF6F"} buttonColor={"#E2FF6F"} minutes={0} seconds={59} text=" " ButtonText="Resend" resend={handleResendOTP} background={"#1F1F24"} />
+            <OtpTimer textColor={"#4F8EFF"} buttonColor={"#4F8EFF"} minutes={0} seconds={59} text=" " ButtonText="Resend" resend={handleResendOTP} background={"#1F1F24"} />
           )}
         </Box>
         <Box sx={{ width: "100%", mt: 2 }}>

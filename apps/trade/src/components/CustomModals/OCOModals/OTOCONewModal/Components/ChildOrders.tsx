@@ -152,7 +152,7 @@ const ChildOrders: React.FC<ChildOrdersProps> = ({ type, gridSize, parentData, d
                 onChange={handleChangeUpdatedPrice}
               />
               <CloseIcon id="openOrderModal-Close-BTN" onClick={handleClose} style={{ marginLeft: "8px", cursor: "pointer", fontSize: "14px" }} />
-              <CheckIcon id="openOrderModal-Right-Btn" onClick={handleCheckClick} style={{ marginLeft: "8px", cursor: !error && "pointer", fontSize: "14px", color: error ? "gray" : "#E2FF6F" }} />
+              <CheckIcon id="openOrderModal-Right-Btn" onClick={handleCheckClick} style={{ marginLeft: "8px", cursor: !error && "pointer", fontSize: "14px", color: error ? "gray" : "#4F8EFF" }} />
             </Box>
             {error && (
               <TextView component={"div"} variant="Medium_12" color={"text.error"}>

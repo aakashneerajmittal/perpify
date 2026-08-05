@@ -7,21 +7,21 @@ export const MuiSwitch = {
       border: "1px solid",
       padding: 0,
       "&.Mui-checked": {
-        borderColor: "#EBFF25"
+        borderColor: "#4F8EFF"
       },
       "& .MuiSwitch-switchBase": {
         padding: 0,
 
         transitionDuration: "300ms",
         "& + .MuiSwitch-track": {
-          borderColor: "#EBFF25",
+          borderColor: "#4F8EFF",
           backgroundColor: "#1B1B1F",
           opacity: 1,
           border: 2
         },
         "&.Mui-checked": {
           "& .MuiSwitch-thumb": {
-            backgroundColor: "#EBFF25"
+            backgroundColor: "#4F8EFF"
           },
           transform: "translateX(13px)",
           color: "#fff",

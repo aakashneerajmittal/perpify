@@ -43,7 +43,7 @@ function PersonalDetails() {
 
   const BankVerificationTag = (
     <TextView text={"Bank Verification"} variant="Medium_14">
-      <CheckIcon style={{ color: "#D4F939", fontSize: "inherit", marginRight: "3px" }} />
+      <CheckIcon style={{ color: "#4F8EFF", fontSize: "inherit", marginRight: "3px" }} />
     </TextView>
   );
 
@@ -65,7 +65,7 @@ function PersonalDetails() {
   );
   const KycVerificationTag = (
     <TextView text={"KYC Verification"} variant="Medium_14">
-      <CheckIcon style={{ color: "#D4F939", fontSize: "inherit", marginRight: "3px" }} />
+      <CheckIcon style={{ color: "#4F8EFF", fontSize: "inherit", marginRight: "3px" }} />
     </TextView>
   );
   const ViewKyc = (

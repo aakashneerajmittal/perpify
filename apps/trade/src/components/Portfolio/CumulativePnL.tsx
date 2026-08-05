@@ -123,7 +123,7 @@ const CummulativePnL = ({ refreshState }: { refreshState: boolean }) => {
                 placement="top"
               >
                 <Box display={"flex"} gap={1} alignItems={"center"}>
-                  <FiberManualRecordIcon sx={{ width: 10, height: 10, color: "#C0DF5A" }} />
+                  <FiberManualRecordIcon sx={{ width: 10, height: 10, color: "#4F8EFF" }} />
                   <TextView text={"Net Cumulative P&L"} component="span" variant="Medium_14" color="text.regular" />
                 </Box>
               </Tooltip>

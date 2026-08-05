@@ -21,13 +21,13 @@ const LeverageSlider = ({ handleLeverageChange, leverage, maxLeverage }: { handl
           id={"orderForm-leverageSlider-at-" + leverage}
           min={1}
           sx={{
-            color: "#C0DF5A",
+            color: "#4F8EFF",
             height: "6px",
             borderRadius: "40px",
             "& .MuiSlider-thumb": {
               width: 21,
               height: 21,
-              background: "linear-gradient(0deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15)),conic-gradient(from 135deg at 50% 50%, #16B943 0deg, #EBFF25 193.12deg, #16B943 360deg)",
+              background: "linear-gradient(0deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15)),conic-gradient(from 135deg at 50% 50%, #16B943 0deg, #4F8EFF 193.12deg, #16B943 360deg)",
               transition: "0.3s cubic-bezier(.47,1.64,.41,.8)",
               "&:before": {
                 boxShadow: "0 2px 12px 0 rgba(0,0,0,0.4)"

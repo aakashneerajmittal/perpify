@@ -6,7 +6,7 @@ export const SETTING_LIST_ITEM_STYLE = {
   "&.Mui-selected": {
     backgroundColor: "background.secondary",
     color: "text.main",
-    borderRight: "0.1px solid #C6EB3B",
+    borderRight: "0.1px solid #4F8EFF",
     fontWeight: 700
   }
 };

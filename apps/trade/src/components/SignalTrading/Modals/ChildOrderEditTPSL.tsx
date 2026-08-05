@@ -195,7 +195,7 @@ const ChildOrdersEditTPSL: React.FC<ChildOrdersEditTPSLProps> = ({
                 onChange={handleChangeUpdatedPrice}
               />
               <CloseIcon id="openOrderModal-Close-BTN" onClick={handleClose} fontSize="14px" style={{ marginLeft: "8px", cursor: "pointer" }} />
-              <CheckIcon id="openOrderModal-Right-Btn" onClick={submitNewPrice} fontSize="14px" style={{ marginLeft: "8px", color: error ? "gray" : "#E2FF6F", cursor: !error && "pointer" }} />
+              <CheckIcon id="openOrderModal-Right-Btn" onClick={submitNewPrice} fontSize="14px" style={{ marginLeft: "8px", color: error ? "gray" : "#4F8EFF", cursor: !error && "pointer" }} />
             </Box>
             {error && (
               <Typography component={"div"} variant="Medium_12" color={"text.error"}>

@@ -68,7 +68,7 @@ const RiskWarningModal = ({ IsOpen, primaryAction, primaryName, isPrimaryAction 
             style={{
               margin: "0px 5px",
 
-              color: "#E2FF6F",
+              color: "#4F8EFF",
               cursor: "pointer"
             }}
             onClick={() => setisReadMore(true)}

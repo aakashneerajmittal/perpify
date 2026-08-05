@@ -178,7 +178,7 @@ function Verification({ setCurrentScreen, userEmail, setUserEmail, flowID }) {
                 <TextView color={"text.quaternary"} variant="Regular_14" text={"   Didn't Receive Email?"} />
 
                 {firstOTPResendButton ? (
-                  <OtpTimer textColor={"#E2FF6F"} buttonColor={"#E2FF6F"} background="#0e0e0f" minutes={0} seconds={59} text=" " ButtonText="Resend" resend={handleResendEmailVerificationOtp} />
+                  <OtpTimer textColor={"#4F8EFF"} buttonColor={"#4F8EFF"} background="#0e0e0f" minutes={0} seconds={59} text=" " ButtonText="Resend" resend={handleResendEmailVerificationOtp} />
                 ) : (
                   <TextView
                     text={"         Resend"}

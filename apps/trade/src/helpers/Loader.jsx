@@ -10,7 +10,7 @@ const useStyles = makeStyles({
     backgroundColor: "#000000"
   },
   barColorPrimary: {
-    backgroundColor: "#E2FF6F"
+    backgroundColor: "#4F8EFF"
   },
   dashedColorPrimary: {
     backgroundImage: "radial-gradient(#f6ce95 0%, #f6ce95 16%, transparent 42%)"

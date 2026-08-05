@@ -36,12 +36,12 @@ const ReferralAndRebateCard = () => {
       </Grid>
 
       <Grid item>
-        <TextView text={"          Refer And Earn"} variant="Medium_16" color={"#C0DF5A"} />
+        <TextView text={"          Refer And Earn"} variant="Medium_16" color={"#4F8EFF"} />
 
         <TextView text={"Invite friends to sign up and start trading. Earn upto 0.03% of the trading volume generate by them."} variant="Regular_14" />
       </Grid>
       <Grid item>
-        <TextView text={"     Trading Fee Rebate"} variant="Medium_16" color={"#C0DF5A"} />
+        <TextView text={"     Trading Fee Rebate"} variant="Medium_16" color={"#4F8EFF"} />
 
         <TextView text={"   Sign up using referral code and get a flat rebate of upto 20% on your trading fee."} variant="Regular_14" />
       </Grid>

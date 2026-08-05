@@ -154,7 +154,7 @@ const RiskParameterModal: React.FC<RiskParameterModalProps> = ({
         {(!type || type === "MARGIN_PER_SIGNAL") && (
           <Box mt={1}>
             <BasicTextFields label={"Margin allocated for each Signal (USDC)"} value={maxMarginPerSignal} onChange={handleMaxMarginChange} type={"number"} />
-            <Typography variant="SemiBold_11" color={"#C0DF5A"}>
+            <Typography variant="SemiBold_11" color={"#4F8EFF"}>
               {"Note: "}
               <Typography variant="SemiBold_11" component={"span"} color={"text.secondary"}>
                 {" At time analyst gives a signal, and this margin amount is not available, signal will be rejected."}
@@ -175,7 +175,7 @@ const RiskParameterModal: React.FC<RiskParameterModalProps> = ({
               onChange={handleMaxMarginLockedChange}
               type={"number"}
             />
-            <Typography variant="SemiBold_11" color={"#C0DF5A"}>
+            <Typography variant="SemiBold_11" color={"#4F8EFF"}>
               {"Note: "}
               <Typography variant="SemiBold_11" component={"span"} color={"text.secondary"}>
                 {" The total margin allocated across signals cannot exceed this value. All new signals will be rejected until margin gets freed up from previous signals."}

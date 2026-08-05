@@ -24,7 +24,7 @@ export const GREEN_BOX_FRAME = {
 };
 export const PRIMARY_ACCOUNT_STYLE = {
   px: 3,
-  background: "#E2FF6F",
+  background: "#4F8EFF",
   color: "black",
   display: "flex",
   justifyContent: "center",

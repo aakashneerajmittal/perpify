@@ -69,7 +69,7 @@ const DeleteKeyOTPModal: React.FC<ComponentProps> = ({ isOpen, setIsOpen, delete
           <Box mt={"1rem"} sx={{ display: "flex" }}>
             <TextView color={"text.regular"} variant={"Regular_14"} style={{ marginRight: "0.375rem" }} text={"Didn't Receive?"} />
             {isResendClicked ? (
-              <OtpTimer textColor={"#E2FF6F"} buttonColor={"#E2FF6F"} minutes={0} seconds={59} text=" " ButtonText="Resend" resend={handleResendOTP} background={"#1B1B1F"} textClass={"otp-timer"} />
+              <OtpTimer textColor={"#4F8EFF"} buttonColor={"#4F8EFF"} minutes={0} seconds={59} text=" " ButtonText="Resend" resend={handleResendOTP} background={"#1B1B1F"} textClass={"otp-timer"} />
             ) : (
               <TextView component={"span"} style={{ cursor: "pointer" }} onClick={handleResendOTP} color={"text.main"} variant={"Regular_14"} text={"Resend"} />
             )}

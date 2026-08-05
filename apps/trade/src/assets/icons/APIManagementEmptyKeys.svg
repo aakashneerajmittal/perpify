@@ -21,19 +21,19 @@
 <ellipse cx="97.1167" cy="1.99202" rx="2.14993" ry="1.99202" fill="#0B7030"/>
 <ellipse cx="89.6774" cy="93.5727" rx="0.754025" ry="0.735508" fill="#14AB4C"/>
 <ellipse cx="22.389" cy="49.7166" rx="1.18632" ry="1.17024" fill="#14AB4C"/>
-<ellipse cx="142.416" cy="91.6024" rx="2.54695" ry="2.27339" fill="#D8FF35"/>
-<ellipse cx="72.8049" cy="20.5063" rx="1.67894" ry="1.49861" fill="#D5FA39"/>
+<ellipse cx="142.416" cy="91.6024" rx="2.54695" ry="2.27339" fill="#4F8EFF"/>
+<ellipse cx="72.8049" cy="20.5063" rx="1.67894" ry="1.49861" fill="#4F8EFF"/>
 <defs>
 <linearGradient id="paint0_linear_4238_40465" x1="137.143" y1="18.0161" x2="123.718" y2="71.1504" gradientUnits="userSpaceOnUse">
-<stop offset="0.4267" stop-color="#D4F938"/>
+<stop offset="0.4267" stop-color="#4F8EFF"/>
 <stop offset="1" stop-color="#32D875" stop-opacity="0.96"/>
 </linearGradient>
 <linearGradient id="paint1_linear_4238_40465" x1="118.003" y1="53.8626" x2="107.02" y2="89.2056" gradientUnits="userSpaceOnUse">
-<stop offset="0.4267" stop-color="#D4F938"/>
+<stop offset="0.4267" stop-color="#4F8EFF"/>
 <stop offset="1" stop-color="#32D875" stop-opacity="0.96"/>
 </linearGradient>
 <linearGradient id="paint2_linear_4238_40465" x1="62.4026" y1="71.7133" x2="58.5658" y2="114.873" gradientUnits="userSpaceOnUse">
-<stop offset="0.4267" stop-color="#D4F938"/>
+<stop offset="0.4267" stop-color="#4F8EFF"/>
 <stop offset="1" stop-color="#32D875" stop-opacity="0.96"/>
 </linearGradient>
 </defs>

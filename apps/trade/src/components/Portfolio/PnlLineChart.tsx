@@ -97,11 +97,11 @@ export function PnlLineChart({ graphData }: { graphData: { labels: string[]; dat
           {
             label: "Net P&L",
             data: datasetTwo,
-            borderColor: "#C0DF5A",
+            borderColor: "#4F8EFF",
             pointStyle: "circle",
             pointRadius: 0.75,
             borderWidth: 2.5,
-            backgroundColor: "#C0DF5A"
+            backgroundColor: "#4F8EFF"
           }
         ]
       }}

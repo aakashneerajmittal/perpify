@@ -11,7 +11,7 @@ const NoDataBanner = ({ variant = "large" }: { variant?: "small" | "large" }) =>
     <Box
       sx={{
         width: "100%",
-        background: "linear-gradient(to top, #E2FF6F -890%, rgba(54, 208, 104, 0) 120%)",
+        background: "linear-gradient(to top, #4F8EFF -890%, rgba(54, 208, 104, 0) 120%)",
         borderRadius: 2,
         padding: "16px 24px",
         gap: "32px",

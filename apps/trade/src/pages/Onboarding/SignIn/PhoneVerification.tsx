@@ -207,7 +207,7 @@ function MobileSignInVerification() {
                   <TextView variant={"Medium_14"} text={"Didn't receive SMS?"} color={"text.quaternary"} />
 
                   {firstOTPResendButton ? (
-                    <OtpTimer textColor={"#E2FF6F"} buttonColor={"#E2FF6F"} background="#0e0e0f" minutes={0} seconds={59} text=" " ButtonText="Resend" resend={handleResendOTP} />
+                    <OtpTimer textColor={"#4F8EFF"} buttonColor={"#4F8EFF"} background="#0e0e0f" minutes={0} seconds={59} text=" " ButtonText="Resend" resend={handleResendOTP} />
                   ) : (
                     <TextView
                       variant={"Medium_14"}

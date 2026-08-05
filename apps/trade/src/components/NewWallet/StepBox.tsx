@@ -24,7 +24,7 @@ const StepBox: React.FC<ComponentProps> = ({ title, description, icon, stepNumbe
         background: `linear-gradient(185deg, rgba(226, 255, 111, 0.12) -53.88%, rgba(54, 208, 104, 0.00) 165.2%)`
       }}
     >
-      <Box px={2} py={0.5} sx={{ backgroundColor: "#C0DF5A" }}>
+      <Box px={2} py={0.5} sx={{ backgroundColor: "#4F8EFF" }}>
         <TextView variant={"Bold_12"} color={"#000"} text={`STEP ${stepNumber}`}></TextView>
       </Box>
       <Box

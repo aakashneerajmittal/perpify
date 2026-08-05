@@ -89,7 +89,7 @@ export const REFERRAL_CODE_BOX = {
   borderRadius: 0,
   paddingTop: "20px",
   position: "relative",
-  border: "0.1px solid #E2FF6F"
+  border: "0.1px solid #4F8EFF"
 };
 export const NO_ROWS_GRID_STYLE = { display: "flex", justifyContent: "center", flexDirection: "column", alignItems: "center", marginTop: "30px" };
 export const REFERRAL_CODE_DISPLAY_STYLE = { display: "flex", justifyContent: "start", gap: "4px" };

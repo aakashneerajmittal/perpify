@@ -38,14 +38,14 @@ export const CONVERSION_TOGGLE_BUTTON_GROUP = {
   }
 };
 export const TOGGLE_BUTTON = {
-  outlineColor: "#E2FF6F",
+  outlineColor: "#4F8EFF",
   outlineWidth: "1px",
   outlineStyle: "solid",
   "&.Mui-selected": {
     color: "black",
-    backgroundColor: "#E2FF6F",
+    backgroundColor: "#4F8EFF",
     "&:hover": {
-      backgroundColor: "#E2FF6F"
+      backgroundColor: "#4F8EFF"
     }
   }
 };
@@ -57,9 +57,9 @@ export const TOGGLE_BUTTON_HEADER = {
   "&.Mui-selected": {
     color: "black",
     outlineStyle: "none",
-    backgroundColor: "#E2FF6F",
+    backgroundColor: "#4F8EFF",
     "&:hover": {
-      backgroundColor: "#E2FF6F"
+      backgroundColor: "#4F8EFF"
     }
   }
 };

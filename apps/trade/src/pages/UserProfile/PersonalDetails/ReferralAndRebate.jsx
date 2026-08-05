@@ -9,7 +9,7 @@ const ReferralAndRebate = () => {
     <>
       <Grid item container px={5} pt={3} lg={12} md={12} justifyContent={"space-between"}>
         <Grid item pt={3} pb={1.8} lg={6} md={6}>
-          <Typography variant="Medium_16" color={"#C0DF5A"}>
+          <Typography variant="Medium_16" color={"#4F8EFF"}>
             Refer And Earn
           </Typography>
         </Grid>
@@ -60,7 +60,7 @@ const ReferralAndRebate = () => {
             <Typography color={"text.secondary"} component={"p"} variant={"Medium_11"}>
               Level
             </Typography>
-            <Typography component={"p"} variant={"Medium_12"} color={"#EBFF25"} mt={1}>
+            <Typography component={"p"} variant={"Medium_12"} color={"#4F8EFF"} mt={1}>
               01
             </Typography>
           </Grid>
@@ -92,7 +92,7 @@ const ReferralAndRebate = () => {
   const RebateNotDone = (
     <>
       <Grid item container px={5} pt={6} lg={12} md={12}>
-        <Typography variant="Medium_16" color={"#C0DF5A"}>
+        <Typography variant="Medium_16" color={"#4F8EFF"}>
           Trading Fee Rebate
         </Typography>
         <Box display={"flex"} flexDirection={"row"}>
@@ -130,7 +130,7 @@ const ReferralAndRebate = () => {
             <Typography color={"text.secondary"} component={"p"} variant={"Medium_11"}>
               Rebate %
             </Typography>
-            <Typography component={"p"} variant={"Medium_12"} color={"#EBFF25"} mt={1}>
+            <Typography component={"p"} variant={"Medium_12"} color={"#4F8EFF"} mt={1}>
               01
             </Typography>
           </Grid>

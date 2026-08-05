@@ -129,7 +129,7 @@ const MINRWallet = ({ setSelectedWalletTab, IsUserVerified }) => {
         <Box sx={{ display: "flex", justifyContent: "center", flexDirection: "column" }}>
           <Box
             sx={{
-              // border: "0.1px solid #E2FF6F",
+              // border: "0.1px solid #4F8EFF",
               minWidth: "325px",
               width: "100%",
               p: 3,

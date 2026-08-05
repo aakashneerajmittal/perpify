@@ -9,7 +9,7 @@ export const MuiOutlinedInput = {
         borderColor: "#0E0E0F !important"
       },
       "&:hover fieldset": {
-        borderColor: "#E2FF6F !important"
+        borderColor: "#4F8EFF !important"
       }
     }
   }

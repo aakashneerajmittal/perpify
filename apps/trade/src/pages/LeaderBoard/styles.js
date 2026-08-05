@@ -65,9 +65,9 @@ export const STAND2BOX = {
   position: "relative",
   width: { xs: "94px", sm: "130px", md: "148px" },
   height: { xs: "96px", sm: "135px", md: "151px" },
-  background: "linear-gradient(178.91deg, #E2FF6F -187.19%, rgba(226, 255, 111, 0.411458) -22%, rgba(226, 255, 111, 0) 93.48%)",
+  background: "linear-gradient(178.91deg, #4F8EFF -187.19%, rgba(226, 255, 111, 0.411458) -22%, rgba(226, 255, 111, 0) 93.48%)",
   borderRadius: "25px",
-  border: "1px solid #E2FF6F",
+  border: "1px solid #4F8EFF",
   display: "flex",
   justifyContent: "center",
   alignItems: "flex-end"
@@ -77,11 +77,11 @@ export const STAND3BOX = {
   position: "relative",
   width: { xs: "94px", sm: "130px", md: "148px" },
   height: { xs: "87px", sm: "120px", md: "136px" },
-  background: "linear-gradient(178.91deg, #E2FF6F -187.19%, rgba(226, 255, 111, 0.411458) -22%, rgba(226, 255, 111, 0) 93.48%)",
+  background: "linear-gradient(178.91deg, #4F8EFF -187.19%, rgba(226, 255, 111, 0.411458) -22%, rgba(226, 255, 111, 0) 93.48%)",
   borderRadius: "25px",
   borderWidth: "1px",
   borderStyle: "solid",
-  borderColor: "#E2FF6F",
+  borderColor: "#4F8EFF",
   borderLeft: "none",
   display: "flex",
   justifyContent: "center",
@@ -92,9 +92,9 @@ export const STAND1BOX = {
   position: "relative",
   width: { xs: "104px", sm: "145px", md: "165px" },
   height: { xs: "136px", sm: "195px", md: "214px" },
-  background: "linear-gradient(178.91deg, #E2FF6F -187.19%, rgba(226, 255, 111, 0.411458) -22%, rgba(226, 255, 111, 0) 93.48%)",
+  background: "linear-gradient(178.91deg, #4F8EFF -187.19%, rgba(226, 255, 111, 0.411458) -22%, rgba(226, 255, 111, 0) 93.48%)",
   borderRadius: "25px",
-  border: "1px solid #E2FF6F",
+  border: "1px solid #4F8EFF",
   zIndex: 10,
   display: "flex",
   justifyContent: "center",
@@ -110,9 +110,9 @@ export const LEADER2AVATARSTYLE = {
   width: { xs: "53px", sm: "92px" },
   height: { xs: "55px", sm: "92px" },
   borderRadius: "100px",
-  border: "3px solid #E2FF6F",
+  border: "3px solid #4F8EFF",
   backgroundSize: "cover",
-  backgroundColor: "#E2FF6F"
+  backgroundColor: "#4F8EFF"
 };
 export const RANK2BOXSTYLE = {
   position: "relative",
@@ -189,9 +189,9 @@ export const LEADER3AVATARSTYLE = {
   width: { xs: "53px", sm: "92px" },
   height: { xs: "55px", sm: "92px" },
   borderRadius: "100px",
-  border: "3px solid #E2FF6F",
+  border: "3px solid #4F8EFF",
   backgroundSize: "cover",
-  backgroundColor: "#E2FF6F"
+  backgroundColor: "#4F8EFF"
 };
 
 export const LEADER3AVATARPOS = {
@@ -214,7 +214,7 @@ export const LEFTRIBBONSTYLE = {
   left: "-18%",
   width: { xs: "77px", sm: "122px" },
   height: { xs: "8px", sm: "12px" },
-  background: "linear-gradient(160.38deg, #E2FF6F -213.22%, rgba(226, 255, 111, 0) 72.75%)",
+  background: "linear-gradient(160.38deg, #4F8EFF -213.22%, rgba(226, 255, 111, 0) 72.75%)",
   transform: "rotate(115deg)",
   zIndex: 1
 };
@@ -225,7 +225,7 @@ export const RIGHTRIBBONSTYLE = {
   right: "-20%",
   width: { xs: "77px", sm: "122px" },
   height: { xs: "8px", sm: "12px" },
-  background: "linear-gradient(-160.38deg, #E2FF6F -213.22%, rgba(226, 255, 111, 0) 72.75%)",
+  background: "linear-gradient(-160.38deg, #4F8EFF -213.22%, rgba(226, 255, 111, 0) 72.75%)",
   transform: "rotate(-115deg)",
   zIndex: 1
 };
@@ -273,9 +273,9 @@ export const LEADER1AVATARSTYLE = {
   width: { xs: "65px", sm: "110px" },
   height: { xs: "65px", sm: "110px" },
   borderRadius: "100px",
-  border: "3px solid #E2FF6F",
+  border: "3px solid #4F8EFF",
   backgroundSize: "cover",
-  backgroundColor: "#E2FF6F"
+  backgroundColor: "#4F8EFF"
 };
 
 export const USERSIGNINWRAPPER = {

@@ -6,7 +6,7 @@ export const MuiCheckbox = {
     },
     colorPrimary: {
       "&.Mui-checked": {
-        color: "#E2FF6F"
+        color: "#4F8EFF"
       }
     },
     colorSecondary: {

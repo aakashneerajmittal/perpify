@@ -52,7 +52,7 @@
 <stop offset="1" stop-color="#3ED179" stop-opacity="0"/>
 </linearGradient>
 <linearGradient id="paint6_linear_4238_40755" x1="60.6715" y1="18.232" x2="60.6715" y2="104.229" gradientUnits="userSpaceOnUse">
-<stop offset="0.4375" stop-color="#D4F938"/>
+<stop offset="0.4375" stop-color="#4F8EFF"/>
 <stop offset="1" stop-color="#32D875" stop-opacity="0.96"/>
 </linearGradient>
 </defs>

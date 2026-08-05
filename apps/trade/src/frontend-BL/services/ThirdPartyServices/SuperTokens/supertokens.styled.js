@@ -6,7 +6,7 @@ export const palette = {
   textInput: "white",
   textPrimary: "white",
   textLink: "#a9a9a9",
-  primary: "#E2FF6F",
+  primary: "#4F8EFF",
   superTokensBrandingBackground: "#5C5C5C",
   superTokensBrandingText: "grey"
 };
@@ -42,7 +42,7 @@ export const style = {
     color: "white"
   },
   link: {
-    color: "#E2FF6F"
+    color: "#4F8EFF"
   },
   providerGithub: {
     background: "rgba(79, 79, 79, 0.25)",
@@ -95,7 +95,7 @@ export const style = {
     height: "48px"
   },
   forgotPasswordLink: {
-    color: "#E2FF6F"
+    color: "#4F8EFF"
   },
   superTokensBranding: {
     display: "none"

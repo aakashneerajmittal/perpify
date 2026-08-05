@@ -45,7 +45,7 @@ export const BoxStyle = { border: "0.25px solid #4F4F4F" };
 export const EXPANDICON = {
   backgroundColor: "#4A4A4A",
   borderRadius: "50%",
-  color: "#e2ff6f",
+  color: "#4F8EFF",
   alignSelf: "flex-start"
 };
 export const bottomFixed = {

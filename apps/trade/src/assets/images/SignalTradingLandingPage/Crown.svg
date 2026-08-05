@@ -64,11 +64,11 @@
 <path d="M39.0712 7.87321C39.0712 7.87321 38.0953 9.91055 37.7513 10.3117C37.4072 10.7129 37.0373 11.6923 35.5632 11.2251C35.5632 11.2251 33.8961 10.6276 33.5123 10.3763C33.5123 10.3763 35.132 11.1642 35.5019 11.4706C35.8718 11.777 36.6854 12.2912 35.9075 14.2022L34.9812 16.2418C34.9812 16.2418 36.0435 14.1479 36.3199 13.7725C36.5962 13.397 37.1058 12.3802 38.6184 12.9245L40.4365 13.6822C40.4365 13.6822 38.9921 13.0381 38.2963 12.4394C37.6005 11.8407 37.7556 10.6127 39.0712 7.87321Z" fill="white" stroke="white" stroke-width="0.0889285" stroke-miterlimit="10"/>
 <defs>
 <linearGradient id="paint0_linear_798_2381" x1="42.0713" y1="61.4053" x2="42.0713" y2="71.4079" gradientUnits="userSpaceOnUse">
-<stop stop-color="#D4F938"/>
+<stop stop-color="#4F8EFF"/>
 <stop offset="1" stop-color="#58F28A"/>
 </linearGradient>
 <linearGradient id="paint1_linear_798_2381" x1="42.1525" y1="16.6498" x2="42.1525" y2="60.2677" gradientUnits="userSpaceOnUse">
-<stop offset="0.416667" stop-color="#D4F938"/>
+<stop offset="0.416667" stop-color="#4F8EFF"/>
 <stop offset="1" stop-color="#58F28A"/>
 </linearGradient>
 </defs>

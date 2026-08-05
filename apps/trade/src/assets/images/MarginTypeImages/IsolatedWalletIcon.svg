@@ -9,7 +9,7 @@
 <mask id="path-6-inside-1_68_937" fill="white">
 <path d="M48 24C48 19.5566 46.7665 15.2004 44.4368 11.4167C42.1071 7.63302 38.7727 4.57036 34.8051 2.56988L24 24L48 24Z"/>
 </mask>
-<path d="M48 24C48 19.5566 46.7665 15.2004 44.4368 11.4167C42.1071 7.63302 38.7727 4.57036 34.8051 2.56988L24 24L48 24Z" fill="url(#paint1_linear_68_937)" stroke="#E2FF6F" stroke-width="2" mask="url(#path-6-inside-1_68_937)"/>
+<path d="M48 24C48 19.5566 46.7665 15.2004 44.4368 11.4167C42.1071 7.63302 38.7727 4.57036 34.8051 2.56988L24 24L48 24Z" fill="url(#paint1_linear_68_937)" stroke="#4F8EFF" stroke-width="2" mask="url(#path-6-inside-1_68_937)"/>
 <mask id="mask0_68_937" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="25" y="3" width="22" height="21">
 <path d="M46.9672 23.007C46.9672 18.5636 45.3937 15.0374 43.064 11.2537C40.7343 7.47 39.1797 5.93258 35.2121 3.9321L25.625 22.9075L36.6961 22.9062L46.9672 23.007Z" fill="url(#paint2_linear_68_937)"/>
 </mask>
@@ -25,11 +25,11 @@
 <stop offset="1" stop-color="#505155"/>
 </linearGradient>
 <linearGradient id="paint1_linear_68_937" x1="-14.8886" y1="-15.3503" x2="27.9928" y2="49.6127" gradientUnits="userSpaceOnUse">
-<stop stop-color="#E2FF6F"/>
+<stop stop-color="#4F8EFF"/>
 <stop offset="1" stop-color="#505155"/>
 </linearGradient>
 <linearGradient id="paint2_linear_68_937" x1="19.0051" y1="-2.16798" x2="35.2258" y2="25.3266" gradientUnits="userSpaceOnUse">
-<stop stop-color="#E2FF6F"/>
+<stop stop-color="#4F8EFF"/>
 <stop offset="1" stop-color="#505155"/>
 </linearGradient>
 </defs>

@@ -53,7 +53,7 @@ export const positionSymbol = {
   padding: "6.5px",
   "&:hover": {
     cursor: "pointer",
-    color: "#E2FF6F",
+    color: "#4F8EFF",
     fontWeight: "900"
   }
 };
@@ -121,7 +121,7 @@ export const addmarginiconstyle = {
   fontSize: "1rem",
   "&:hover": {
     cursor: "pointer",
-    color: "#E2FF6F",
+    color: "#4F8EFF",
     fontWeight: "900"
   }
 };

@@ -209,7 +209,7 @@ export const REBATE_HISTORY_COLUMNS = [
     align: "center",
     renderCell: (params) => (
       <>
-        <Typography variant="Regular_14" color="#F4F16C">
+        <Typography variant="Regular_14" color="#4F8EFF">
           {params.row.rebateRate} {"%"}
         </Typography>
       </>
@@ -290,7 +290,7 @@ export const COLUMN_TASKREWARD_HISTORY = [
     align: "center",
     renderCell: (params) => (
       <>
-        <Typography variant="Regular_14" color="#F4F16C">
+        <Typography variant="Regular_14" color="#4F8EFF">
           {params.row.campaign}
         </Typography>
       </>

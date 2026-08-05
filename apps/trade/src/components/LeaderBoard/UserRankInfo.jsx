@@ -47,7 +47,7 @@ export const UserRankInfo = ({ userRankDetail, duration }) => {
           >
             <BorderColorOutlinedIcon
               sx={{
-                color: "#E2FF6F",
+                color: "#4F8EFF",
                 fontSize: "18px",
                 marginTop: 0,
                 marginLeft: 0.5

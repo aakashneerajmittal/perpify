@@ -24,15 +24,15 @@
 </pattern>
 <linearGradient id="paint0_linear_5996_77959" x1="84.3801" y1="71.8292" x2="122.688" y2="113.197" gradientUnits="userSpaceOnUse">
 <stop stop-color="#6CC481"/>
-<stop offset="1" stop-color="#EBFF25"/>
+<stop offset="1" stop-color="#4F8EFF"/>
 </linearGradient>
 <linearGradient id="paint1_linear_5996_77959" x1="69.3361" y1="78.054" x2="80.4255" y2="87.8514" gradientUnits="userSpaceOnUse">
 <stop stop-color="#6CC481"/>
-<stop offset="1" stop-color="#EBFF25"/>
+<stop offset="1" stop-color="#4F8EFF"/>
 </linearGradient>
 <linearGradient id="paint2_linear_5996_77959" x1="139.814" y1="86.2171" x2="150.858" y2="88.4544" gradientUnits="userSpaceOnUse">
 <stop stop-color="#6CC481"/>
-<stop offset="1" stop-color="#EBFF25"/>
+<stop offset="1" stop-color="#4F8EFF"/>
 </linearGradient>
 <clipPath id="clip0_5996_77959">
 <rect width="189.72" height="200" fill="white"/>

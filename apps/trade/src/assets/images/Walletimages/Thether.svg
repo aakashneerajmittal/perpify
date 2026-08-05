@@ -83,11 +83,11 @@
 </g>
 <defs>
 <linearGradient id="paint0_linear_1258_38085" x1="60.101" y1="24.5374" x2="22.8534" y2="77.0246" gradientUnits="userSpaceOnUse">
-<stop stop-color="#EBFF25"/>
+<stop stop-color="#4F8EFF"/>
 <stop offset="1" stop-color="#44D66D"/>
 </linearGradient>
 <linearGradient id="paint1_linear_1258_38085" x1="60.101" y1="11.4967" x2="60.101" y2="75.8967" gradientUnits="userSpaceOnUse">
-<stop offset="0.34375" stop-color="#D4F938"/>
+<stop offset="0.34375" stop-color="#4F8EFF"/>
 <stop offset="1" stop-color="#44D66D"/>
 </linearGradient>
 <clipPath id="clip0_1258_38085">

@@ -23,7 +23,7 @@ const styles = {
     ...typography.SemiBold_20,
     textDecoration: "underline 4px",
     textUnderlineOffset: "6px",
-    textDecorationColor: "#E2FF6F"
+    textDecorationColor: "#4F8EFF"
   },
   titleTypography: { m: 4, ...typography.SemiBold_20 }
 };

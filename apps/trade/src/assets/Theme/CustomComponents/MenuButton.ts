@@ -31,10 +31,10 @@ export const MuiButton = {
     {
       props: { variant: "DensityMain" },
       style: {
-        color: "#E2FF6F",
-        border: "0.1px solid #E2FF6F",
+        color: "#4F8EFF",
+        border: "0.1px solid #4F8EFF",
         "&:hover": {
-          color: "#E2FF6F",
+          color: "#4F8EFF",
           backgroundColor: "rgb(255 255 255 / 8%);"
         }
       }
@@ -43,8 +43,8 @@ export const MuiButton = {
       props: { variant: "DensityMainFill" },
       style: ({ theme }: { theme: any }) => ({
         color: "black",
-        backgroundColor: "#E2FF6F",
-        "&:hover": { color: "black", backgroundColor: "#E2FF6F" }
+        backgroundColor: "#4F8EFF",
+        "&:hover": { color: "black", backgroundColor: "#4F8EFF" }
       })
     },
     {

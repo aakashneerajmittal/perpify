@@ -74,7 +74,7 @@ const OTPModal: React.FC<ComponentProps> = ({ action, IsOpen, cancelAction, SETF
             ></TextView>
           </TextView>
         )}
-        {!resendRenderBoolean && <OtpTimer textColor={"#E2FF6F"} buttonColor={"#E2FF6F"} minutes={0} seconds={59} text=" " ButtonText="Resend" resend={handleResendOTP} background={"#1F1F24"} />}
+        {!resendRenderBoolean && <OtpTimer textColor={"#4F8EFF"} buttonColor={"#4F8EFF"} minutes={0} seconds={59} text=" " ButtonText="Resend" resend={handleResendOTP} background={"#1F1F24"} />}
       </Box>
     </CustomModal>
   );

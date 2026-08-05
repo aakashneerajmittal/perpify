@@ -38,7 +38,7 @@ export const widgetContainer = {
   toolbar_bg: "#1B1B1F",
   loading_screen: {
     backgroundColor: "#1B1B1F",
-    foregroundColor: "#E2FF6F"
+    foregroundColor: "#4F8EFF"
   },
   overrides: {
     "paneProperties.backgroundType": "solid",

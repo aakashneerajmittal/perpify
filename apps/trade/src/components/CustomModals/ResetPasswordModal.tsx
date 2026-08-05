@@ -130,7 +130,7 @@ const ResetPassword = ({ isOpen, close }: { isOpen: boolean; close: Function }) 
                     Resend
                   </Typography>
                 ) : (
-                  <OtpTimer textColor={"#E2FF6F"} buttonColor={"#E2FF6F"} background="#242428" minutes={0} seconds={59} text=" " ButtonText="Resend" resend={() => FORGETPASSWORD(EMAIL.current)} />
+                  <OtpTimer textColor={"#4F8EFF"} buttonColor={"#4F8EFF"} background="#242428" minutes={0} seconds={59} text=" " ButtonText="Resend" resend={() => FORGETPASSWORD(EMAIL.current)} />
                 )}
               </Box>
             </Grid>

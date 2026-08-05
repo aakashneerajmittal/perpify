@@ -3,7 +3,7 @@
 <path d="M25.83 424.79H145.07C145.07 418.5 139.97 413.39 133.67 413.39H37.23C30.94 413.39 25.83 418.49 25.83 424.79Z" fill="#00662E"/>
 <path d="M93.88 378.3H72.84V413.39H93.88V378.3Z" fill="url(#paint1_linear_6407_68095)"/>
 <path d="M145.946 128.887L125.371 124.491L77.1941 349.982L97.7698 354.378L145.946 128.887Z" fill="url(#paint2_linear_6407_68095)"/>
-<path d="M299.3 153.07V84.04" stroke="#AEDF2E" stroke-width="3" stroke-miterlimit="10"/>
+<path d="M299.3 153.07V84.04" stroke="#4F8EFF" stroke-width="3" stroke-miterlimit="10"/>
 <path d="M283.071 81.8454L280.496 71.6455L153.84 103.624L156.415 113.824L283.071 81.8454Z" fill="#217D4B"/>
 <path d="M107.77 364C107.77 376.91 97.3 387.38 84.39 387.38C71.48 387.38 61.01 376.91 61.01 364C61.01 351.09 71.48 340.62 84.39 340.62C97.3 340.62 107.77 351.09 107.77 364Z" fill="#217D4B"/>
 <path d="M319.31 64.75C324.71 75.8 320.12 89.13 309.07 94.53C298.02 99.93 284.69 95.34 279.29 84.29C273.89 73.24 278.48 59.91 289.53 54.51C300.58 49.11 313.91 53.7 319.31 64.75Z" fill="#217D4B"/>
@@ -73,7 +73,7 @@
 <stop offset="1" stop-color="#FFB600"/>
 </linearGradient>
 <linearGradient id="paint3_linear_6407_68095" x1="307.555" y1="152.91" x2="307.555" y2="308.36" gradientUnits="userSpaceOnUse">
-<stop stop-color="#D1EA25"/>
+<stop stop-color="#4F8EFF"/>
 <stop offset="1" stop-color="#32B54A"/>
 </linearGradient>
 <linearGradient id="paint4_linear_6407_68095" x1="191.985" y1="387.66" x2="191.985" y2="414.19" gradientUnits="userSpaceOnUse">

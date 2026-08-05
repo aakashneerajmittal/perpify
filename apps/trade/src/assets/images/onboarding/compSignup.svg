@@ -12,7 +12,7 @@
       }
 
       .cls-3 {
-        fill: #f5fe8f;
+        fill: #4F8EFF;
       }
 
       .cls-4, .cls-5 {
@@ -24,7 +24,7 @@
       }
 
       .cls-7 {
-        fill: #e2ff6f;
+        fill: #4F8EFF;
       }
 
       .cls-8 {
@@ -32,7 +32,7 @@
       }
 
       .cls-9 {
-        fill: #b2d234;
+        fill: #4F8EFF;
       }
 
       .cls-10 {
@@ -72,7 +72,7 @@
       }
     </style>
     <linearGradient id="linear-gradient" x1="407.41" y1="658.72" x2="403.85" y2="157.81" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#c9ff94"/>
+      <stop offset="0" stop-color="#4F8EFF"/>
       <stop offset="1" stop-color="#fff" stop-opacity="0"/>
     </linearGradient>
   </defs>

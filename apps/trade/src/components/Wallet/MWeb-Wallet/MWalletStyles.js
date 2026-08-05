@@ -17,23 +17,23 @@ export const StepperStyle = {
       marginTop: "2px"
     },
     ".Mui-completed": {
-      color: "#E2FF6F !important", // circle color (ACTIVE)
+      color: "#4F8EFF !important", // circle color (ACTIVE)
       ".MuiSvgIcon-root": {
-        color: "#E2FF6F !important",
+        color: "#4F8EFF !important",
         fontSize: "20px"
       } // circle color (COMPLETED)
     },
     ".Mui-active": {
-      color: "#E2FF6F !important", // circle color (ACTIVE)
+      color: "#4F8EFF !important", // circle color (ACTIVE)
       "&.MuiSvgIcon-root": {
-        color: "#E2FF6F !important",
+        color: "#4F8EFF !important",
         fontSize: "20px"
       }
     }
   },
   "& .MuiStepIcon-root": {
     ".Mui-active": {
-      color: "#E2FF6F"
+      color: "#4F8EFF"
     }
   }
 };
