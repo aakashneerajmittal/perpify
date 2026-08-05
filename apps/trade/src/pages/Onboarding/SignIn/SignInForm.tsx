@@ -97,7 +97,7 @@ const SignInForm = () => {
     SIGNINWITHEGOOGLE: string;
     FORGETPASSWORD: string;
   } = {
-    TITLE: "Welcome Back to Density!",
+    TITLE: "Welcome Back to Perpify!",
     SUBTITLE: "Welcome back! Login to your account.",
     EMAIL: "E-mail Id",
     SIGNINWITHEMAIL: "Sign In with Email",
@@ -196,7 +196,7 @@ const SignInForm = () => {
       </Box>
       <Box my={1}>
         <TextView component={"p"} variant={"Medium_14"}>
-          <TextView text={"New to Density?  "} color="text.quaternary" variant={"Medium_14"} component={"span"} />
+          <TextView text={"New to Perpify?  "} color="text.quaternary" variant={"Medium_14"} component={"span"} />
           <TextView
             variant={"Medium_14"}
             text={"Sign Up"}

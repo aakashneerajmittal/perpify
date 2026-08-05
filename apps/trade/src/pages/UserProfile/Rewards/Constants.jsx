@@ -350,7 +350,7 @@ export const COLUMN_TASKREWARD_HISTORY = [
 ];
 
 // CONTENT
-export const REFER_SUBTITLE = "Why earn on trading fees when you can earn on trading volume ? The DENSITY Referral program allows users to earn on the trading volume of your friends.";
+export const REFER_SUBTITLE = "Why earn on trading fees when you can earn on trading volume ? The PERPIFY Referral program allows users to earn on the trading volume of your friends.";
 export const TASK_REWARD_SUBTITLE = "Embark on an exciting Trading Adventure and unlock amazing rewards as you achieve specific milestones along your journey!";
 
 export const KYC_CTA_TEXT = "Complete KYC Now !";

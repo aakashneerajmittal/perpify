@@ -24,7 +24,7 @@ function SignUpOnboardingScreen() {
   const [termsError, setTermsError] = useState("");
   const posthog = usePostHog();
   const textStrings = {
-    TITLE: "Get Started with Density!",
+    TITLE: "Get Started with Perpify!",
     SUBTITLE: "Create your account. Select a method to Sign Up",
     EMAIL: "E-mail Id",
     SIGNUPWITHEGOOGLE: "Sign Up with Google"

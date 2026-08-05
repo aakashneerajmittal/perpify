@@ -6,7 +6,7 @@ import BasicTextFields from "@/components/UI/CustomInput/BasicTextFields";
 import { Eyeicon } from "@/assets/icons";
 
 const textStrings = {
-  TITLE: "Get Started with Density!",
+  TITLE: "Get Started with Perpify!",
   SUBTITLE: "Lorem ipsum dolor sit amet consectetur.",
   CREATEPASSWORD: "Create your password",
   BACK: "Create your password"

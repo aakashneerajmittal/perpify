@@ -166,7 +166,7 @@ const INRDeposite = () => {
         mt={2}
       >
         <NeedHelpBoxes
-          title={"Density Blogs"}
+          title={"Perpify Blogs"}
           imgSrc={DensityLogo}
           link={"https://blogs.density.exchange/how-to-deposit-funds-on-density/"}
           description={"Got doubts on NEFT & IMPS Transfer? Take a look at our blogs!"}

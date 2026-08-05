@@ -172,7 +172,7 @@ export const UserReferralAndRebate = () => {
         }}
       >
         <TextView variant={"Medium_22"} style={{ marginBottom: "1rem" }} color={"text.default"} text={"Earn on Trading Volume"} />
-        <TextView variant={"Regular_16"} color={"text.quaternary"} text={"The Density Referral program allows users to earn on the trading volume of your friends"} />
+        <TextView variant={"Regular_16"} color={"text.quaternary"} text={"The Perpify Referral program allows users to earn on the trading volume of your friends"} />
       </Box>
     ) : (
       <>

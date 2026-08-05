@@ -21,7 +21,7 @@ export const APIManagementCard = () => {
       <Box>
         <Box py={"1.5rem"} component={"img"} src={APIManagement_Icon} sx={{ margin: "auto" }} />
       </Box>
-      <TextView text={"Use Density API's to place and close orders, as well as to monitor your wallet status and transaction history."} variant={"Regular_14"} />
+      <TextView text={"Use Perpify API's to place and close orders, as well as to monitor your wallet status and transaction history."} variant={"Regular_14"} />
     </Box>
   );
 };

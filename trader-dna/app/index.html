@@ -13,22 +13,25 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
 <style>
 :root{
-  --bg:#080808; --bg1:#0f0f0f; --bg2:#151515; --bg3:#1c1c1c; --line:#262622;
-  --ink:#f0ede8; --mut:#8a8a82; --dim:#55554e;
-  --amber:#ffb454; --blue:#4f8eff; --green:#3ecf8e; --red:#ff5566; --violet:#b98cff;
+  --bg:#080808; --bg1:#0f0f0f; --bg2:#151515; --bg3:#1e1e1e; --line:#2a2a2a;
+  --ink:#f0ede8; --mut:#888880; --dim:#55554f;
+  --amber:#ffb454; --blue:#4f8eff; --green:#3ecf8e; --red:#ff5555; --violet:#b98cff;
   --mono:'DM Mono',ui-monospace,monospace; --disp:'Syne',sans-serif; --serif:'Instrument Serif',serif;
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
-a{color:var(--amber);text-decoration:none}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--disp);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:var(--blue);text-decoration:none}
 .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
 .mono{font-family:var(--mono)}
 .disp{font-family:var(--disp)}
+/* Body prose is now Syne (matches the trade page, whose "Neurial" body = Syne). Keep the
+   terminal kickers, labels, tabular values and chips in DM Mono — the venue's mono role. */
+.section-t,.kpi .l,.score-of,.factor .fv,.small,.trust,.pill,.badge,.conn .badge,.regtag,.tab,.logos span{font-family:var(--mono)}
 h1,h2,h3{font-family:var(--disp);font-weight:700;letter-spacing:-.01em;margin:0}
 .tnum{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 button{font-family:var(--mono);cursor:pointer;border:none;background:none;color:inherit}
 .btn{display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:500;transition:.15s;border:1px solid var(--line)}
-.btn-primary{background:var(--amber);color:#1a1206;border-color:var(--amber);font-weight:600}
+.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue);font-weight:600}
 .btn-primary:hover{filter:brightness(1.08)}
 .btn-ghost{background:var(--bg2);color:var(--ink)}
 .btn-ghost:hover{background:var(--bg3);border-color:#33332c}
@@ -43,14 +46,14 @@ nav{position:sticky;top:0;z-index:40;backdrop-filter:blur(10px);background:rgba(
 .embed{background:transparent}
 nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
 .brand{display:flex;align-items:center;gap:11px;font-family:var(--disp);font-weight:800;letter-spacing:.02em}
-.brand .mk{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--amber),#ff8a3d);display:grid;place-items:center;color:#160f04;font-size:15px}
+.brand .mk{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--blue),#2E6BE0);display:grid;place-items:center;color:#fff;font-size:15px}
 .brand small{font-weight:500;color:var(--mut);font-family:var(--mono);letter-spacing:.06em;font-size:11px;text-transform:uppercase}
 
 /* hero */
 .hero{padding:64px 0 34px;border-bottom:1px solid var(--line);position:relative;overflow:hidden}
-.hero .glow{position:absolute;inset:-40% 30% auto -10%;height:520px;background:radial-gradient(closest-side,rgba(255,180,84,.10),transparent);pointer-events:none}
+.hero .glow{position:absolute;inset:-40% 30% auto -10%;height:520px;background:radial-gradient(closest-side,rgba(79,142,255,.10),transparent);pointer-events:none}
 .hero h1{font-size:clamp(34px,6vw,60px);line-height:1.02;font-weight:800;letter-spacing:-.02em;max-width:15ch}
-.hero h1 em{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--amber)}
+.hero h1 em{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--blue)}
 .hero p.sub{color:var(--mut);font-size:16px;max-width:60ch;margin:20px 0 0}
 .hero .cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:30px}
 .trust{display:flex;gap:22px;flex-wrap:wrap;margin-top:26px;color:var(--dim);font-size:12px}
@@ -68,7 +71,7 @@ nav .wrap{display:flex;align-items:center;justify-content:space-between;height:6
 .way .tag{position:absolute;top:18px;right:18px}
 .way p{color:var(--mut);font-size:13.5px;margin:0 0 18px}
 .dz{border:1.5px dashed #34342c;border-radius:12px;padding:26px;text-align:center;color:var(--mut);transition:.15s;cursor:pointer}
-.dz:hover,.dz.drag{border-color:var(--amber);background:rgba(255,180,84,.04);color:var(--ink)}
+.dz:hover,.dz.drag{border-color:var(--blue);background:rgba(79,142,255,.04);color:var(--ink)}
 .logos{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
 .logos span{font-size:11px;color:var(--dim);padding:3px 8px;border:1px solid var(--line);border-radius:6px}
 
@@ -84,7 +87,7 @@ nav .wrap{display:flex;align-items:center;justify-content:space-between;height:6
 .arch-name{font-family:var(--disp);font-weight:800;font-size:26px;letter-spacing:-.01em;margin-top:4px}
 .arch-read{color:var(--mut);font-size:13.5px;margin-top:8px;max-width:34ch}
 .confbar{height:5px;border-radius:3px;background:var(--bg3);overflow:hidden;margin-top:6px}
-.confbar>i{display:block;height:100%;background:var(--amber)}
+.confbar>i{display:block;height:100%;background:var(--blue)}
 
 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .kpi{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:14px}
@@ -102,16 +105,16 @@ nav .wrap{display:flex;align-items:center;justify-content:space-between;height:6
 .factor .fv{font-size:12px;color:var(--mut);width:52px;text-align:right}
 
 .priv{display:flex;align-items:flex-start;gap:10px;padding:8px 0;font-size:13.5px;color:var(--ink)}
-.priv .ic{color:var(--amber);margin-top:1px}
+.priv .ic{color:var(--blue);margin-top:1px}
 .priv.lock{color:var(--dim)}
 .priv.lock .ic{color:var(--dim)}
 
-.improve{border-left:2px solid var(--amber);padding:6px 0 6px 14px;margin:12px 0}
+.improve{border-left:2px solid var(--blue);padding:6px 0 6px 14px;margin:12px 0}
 .improve .h{font-size:14px;color:var(--ink)}
 .improve .d{font-size:12.5px;color:var(--mut);margin-top:3px}
 .improve .delta{color:var(--green);font-weight:500}
 
-.dollar{background:linear-gradient(180deg,rgba(255,180,84,.06),transparent);border:1px solid #2b2519;border-radius:14px;padding:18px;margin-bottom:12px}
+.dollar{background:linear-gradient(180deg,rgba(79,142,255,.06),transparent);border:1px solid rgba(79,142,255,.22);border-radius:14px;padding:18px;margin-bottom:12px}
 .dollar .big{font-family:var(--disp);font-weight:800;font-size:30px;letter-spacing:-.02em}
 .dollar .lbl{font-size:12.5px;color:var(--mut);margin-top:4px}
 .neg{color:var(--red)} .pos{color:var(--green)}
@@ -131,7 +134,7 @@ nav .wrap{display:flex;align-items:center;justify-content:space-between;height:6
 .conn .badge{font-size:10px;color:var(--dim);border:1px solid var(--line);padding:2px 7px;border-radius:5px}
 
 footer{border-top:1px solid var(--line);margin-top:56px;padding:30px 0;color:var(--dim);font-size:12px}
-.spinner{width:18px;height:18px;border:2px solid rgba(255,180,84,.25);border-top-color:var(--amber);border-radius:50%;animation:sp .7s linear infinite}
+.spinner{width:18px;height:18px;border:2px solid rgba(79,142,255,.25);border-top-color:var(--blue);border-radius:50%;animation:sp .7s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 .hide{display:none!important}
 .small{font-size:12px;color:var(--dim)}
@@ -145,7 +148,7 @@ canvas{max-width:100%}
 </head>
 <body>
 <nav><div class="wrap">
-  <a class="brand" href="/" style="text-decoration:none;color:inherit" title="Back to trading"><span class="mk">◈</span> PERPIFY <small>· Trader DNA</small></a>
+  <a class="brand" href="/" style="text-decoration:none;color:var(--blue)" title="Back to trading"><span class="mk">◈</span> PERPIFY <small>· Trader DNA</small></a>
   <div style="display:flex;gap:10px;align-items:center">
     <a class="btn btn-ghost" href="/" style="padding:8px 14px;text-decoration:none">← Trade</a>
     <span class="pill"><span class="dot" style="background:var(--green)"></span> model <span class="tnum" id="nav-model">dna-v0.1</span></span>
@@ -157,7 +160,7 @@ canvas{max-width:100%}
 <section id="intake">
 <div class="hero"><div class="wrap" style="position:relative">
   <div class="glow"></div>
-  <span class="pill" style="margin-bottom:20px"><span class="dot" style="background:var(--amber)"></span> Behavioral underwriting · scored through the cycle</span>
+  <span class="pill" style="margin-bottom:20px"><span class="dot" style="background:var(--blue)"></span> Behavioral underwriting · scored through the cycle</span>
   <h1>Your trades already know <em>who you are.</em></h1>
   <p class="sub">Connect your exchange or drop a CSV — crypto or stocks. A machine-learning model scores your behavior the way Perpify's underwriting engine prices risk: your <b style="color:var(--ink)">archetype</b>, how well you traded <b style="color:var(--ink)">the market you were handed</b>, what your worst habits cost you <b style="color:var(--ink)">in dollars</b>, and what a better score unlocks.</p>
   <div class="cta">
@@ -280,7 +283,7 @@ canvas{max-width:100%}
 
       <div class="card" style="display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap">
         <div>
-          <div style="font-family:var(--disp);font-weight:700;font-size:16px">Turn this into a <span style="color:var(--amber)">verified</span> tier.</div>
+          <div style="font-family:var(--disp);font-weight:700;font-size:16px">Turn this into a <span style="color:var(--blue)">verified</span> tier.</div>
           <div class="small" style="margin-top:4px">A CSV is a mirror. Connect read-only to prove it — and carry a real provisional tier onto Perpify.</div>
         </div>
         <button class="btn btn-primary" onclick="openConnect()">Connect &amp; verify →</button>
@@ -896,7 +899,7 @@ function drawRadar(vals){
   for(let ring=1;ring<=4;ring++){g.beginPath();for(let i=0;i<=N;i++){const a=-Math.PI/2+(i%N)/N*2*Math.PI;const rr=R*ring/4;const x=cx+Math.cos(a)*rr,y=cy+Math.sin(a)*rr;i?g.lineTo(x,y):g.moveTo(x,y);}g.closePath();g.strokeStyle='#1f1f1b';g.lineWidth=1;g.stroke();}
   g.beginPath();
   keys.forEach((k,i)=>{const a=-Math.PI/2+i/N*2*Math.PI;const rr=R*Math.max(0.04,vals[k]/100);const x=cx+Math.cos(a)*rr,y=cy+Math.sin(a)*rr;i?g.lineTo(x,y):g.moveTo(x,y);});
-  g.closePath();g.fillStyle='rgba(255,180,84,.18)';g.strokeStyle='#ffb454';g.lineWidth=2;g.fill();g.stroke();
+  g.closePath();g.fillStyle='rgba(79,142,255,.18)';g.strokeStyle='#4F8EFF';g.lineWidth=2;g.fill();g.stroke();
   keys.forEach((k,i)=>{const a=-Math.PI/2+i/N*2*Math.PI;const x=cx+Math.cos(a)*(R+22),y=cy+Math.sin(a)*(R+22);g.fillStyle='#8a8a82';g.font='11px DM Mono';g.textAlign='center';g.textBaseline='middle';g.fillText(k,x,y);g.fillStyle='#f0ede8';g.font='bold 11px Syne';g.fillText(vals[k],cx+Math.cos(a)*(R*Math.max(0.04,vals[k]/100)),cy+Math.sin(a)*(R*Math.max(0.04,vals[k]/100)));});
 }
 
@@ -1017,8 +1020,8 @@ function downloadCard(){
   const {score:sc,tier:t,arch,radar,F,rts}=LAST;
   const c=document.createElement('canvas');c.width=1200;c.height=630;const g=c.getContext('2d');
   g.fillStyle='#080808';g.fillRect(0,0,1200,630);
-  const grd=g.createRadialGradient(300,120,20,300,120,600);grd.addColorStop(0,'rgba(255,180,84,.12)');grd.addColorStop(1,'transparent');g.fillStyle=grd;g.fillRect(0,0,1200,630);
-  g.fillStyle='#ffb454';g.font='800 30px Syne';g.fillText('◈ PERPIFY',60,80);
+  const grd=g.createRadialGradient(300,120,20,300,120,600);grd.addColorStop(0,'rgba(79,142,255,.12)');grd.addColorStop(1,'transparent');g.fillStyle=grd;g.fillRect(0,0,1200,630);
+  g.fillStyle='#4F8EFF';g.font='800 30px Syne';g.fillText('◈ PERPIFY',60,80);
   g.fillStyle='#55554e';g.font='500 16px DM Mono';g.fillText('TRADER DNA',60,106);
   g.fillStyle='#8a8a82';g.font='400 20px DM Mono';g.fillText('My trading archetype',60,190);
   g.fillStyle='#f0ede8';g.font='800 64px Syne';g.fillText(arch.name,58,258);

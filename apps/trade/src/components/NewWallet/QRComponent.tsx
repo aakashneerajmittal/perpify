@@ -9,7 +9,7 @@ const QRComponent = () => {
   const handleDownload = () => {
     const link = document.createElement("a");
     link.href = DownloadForQR;
-    link.download = "Density-QR.jpg";
+    link.download = "Perpify-QR.jpg";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

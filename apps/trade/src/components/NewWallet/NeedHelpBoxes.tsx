@@ -18,7 +18,7 @@ const NeedHelpBoxes = ({
   paymentMethod: string;
 }) => {
   const handleRedirect = () => {
-    const eventName = title === "Density Blogs" ? "DEPOSIT_READ_BLOGS_CLICKED" : "DEPOSIT_WATCH_VIDEO_CLICKED";
+    const eventName = title === "Perpify Blogs" ? "DEPOSIT_READ_BLOGS_CLICKED" : "DEPOSIT_WATCH_VIDEO_CLICKED";
     recordCleverTapEvent(eventName, {
       paymentMode: paymentMethod || "TBD"
     });
