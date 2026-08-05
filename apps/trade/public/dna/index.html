@@ -10,22 +10,22 @@
 <meta property="og:type" content="website" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
 <style>
 :root{
   --bg:#080808; --bg1:#0f0f0f; --bg2:#151515; --bg3:#1e1e1e; --line:#2a2a2a;
   --ink:#f0ede8; --mut:#888880; --dim:#55554f;
   --amber:#ffb454; --blue:#4f8eff; --green:#3ecf8e; --red:#ff5555; --violet:#b98cff;
-  --mono:'DM Mono',ui-monospace,monospace; --disp:'Syne',sans-serif; --serif:'Instrument Serif',serif;
+  --mono:'Inter',system-ui,sans-serif; --disp:'Inter',system-ui,sans-serif; --serif:'Inter',system-ui,sans-serif;
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--disp);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--disp);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
 a{color:var(--blue);text-decoration:none}
 .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
 .mono{font-family:var(--mono)}
 .disp{font-family:var(--disp)}
-/* Body prose is now Syne (matches the trade page, whose "Neurial" body = Syne). Keep the
-   terminal kickers, labels, tabular values and chips in DM Mono — the venue's mono role. */
+/* Whole app is Inter now (matches the trade page + deck). --mono/--disp are both Inter;
+   kickers/labels/values stay uppercase+letterspaced but in Inter, with tabular figures. */
 .section-t,.kpi .l,.score-of,.factor .fv,.small,.trust,.pill,.badge,.conn .badge,.regtag,.tab,.logos span{font-family:var(--mono)}
 h1,h2,h3{font-family:var(--disp);font-weight:700;letter-spacing:-.01em;margin:0}
 .tnum{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
@@ -901,7 +901,7 @@ function drawRadar(vals){
   g.beginPath();
   keys.forEach((k,i)=>{const a=-Math.PI/2+i/N*2*Math.PI;const rr=R*Math.max(0.04,vals[k]/100);const x=cx+Math.cos(a)*rr,y=cy+Math.sin(a)*rr;i?g.lineTo(x,y):g.moveTo(x,y);});
   g.closePath();g.fillStyle='rgba(79,142,255,.18)';g.strokeStyle='#4F8EFF';g.lineWidth=2;g.fill();g.stroke();
-  keys.forEach((k,i)=>{const a=-Math.PI/2+i/N*2*Math.PI;const x=cx+Math.cos(a)*(R+22),y=cy+Math.sin(a)*(R+22);g.fillStyle='#8a8a82';g.font='11px DM Mono';g.textAlign='center';g.textBaseline='middle';g.fillText(k,x,y);g.fillStyle='#f0ede8';g.font='bold 11px Syne';g.fillText(vals[k],cx+Math.cos(a)*(R*Math.max(0.04,vals[k]/100)),cy+Math.sin(a)*(R*Math.max(0.04,vals[k]/100)));});
+  keys.forEach((k,i)=>{const a=-Math.PI/2+i/N*2*Math.PI;const x=cx+Math.cos(a)*(R+22),y=cy+Math.sin(a)*(R+22);g.fillStyle='#8a8a82';g.font='11px Inter';g.textAlign='center';g.textBaseline='middle';g.fillText(k,x,y);g.fillStyle='#f0ede8';g.font='bold 11px Inter';g.fillText(vals[k],cx+Math.cos(a)*(R*Math.max(0.04,vals[k]/100)),cy+Math.sin(a)*(R*Math.max(0.04,vals[k]/100)));});
 }
 
 function fmt(n){ n=Math.round(n); if(Math.abs(n)>=1e6)return (n/1e6).toFixed(2)+'M'; if(Math.abs(n)>=1e3)return (n/1e3).toFixed(1)+'k'; return String(n); }
@@ -1022,26 +1022,26 @@ function downloadCard(){
   const c=document.createElement('canvas');c.width=1200;c.height=630;const g=c.getContext('2d');
   g.fillStyle='#080808';g.fillRect(0,0,1200,630);
   const grd=g.createRadialGradient(300,120,20,300,120,600);grd.addColorStop(0,'rgba(79,142,255,.12)');grd.addColorStop(1,'transparent');g.fillStyle=grd;g.fillRect(0,0,1200,630);
-  g.fillStyle='#4F8EFF';g.font='800 30px Syne';g.fillText('◈ PERPIFY',60,80);
-  g.fillStyle='#55554e';g.font='500 16px DM Mono';g.fillText('TRADER DNA',60,106);
-  g.fillStyle='#8a8a82';g.font='400 20px DM Mono';g.fillText('My trading archetype',60,190);
-  g.fillStyle='#f0ede8';g.font='800 64px Syne';g.fillText(arch.name,58,258);
-  g.fillStyle='#8a8a82';g.font='400 19px DM Mono';wrap(g,arch.desc,60,300,520,26);
+  g.fillStyle='#4F8EFF';g.font='800 30px Inter';g.fillText('◈ PERPIFY',60,80);
+  g.fillStyle='#55554e';g.font='500 16px Inter';g.fillText('TRADER DNA',60,106);
+  g.fillStyle='#8a8a82';g.font='400 20px Inter';g.fillText('My trading archetype',60,190);
+  g.fillStyle='#f0ede8';g.font='800 64px Inter';g.fillText(arch.name,58,258);
+  g.fillStyle='#8a8a82';g.font='400 19px Inter';wrap(g,arch.desc,60,300,520,26);
   // score dial
   const cx=940,cy=250,r=130;g.lineWidth=22;g.lineCap='round';
   g.beginPath();g.arc(cx,cy,r,0.75*Math.PI,2.25*Math.PI);g.strokeStyle='#1c1c1c';g.stroke();
   const tcol={A:'#3ecf8e',B:'#8fbf6f',C:'#ffb454',D:'#ff8a5c',E:'#ff5566'}[t.tier];
   g.beginPath();g.arc(cx,cy,r,0.75*Math.PI,0.75*Math.PI+sc/100*1.5*Math.PI);g.strokeStyle=tcol;g.stroke();
-  g.fillStyle='#f0ede8';g.font='800 66px Syne';g.textAlign='center';g.fillText(Math.round(sc),cx,cy+8);
-  g.fillStyle='#8a8a82';g.font='400 15px DM Mono';g.fillText('/100',cx,cy+34);
-  g.fillStyle=tcol;g.font='800 26px Syne';g.fillText('TIER '+t.tier,cx,cy+r+56);g.textAlign='left';
+  g.fillStyle='#f0ede8';g.font='800 66px Inter';g.textAlign='center';g.fillText(Math.round(sc),cx,cy+8);
+  g.fillStyle='#8a8a82';g.font='400 15px Inter';g.fillText('/100',cx,cy+34);
+  g.fillStyle=tcol;g.font='800 26px Inter';g.fillText('TIER '+t.tier,cx,cy+r+56);g.textAlign='left';
   // killer stat
   g.fillStyle='#151515';g.fillRect(60,430,1080,120);g.strokeStyle='#262622';g.strokeRect(60,430,1080,120);
   const med=median(rts.map(x=>x.notional));let bleed=0;for(let i=1;i<rts.length;i++){if(rts[i-1].pnl<0&&rts[i].notional>1.3*med)bleed+=rts[i].pnl;}
-  g.fillStyle='#8a8a82';g.font='400 18px DM Mono';
-  if(bleed<0){g.fillText('My revenge trades bled',88,478);g.fillStyle='#ff5566';g.font='800 46px Syne';g.fillText('−$'+fmt(-bleed),88,528);}
-  else{g.fillText('Regime coverage',88,478);g.fillStyle='#3ecf8e';g.font='800 46px Syne';g.fillText(Math.round(F.regime_coverage*100)+'% of market states',88,528);}
-  g.fillStyle='#55554e';g.font='400 17px DM Mono';g.textAlign='right';g.fillText('score.perpify.trade · scored through the cycle',1130,528);g.textAlign='left';
+  g.fillStyle='#8a8a82';g.font='400 18px Inter';
+  if(bleed<0){g.fillText('My revenge trades bled',88,478);g.fillStyle='#ff5566';g.font='800 46px Inter';g.fillText('−$'+fmt(-bleed),88,528);}
+  else{g.fillText('Regime coverage',88,478);g.fillStyle='#3ecf8e';g.font='800 46px Inter';g.fillText(Math.round(F.regime_coverage*100)+'% of market states',88,528);}
+  g.fillStyle='#55554e';g.font='400 17px Inter';g.textAlign='right';g.fillText('score.perpify.trade · scored through the cycle',1130,528);g.textAlign='left';
   const url=c.toDataURL('image/png');const a=document.createElement('a');a.href=url;a.download='trader-dna-'+t.tier+'.png';a.click();
 }
 function wrap(g,text,x,y,maxW,lh){const words=String(text).split(' ');let line='',yy=y;for(const w of words){if(g.measureText(line+w).width>maxW){g.fillText(line,x,yy);line=w+' ';yy+=lh;}else line+=w+' ';}g.fillText(line,x,yy);}

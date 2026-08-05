@@ -1,26 +1,31 @@
-/* PERPIFY brand fonts — self-hosted (Fontsource). The legacy "Neurial-*" family
-   names are kept as weight-aliases onto Syne so the ~150 MUI type variants render
-   in the brand face with no per-variant edits. Syne = display/UI, DM Mono =
-   numeric + label data, Instrument Serif = italic accents. */
-@font-face { font-family: "Neurial-Light";    src: url('/font/syne-400.woff2') format("woff2"), url('/font/syne-400.woff') format("woff"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "Neurial-Regular";  src: url('/font/syne-400.woff2') format("woff2"), url('/font/syne-400.woff') format("woff"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "Neurial-Medium";   src: url('/font/syne-500.woff2') format("woff2"), url('/font/syne-500.woff') format("woff"); font-weight: 500; font-display: swap; }
-@font-face { font-family: "Neurial-SemiBold"; src: url('/font/syne-600.woff2') format("woff2"), url('/font/syne-600.woff') format("woff"); font-weight: 600; font-display: swap; }
-@font-face { font-family: "Neurial-Bold";     src: url('/font/syne-700.woff2') format("woff2"), url('/font/syne-700.woff') format("woff"); font-weight: 700; font-display: swap; }
+/* PERPIFY UI font — Inter (self-hosted, Fontsource). Clean, neutral, exchange-standard
+   sans (the Binance/Coinbase/Robinhood family) and the pitch deck's face. The legacy
+   "Neurial-*" / "Syne" / "DM Mono" / "Instrument Serif" family names are kept as
+   aliases onto Inter so the ~150 MUI type variants and every MONO/DISPLAY/SERIF use
+   render in Inter with no per-variant edits. Prices/numbers use tabular figures
+   (font-variant-numeric on body below), so columns still align like a monospace. */
+@font-face { font-family: "Neurial-Light";    src: url('/font/inter-300.woff2') format("woff2"); font-weight: 300; font-display: swap; }
+@font-face { font-family: "Neurial-Regular";  src: url('/font/inter-400.woff2') format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Neurial-Medium";   src: url('/font/inter-500.woff2') format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Neurial-SemiBold"; src: url('/font/inter-600.woff2') format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Neurial-Bold";     src: url('/font/inter-700.woff2') format("woff2"); font-weight: 700; font-display: swap; }
 
-/* Real families for direct use (see typography.ts MONO / SERIF / DISPLAY). */
-@font-face { font-family: "Syne"; src: url('/font/syne-400.woff2') format("woff2"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "Syne"; src: url('/font/syne-500.woff2') format("woff2"); font-weight: 500; font-display: swap; }
-@font-face { font-family: "Syne"; src: url('/font/syne-600.woff2') format("woff2"); font-weight: 600; font-display: swap; }
-@font-face { font-family: "Syne"; src: url('/font/syne-700.woff2') format("woff2"); font-weight: 700; font-display: swap; }
-@font-face { font-family: "Syne"; src: url('/font/syne-800.woff2') format("woff2"); font-weight: 800; font-display: swap; }
-@font-face { font-family: "DM Mono"; src: url('/font/dmmono-400.woff2') format("woff2"), url('/font/dmmono-400.woff') format("woff"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "DM Mono"; src: url('/font/dmmono-500.woff2') format("woff2"), url('/font/dmmono-500.woff') format("woff"); font-weight: 500; font-display: swap; }
-@font-face { font-family: "Instrument Serif"; src: url('/font/iserif-400.woff2') format("woff2"), url('/font/iserif-400.woff') format("woff"); font-weight: 400; font-style: normal; font-display: swap; }
-@font-face { font-family: "Instrument Serif"; src: url('/font/iserif-italic.woff2') format("woff2"), url('/font/iserif-italic.woff') format("woff"); font-weight: 400; font-style: italic; font-display: swap; }
+/* "Syne" (DISPLAY_FAMILY + MUI base) → Inter, weights 400–800. */
+@font-face { font-family: "Syne"; src: url('/font/inter-400.woff2') format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Syne"; src: url('/font/inter-500.woff2') format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Syne"; src: url('/font/inter-600.woff2') format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Syne"; src: url('/font/inter-700.woff2') format("woff2"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Syne"; src: url('/font/inter-800.woff2') format("woff2"); font-weight: 800; font-display: swap; }
+/* "DM Mono" (MONO_FAMILY: prices/labels) → Inter; tabular figures come from body. */
+@font-face { font-family: "DM Mono"; src: url('/font/inter-400.woff2') format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "DM Mono"; src: url('/font/inter-500.woff2') format("woff2"); font-weight: 500; font-display: swap; }
+/* "Instrument Serif" (SERIF_FAMILY: italic accents) → Inter. */
+@font-face { font-family: "Instrument Serif"; src: url('/font/inter-400.woff2') format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Instrument Serif"; src: url('/font/inter-400-italic.woff2') format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
 
 html, body { background: #080808; }
-body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+/* tabular-nums keeps price/size columns aligned now that numbers are a proportional sans. */
+body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-variant-numeric: tabular-nums; }
 ::selection { background: rgba(79, 142, 255, 0.28); color: #f0ede8; }
 
 *{box-sizing: border-box; letter-spacing: normal;}

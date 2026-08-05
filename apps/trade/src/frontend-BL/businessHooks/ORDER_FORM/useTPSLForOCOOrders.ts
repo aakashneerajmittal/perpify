@@ -4,7 +4,7 @@ import { useCallback, useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { editASignal } from "../../../frontend-api-service/Api/SignalTrading/SignalTrading";
 import { showSnackBar } from "../../redux/actions/Internal/GlobalErrorHandler.ac";
-import { cancelOrderHelper, placeOCOOrderHelper, cancelAllStrategyOrdersHelper } from "./StrategyOrdersHelper";
+import { cancelOrderHelper, cancelAllStrategyOrdersHelper } from "./StrategyOrdersHelper";
 import { GET_STRATEGY_ORDER } from "../../redux/actions/Futures/GetStrategyOrder.ac";
 import { recordCleverTapEvent } from "../../../utils/recordCleverTapEvent";
 
@@ -327,51 +327,56 @@ const useTPSLForOCOOrders = ({ symbol, side, size, entryPrice, costValue, close 
     }
   };
 
+  // PERPIFY: place position TP/SL as reduce-only conditional TRIGGERS on the engine over the
+  // account WebSocket (PERPIFY_PLACE_TRIGGER) — NOT the legacy signal/strategy REST API, which
+  // the engine doesn't serve (this modal previously showed success but armed nothing). One
+  // trigger per leg; each fires a reduce-only market close when the mark crosses. For a long
+  // (BUY position): TP fires ABOVE entry, SL fires BELOW; a short (SELL) is mirrored.
   const placeOCOOrder = () => {
-    const strategyOrdersToPlace = [];
-    if (takeProfit.length > 0) {
-      strategyOrdersToPlace.push({
-        symbol,
-        side: side === "BUY" ? "SELL" : "BUY",
-        type: "TAKE_PROFIT_MARKET",
-        stopPrice: String(takeProfitValue),
-        reduceOnly: true,
-        timeInForce: "GTE_GTC",
-        price: String(entryPrice),
-        quantity: String(size)
-      });
+    const closeSide = side === "BUY" ? "sell" : "buy";
+    const legs: { kind: "TP" | "SL"; type: string; triggerPx: number; triggerAbove: boolean }[] = [];
+    if (takeProfit.length > 0 && Number(takeProfitValue) > 0) {
+      legs.push({ kind: "TP", type: "TAKE_PROFIT_MARKET", triggerPx: Number(takeProfitValue), triggerAbove: side === "BUY" });
     }
-    if (stopLoss.length > 0) {
-      strategyOrdersToPlace.push({
-        symbol,
-        side: side === "BUY" ? "SELL" : "BUY",
-        type: "STOP_MARKET",
-        stopPrice: String(stopLossValue),
-        reduceOnly: true,
-        timeInForce: "GTE_GTC",
-        price: String(entryPrice),
-        quantity: String(size)
-      });
+    if (stopLoss.length > 0 && Number(stopLossValue) > 0) {
+      legs.push({ kind: "SL", type: "STOP_MARKET", triggerPx: Number(stopLossValue), triggerAbove: side !== "BUY" });
     }
-    strategyOrdersToPlace?.forEach((obj, index) => {
-      const orderType = index === 0 ? "TP" : "SL";
-      recordCleverTapEvent(`PLACE_OTOCO_ORDER_${orderType}`, {
-        symbol: obj?.symbol,
-        side: obj?.side,
-        type: obj?.type,
-        price: obj?.price,
-        stopPrice: obj?.stopPrice,
-        quantity: obj?.quantity
-      });
-    });
+    if (legs.length === 0) return;
     setLoading(true);
-    placeOCOOrderHelper({
-      strategyOrdersToPlace,
-      setLoading,
-      setStrategyOrders,
-      dispatch,
-      close
+    const stamp = Date.now().toString(36);
+    legs.forEach((leg, i) => {
+      recordCleverTapEvent(`PLACE_OTOCO_ORDER_${leg.kind}`, {
+        symbol,
+        side: closeSide.toUpperCase(),
+        type: leg.type,
+        price: String(entryPrice),
+        stopPrice: String(leg.triggerPx),
+        quantity: String(size)
+      });
+      dispatch({
+        type: "PERPIFY_PLACE_TRIGGER",
+        payload: {
+          type: "place_trigger",
+          id: `tpsl-${leg.kind.toLowerCase()}-${stamp}-${i}`,
+          symbol,
+          side: closeSide,
+          qty: Number(size),
+          triggerPx: leg.triggerPx,
+          triggerAbove: leg.triggerAbove,
+          limitPx: 0,
+          reduceOnly: true
+        }
+      });
     });
+    setLoading(false);
+    dispatch(
+      showSnackBar({
+        src: "ADD_TP_SL_SUCCESS",
+        message: "TP/SL placed",
+        type: "success"
+      })
+    );
+    close();
   };
 
   const cancelOrder = ({ orders, setLoading }: { orders: any[]; setLoading: Function }) => {
