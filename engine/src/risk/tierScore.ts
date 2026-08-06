@@ -1,11 +1,12 @@
 /**
- * Behavioral tier scoring (tier-v0.2.1).
+ * Behavioral tier scoring (tier-v0.2.2).
  *
  * Cold start: a wallet with little/no history gets a *provisional* tier derived
  * deterministically from its address — so two wallets pay different margin immediately (the
  * demo), honestly labelled provisional. As the wallet actually trades, the live model takes
  * over and scores from observed behavior: liquidation history, realized-PnL discipline,
- * turnover vs funding (over-sizing), regime-adjusted sizing, and tenure.
+ * turnover vs funding (over-sizing), regime-adjusted sizing, tenure, round-trip quality
+ * (R-multiples, max-adverse-excursion, disposition effect), and tilt (revenge-sizing).
  *
  * Regime-conditioned ("scored through the cycle"): the venue broadcasts a gap coefficient that
  * rises in the overnight/weekend dark period and under stress. The same turnover is a worse
@@ -88,7 +89,7 @@ function normalize(factors: { name: string; contribution: number }[]): { name: s
 export function scoreTier(owner: string, behavior: BehaviorStats, realizedPnl6: bigint, nowSeq: number): TierResult {
   const provisional = demoTierForAddress(owner);
   if (behavior.trades < 4) {
-    return { tier: provisional.tier, tierMult: provisional.tierMult, factors: provisional.factors, modelVersion: "tier-v0.2.1-provisional" };
+    return { tier: provisional.tier, tierMult: provisional.tierMult, factors: provisional.factors, modelVersion: "tier-v0.2.2-provisional" };
   }
 
   let score = 0;
@@ -148,6 +149,54 @@ export function scoreTier(owner: string, behavior: BehaviorStats, realizedPnl6: 
     factors.push({ name: "tenure", contribution: 0.15 });
   }
 
+  // 6) risk-management & conviction from closed round-trips (spec §5,§7) — needs a few closes.
+  if (behavior.roundTrips >= 3) {
+    // R-multiple: did realized outcomes reward the risk taken?
+    const avgR = Number(behavior.sumRMultiple6) / 1e6 / behavior.roundTrips;
+    if (avgR > 0.25) {
+      score += 0.75;
+      factors.push({ name: "positive-r-multiples", contribution: 0.2 });
+    } else if (avgR < -0.5) {
+      score -= 1;
+      factors.push({ name: "poor-r-multiples", contribution: -0.25 });
+    }
+
+    // MAE: how deep did drawdowns run vs margin before exit? (risk-of-ruin proxy)
+    const avgMae = Number(behavior.sumMaeRatio6) / 1e6 / behavior.roundTrips;
+    if (avgMae > 0.6) {
+      score -= 1;
+      factors.push({ name: "deep-drawdowns", contribution: -0.25 });
+    } else if (avgMae < 0.2) {
+      score += 0.5;
+      factors.push({ name: "tight-risk-control", contribution: 0.15 });
+    }
+
+    // Disposition effect: holding losers longer than winners (selling winners early) is the classic
+    // undisciplined tell; cutting losses at least as fast as winners is the opposite.
+    if (behavior.winners >= 1 && behavior.losers >= 1) {
+      const avgWinHold = behavior.sumWinHoldSeq / behavior.winners;
+      const avgLossHold = behavior.sumLossHoldSeq / behavior.losers;
+      if (avgLossHold > avgWinHold * 1.5) {
+        score -= 1;
+        factors.push({ name: "disposition-effect", contribution: -0.25 });
+      } else if (avgWinHold >= avgLossHold) {
+        score += 0.5;
+        factors.push({ name: "cuts-losses-early", contribution: 0.15 });
+      }
+    }
+  }
+
+  // 7) tilt / revenge-sizing (spec §6-7) — sizing up right after a loss; extra-penalized into stress.
+  if (behavior.revengeEvents > 0) {
+    const n = Math.min(3, behavior.revengeEvents);
+    score -= 0.75 * n;
+    factors.push({ name: "revenge-sizing", contribution: -0.2 * n });
+    if (behavior.revengeStressEvents > 0) {
+      score -= 0.75 * Math.min(2, behavior.revengeStressEvents);
+      factors.push({ name: "revenge-into-stress", contribution: -0.3 });
+    }
+  }
+
   const tier: TierCode = score >= 3 ? "A" : score >= 1.5 ? "B" : score >= 0 ? "C" : score >= -1.5 ? "D" : "E";
-  return { tier, tierMult: TIER_MULT[tier], factors: normalize(factors), modelVersion: "tier-v0.2.1-live" };
+  return { tier, tierMult: TIER_MULT[tier], factors: normalize(factors), modelVersion: "tier-v0.2.2-live" };
 }

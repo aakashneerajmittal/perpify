@@ -12,6 +12,16 @@ const beh = (o: Partial<BehaviorStats> = {}): BehaviorStats => ({
   firstSeenSeq: 0,
   stressVolumeUsd6: 0n,
   stressTrades: 0,
+  roundTrips: 0,
+  winners: 0,
+  losers: 0,
+  sumWinHoldSeq: 0,
+  sumLossHoldSeq: 0,
+  sumRMultiple6: 0n,
+  sumMaeRatio6: 0n,
+  lastLossNotional6: 0n,
+  revengeEvents: 0,
+  revengeStressEvents: 0,
   ...o,
 });
 const RANK = ["A", "B", "C", "D", "E"];
@@ -77,5 +87,62 @@ describe("tier-v0.2.1 regime-conditioned scoring ('scored through the cycle')", 
     const cold = scoreTier(W, beh({ trades: 2, stressVolumeUsd6: usd6(5_000_000), stressTrades: 2 }), 0n, 5000);
     expect(cold.modelVersion).toContain("provisional");
     expect(named(cold, "oversizing-into-stress")).toBe(false);
+  });
+});
+
+describe("tier-v0.2.2 round-trip & tilt features (R-multiple, MAE, disposition, revenge)", () => {
+  // Shared clean baseline: 20 trades, modest turnover, tenure, no liquidations.
+  const base = { trades: 20, volumeUsd6: usd6(300_000) as any };
+
+  it("penalizes the disposition effect (holding losers longer than winners)", () => {
+    // identical except loss-hold vs win-hold — winners and losers both count, only the asymmetry differs.
+    const disciplined = scoreTier(
+      W,
+      beh({ ...base, roundTrips: 10, winners: 5, losers: 5, sumWinHoldSeq: 500, sumLossHoldSeq: 500 }),
+      0n,
+      5000,
+    );
+    const dispositional = scoreTier(
+      W,
+      beh({ ...base, roundTrips: 10, winners: 5, losers: 5, sumWinHoldSeq: 500, sumLossHoldSeq: 2500 }),
+      0n,
+      5000,
+    );
+    expect(RANK.indexOf(dispositional.tier)).toBeGreaterThan(RANK.indexOf(disciplined.tier));
+    expect(dispositional.tierMult).toBeGreaterThan(disciplined.tierMult);
+    expect(named(dispositional, "disposition-effect")).toBe(true);
+    expect(named(disciplined, "cuts-losses-early")).toBe(true);
+  });
+
+  it("rewards favorable R-multiples and penalizes poor ones", () => {
+    const goodR = scoreTier(W, beh({ ...base, roundTrips: 5, sumRMultiple6: usd6(5), sumMaeRatio6: usd6(0.5) }), 0n, 5000);
+    const poorR = scoreTier(W, beh({ ...base, roundTrips: 5, sumRMultiple6: usd6(-5), sumMaeRatio6: usd6(0.5) }), 0n, 5000);
+    expect(RANK.indexOf(goodR.tier)).toBeLessThan(RANK.indexOf(poorR.tier));
+    expect(named(goodR, "positive-r-multiples")).toBe(true);
+    expect(named(poorR, "poor-r-multiples")).toBe(true);
+  });
+
+  it("penalizes deep max-adverse-excursion vs tight risk control", () => {
+    const deep = scoreTier(W, beh({ ...base, roundTrips: 5, sumMaeRatio6: usd6(4) }), 0n, 5000); // avg 0.8
+    const tight = scoreTier(W, beh({ ...base, roundTrips: 5, sumMaeRatio6: usd6(0.5) }), 0n, 5000); // avg 0.1
+    expect(RANK.indexOf(deep.tier)).toBeGreaterThan(RANK.indexOf(tight.tier));
+    expect(named(deep, "deep-drawdowns")).toBe(true);
+    expect(named(tight, "tight-risk-control")).toBe(true);
+  });
+
+  it("penalizes revenge-sizing, and extra when it happens into stress", () => {
+    const clean = scoreTier(W, beh({ ...base }), 0n, 5000);
+    const revenge = scoreTier(W, beh({ ...base, revengeEvents: 2 }), 0n, 5000);
+    const revengeStress = scoreTier(W, beh({ ...base, revengeEvents: 2, revengeStressEvents: 1 }), 0n, 5000);
+    expect(RANK.indexOf(revenge.tier)).toBeGreaterThan(RANK.indexOf(clean.tier));
+    expect(RANK.indexOf(revengeStress.tier)).toBeGreaterThanOrEqual(RANK.indexOf(revenge.tier));
+    expect(revengeStress.tierMult).toBeGreaterThan(revenge.tierMult);
+    expect(named(revenge, "revenge-sizing")).toBe(true);
+    expect(named(revengeStress, "revenge-into-stress")).toBe(true);
+  });
+
+  it("round-trip signals need a few closes; below the floor they don't fire", () => {
+    const tooFew = scoreTier(W, beh({ ...base, roundTrips: 2, sumMaeRatio6: usd6(10) }), 0n, 5000);
+    expect(named(tooFew, "deep-drawdowns")).toBe(false);
   });
 });

@@ -301,3 +301,46 @@ describe("fuzz: conservation law under random command streams", () => {
     expect(s2.eventHead).toBe(s.eventHead);
   }, 30_000);
 });
+
+describe("behavioral capture (tier-v0.2.2): round-trips, MAE, revenge — end to end + replay-safe", () => {
+  it("a losing round-trip records MAE, arms revenge, and the next oversized entry is flagged", () => {
+    const s = createEngine(undefined, usd6(100_000));
+    const log = freshLog();
+    run(s, log, tick(5000));
+    run(s, log, deposit(ALICE, 50_000));
+    run(s, log, deposit(BOB, 500_000));
+
+    // ALICE opens long 1 @ 5000 (BOB is the resting maker).
+    run(s, log, mkOrderCmd(BOB, "sell", 5000, 1));
+    run(s, log, mkOrderCmd(ALICE, "buy", 5000, 1, { tif: "IOC" }));
+    expect(s.accounts.get(ALICE)!.behavior.trades).toBeGreaterThanOrEqual(1);
+    expect(posOf(s, ALICE)!.worstAdverse6).toBe(0n);
+
+    // price drops while the long is open → MAE accrues at the oracle mark.
+    run(s, log, tick(4900));
+    expect(posOf(s, ALICE)!.worstAdverse6).toBeGreaterThan(0n);
+
+    // ALICE closes into BOB's bid at 4900 → realized loss → a losing round-trip is recorded.
+    run(s, log, mkOrderCmd(BOB, "buy", 4900, 1));
+    run(s, log, mkOrderCmd(ALICE, "sell", 4900, 1, { tif: "IOC", reduceOnly: true }));
+    const closed = s.accounts.get(ALICE)!.behavior;
+    expect(posOf(s, ALICE)).toBe(null);
+    expect(closed.roundTrips).toBe(1);
+    expect(closed.losers).toBe(1);
+    expect(closed.sumMaeRatio6).toBeGreaterThan(0n); // the drawdown was captured into the round-trip
+    expect(closed.lastLossNotional6).toBeGreaterThan(0n); // revenge is now armed
+
+    // ALICE re-enters 5× larger right after the loss → revenge-sizing flagged, arm consumed.
+    run(s, log, mkOrderCmd(BOB, "sell", 4900, 5));
+    run(s, log, mkOrderCmd(ALICE, "buy", 4900, 5, { tif: "IOC" }));
+    const revenged = s.accounts.get(ALICE)!.behavior;
+    expect(revenged.revengeEvents).toBe(1);
+    expect(revenged.lastLossNotional6).toBe(0n);
+
+    // replay-safety: the whole behavioral state (MAE-derived ratios, revenge counts) reconstructs
+    // byte-for-byte from the command log — same guarantee the venue's determinism rests on.
+    const s2 = replay(log, undefined, usd6(100_000));
+    expect(stateRoot(s2)).toBe(stateRoot(s));
+    expect(s2.accounts.get(ALICE)!.behavior).toEqual(s.accounts.get(ALICE)!.behavior);
+  });
+});

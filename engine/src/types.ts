@@ -149,6 +149,9 @@ export interface Position {
   entryPx: Px8;
   isolatedCollateral: Usd6;
   openedSeq: number;
+  /** worst adverse excursion (MAE): the peak unrealized loss this position has seen, as a positive
+   *  usd6 magnitude, updated at each oracle mark. Feeds the tier's risk-management signal at close. */
+  worstAdverse6: Usd6;
 }
 
 export interface Account {
@@ -181,6 +184,20 @@ export interface BehaviorStats {
    *  the same turnover is a worse risk signal when it was piled on during the dark period. */
   stressVolumeUsd6: Usd6;
   stressTrades: number; // fills placed while the regime was stressed
+
+  // ---- round-trip / conviction signals, accumulated when a position is reduced/closed (spec §5,§7) ----
+  roundTrips: number; // closing legs recorded (a reduce that realizes PnL)
+  winners: number; // legs closed in profit
+  losers: number; // legs closed at a loss
+  sumWinHoldSeq: number; // Σ hold-duration (in seq) of winning legs
+  sumLossHoldSeq: number; // Σ hold-duration of losing legs → disposition: are losers held longer?
+  sumRMultiple6: Usd6; // Σ clamped R-multiple ×1e6 (realized / margin-at-risk) → risk-adjusted outcome
+  sumMaeRatio6: Usd6; // Σ (MAE / margin-at-risk) ×1e6 → how deep drawdowns ran before exit (risk-of-ruin)
+
+  // ---- tilt / revenge-sizing (spec §6-7) ----
+  lastLossNotional6: Usd6; // notional of the most recent losing exit (0 = none pending); arms the next open
+  revengeEvents: number; // opens that sized up sharply right after a loss
+  revengeStressEvents: number; // ...of those, ones opened into a stressed regime (penalized extra, §6)
 }
 
 // ---------- commands (the ONLY way anything enters the core) ----------

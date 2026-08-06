@@ -36,6 +36,7 @@ import {
   mmRequired,
   positionEquity,
   positionNotional,
+  unrealizedPnl,
   type RiskCoeffs,
 } from "./margin.js";
 import {
@@ -106,6 +107,14 @@ export function insuranceFundBalance(s: EngineState): bigint {
 
 // ---------- fill settlement ----------
 
+/** Clamp an R-multiple (×1e6) into [-5R, +10R] so a single outlier round-trip can't dominate the
+ *  running average the tier reads. */
+function clampR6(r6: bigint): bigint {
+  const MAX = 10_000_000n;
+  const MIN = -5_000_000n;
+  return r6 > MAX ? MAX : r6 < MIN ? MIN : r6;
+}
+
 /**
  * Settle one fill for one party in one market. Handles reduce, reduce-then-flip, increase,
  * open. reserveCol/reserveFee: portions of this party's order reservation consumed by the
@@ -125,6 +134,11 @@ function applyFill(
   const a = getOrCreateAccount(s, owner);
   a.reserved -= reserveCol + reserveFee;
   s.feePool6 += reserveFee;
+
+  // revenge-sizing is scored against a loss from a PRIOR fill, not a same-fill flip: snapshot the
+  // armed loss notional before this fill's own close leg (below) can overwrite it.
+  const armedLoss6 = owner !== INSURANCE_ACCOUNT ? a.behavior.lastLossNotional6 : 0n;
+  let lossThisFill = false;
 
   // behavior tracking for live tiers (skip the insurance fund's backstop fills)
   if (owner !== INSURANCE_ACCOUNT) {
@@ -155,6 +169,26 @@ function applyFill(
     const realized = ((px - pos.entryPx) * closeQty * dir) / 10_000_000_000n;
     a.realizedPnl6 += realized; // lifetime realized PnL counter (not cash — cash moves below)
     const share = (pos.isolatedCollateral * closeQty) / pos.qty;
+    // Round-trip behavioral capture (spec §5,§7): this reducing leg closes a round-trip — record
+    // hold time, R-multiple (realized / margin-at-risk) and the position's MAE, and classify
+    // win/loss. A loss arms the revenge check for the next entry. Reads pos.* before the mutations.
+    if (owner !== INSURANCE_ACCOUNT) {
+      const b = a.behavior;
+      b.roundTrips += 1;
+      const holdSeq = Math.max(0, s.seq - pos.openedSeq);
+      const marginAtRisk = share > 0n ? share : 1n; // collateral released = this leg's 1R risk unit
+      b.sumRMultiple6 += clampR6((realized * 1_000_000n) / marginAtRisk);
+      if (pos.worstAdverse6 > 0n) b.sumMaeRatio6 += (pos.worstAdverse6 * 1_000_000n) / marginAtRisk;
+      if (realized > 0n) {
+        b.winners += 1;
+        b.sumWinHoldSeq += holdSeq;
+      } else if (realized < 0n) {
+        b.losers += 1;
+        b.sumLossHoldSeq += holdSeq;
+        b.lastLossNotional6 = notionalUsd6(closeQty, pos.entryPx); // arm revenge for the next open
+        lossThisFill = true;
+      }
+    }
     pos.isolatedCollateral -= share;
     pos.qty -= closeQty;
 
@@ -182,6 +216,19 @@ function applyFill(
   }
 
   if (remainingQty > 0n) {
+    // Tilt / revenge-sizing (spec §6-7): the first entry after a PRIOR losing exit that sizes up
+    // sharply (≥1.5× the lost notional). A same-fill flip isn't revenge (lossThisFill guards it),
+    // and only this immediate next entry consumes the armed loss — into a stressed regime it's
+    // penalized extra.
+    if (owner !== INSURANCE_ACCOUNT && armedLoss6 > 0n && !lossThisFill) {
+      const entryNotional = notionalUsd6(remainingQty, px);
+      if (entryNotional > (armedLoss6 * 3n) / 2n) {
+        a.behavior.revengeEvents += 1;
+        const rm = marketState(s, market);
+        if (rm.gapCoeff6 >= STRESS_GAP_COEFF6 || rm.reduceOnly) a.behavior.revengeStressEvents += 1;
+      }
+      a.behavior.lastLossNotional6 = 0n; // consumed by this entry (whether or not it fired)
+    }
     const cur = a.positions.get(market);
     if (cur && cur.side === side) {
       // ---- increase ----
@@ -199,6 +246,7 @@ function applyFill(
         entryPx: px,
         isolatedCollateral: colRemaining,
         openedSeq: s.seq,
+        worstAdverse6: 0n,
       });
     }
   }
@@ -354,6 +402,8 @@ function liquidate(s: EngineState, evs: EngineEvent[], owner: Address, market: M
   const pos = a?.positions.get(market);
   if (!a || !pos) return;
   a.behavior.liquidations += 1; // behavioral signal for live tiers
+  // a liquidation is the sharpest loss — arm the revenge-sizing check against the trader's next entry.
+  if (owner !== INSURANCE_ACCOUNT) a.behavior.lastLossNotional6 = notionalUsd6(pos.qty, pos.entryPx);
   const mkt = marketState(s, market);
   const c = coeffsFor(s, market, a);
   const equityAtTrigger = positionEquity(pos, mkt.markPx8);
@@ -467,6 +517,21 @@ function liquidate(s: EngineState, evs: EngineEvent[], owner: Address, market: M
       seq: s.seq,
     },
   });
+}
+
+/** Update each open position's worst adverse excursion (MAE) at the current mark — the running peak
+ *  unrealized loss, read by the tier's risk-management signal at close. Replay-safe: driven by the
+ *  same sequenced oracle ticks as everything else. */
+function trackExcursions(s: EngineState, market: MarketId): void {
+  const mark = marketState(s, market).markPx8;
+  if (mark === 0n) return;
+  for (const [owner, a] of s.accounts) {
+    if (owner === INSURANCE_ACCOUNT) continue;
+    const pos = a.positions.get(market);
+    if (!pos) continue;
+    const up = unrealizedPnl(pos, mark);
+    if (up < 0n && -up > pos.worstAdverse6) pos.worstAdverse6 = -up;
+  }
 }
 
 /** scan one market for under-margin positions and liquidate them (cascades allowed) */
@@ -598,6 +663,7 @@ export function apply(s: EngineState, cmd: Command): EngineEvent[] {
       // stale-trade guard: mark = last trade only while it stays within 0.5% of index;
       // beyond that the index is the better truth (proper mark = f(index, mid, last) is an M2 item)
       if (bigabs(mkt.markPx8 - mkt.indexPx8) * 200n > mkt.indexPx8) mkt.markPx8 = mkt.indexPx8;
+      trackExcursions(s, cmd.market); // update MAE at the fresh mark before triggers/liquidation
       fireTriggers(s, evs, cmd.market); // stops/TPs fire before forced liquidation gets the chance
       liquidationScan(s, evs, cmd.market);
       break;

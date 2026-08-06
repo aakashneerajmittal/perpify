@@ -136,7 +136,25 @@ export function getOrCreateAccount(s: EngineState, owner: Address): Account {
       tier: null,
       lastNonce: -1,
       realizedPnl6: 0n,
-      behavior: { trades: 0, liquidations: 0, volumeUsd6: 0n, fundedUsd6: 0n, firstSeenSeq: s.seq, stressVolumeUsd6: 0n, stressTrades: 0 },
+      behavior: {
+        trades: 0,
+        liquidations: 0,
+        volumeUsd6: 0n,
+        fundedUsd6: 0n,
+        firstSeenSeq: s.seq,
+        stressVolumeUsd6: 0n,
+        stressTrades: 0,
+        roundTrips: 0,
+        winners: 0,
+        losers: 0,
+        sumWinHoldSeq: 0,
+        sumLossHoldSeq: 0,
+        sumRMultiple6: 0n,
+        sumMaeRatio6: 0n,
+        lastLossNotional6: 0n,
+        revengeEvents: 0,
+        revengeStressEvents: 0,
+      },
     };
     s.accounts.set(owner, a);
   }

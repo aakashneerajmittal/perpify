@@ -46,6 +46,7 @@ describe("margin math: the product-truth checks", () => {
       entryPx: px8(5000),
       isolatedCollateral: usd6(3000),
       openedSeq: 1,
+      worstAdverse6: 0n,
     };
     expect(unrealizedPnl(long, px8(5100))).toBe(usd6(200)); // +100 × 2
     expect(unrealizedPnl(long, px8(4900))).toBe(usd6(-200));
