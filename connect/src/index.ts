@@ -28,3 +28,17 @@ export {
   type ConnectSummary,
   type ConnectDeps,
 } from "./server.js";
+export { extractFeatures, featureVector, FEATURES, type FeatureMap, type FeatureName } from "./features.js";
+export {
+  scoreTrader,
+  toTierReading,
+  loadModel,
+  rawPredict,
+  scoreOf,
+  tierOf,
+  attribution,
+  nearestArchetype,
+  type DnaModel,
+  type ScoredTrader,
+  type TierFactor,
+} from "./score.js";

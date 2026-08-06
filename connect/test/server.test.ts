@@ -21,12 +21,21 @@ describe("runConnect", () => {
         };
       return { status: 200, json: { data: [] } };
     };
-    const res = await runConnect({ exchange: "okx", apiKey: "k", apiSecret: SECRET, passphrase: "p", account0: 1000 }, { transport, now });
+    const res = await runConnect(
+      { exchange: "okx", apiKey: "k", apiSecret: SECRET, passphrase: "p", account0: 1000, wallet: "0xWALLET" },
+      { transport, now },
+    );
     expect(res.ok).toBe(true);
     expect(res.summary!.roundTrips).toBe(1);
     expect(res.summary!.winRate).toBe(1);
     expect(res.roundTrips![0]!.pnl).toBeCloseTo(10, 9);
     expect(res.roundTrips![0]!.side).toBe(1);
+    // scoring + verified-tier hand-off come through
+    expect(res.scored!.tier).toMatch(/[A-E]/);
+    expect(res.scored!.score).toBeGreaterThanOrEqual(0);
+    expect(res.tierReading!.wallet).toBe("0xwallet");
+    expect(res.tierReading!.tierMult).toBe(res.scored!.tierMult);
+    expect(res.tierReading!.modelVersion).toContain("connect");
   });
 
   it("rejects missing credentials without touching the network", async () => {

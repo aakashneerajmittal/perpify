@@ -10,6 +10,7 @@ import http from "node:http";
 import type { Exchange, RoundTrip } from "./types.js";
 import { reconstruct, setEquity } from "./reconstruct.js";
 import { fetchTradeHistory, fetchTransport, type Creds, type Transport } from "./client.js";
+import { scoreTrader, toTierReading, type ScoredTrader } from "./score.js";
 
 export interface ConnectInput {
   exchange: Exchange;
@@ -18,6 +19,7 @@ export interface ConnectInput {
   passphrase?: string;
   symbols?: string[];
   account0?: number; // starting account value for equity drift (else estimated from peak notional)
+  wallet?: string; // if present, a verified-tier reading for this wallet is produced for hand-off
 }
 
 export interface ConnectSummary {
@@ -34,6 +36,8 @@ export interface ConnectResult {
   error?: string;
   summary?: ConnectSummary;
   roundTrips?: RoundTrip[];
+  scored?: ScoredTrader; // the Trader-DNA score/tier/archetype from the connected history
+  tierReading?: ReturnType<typeof toTierReading>; // verified provisional tier for hand-off (if wallet given)
 }
 
 export interface ConnectDeps {
@@ -79,7 +83,9 @@ export async function runConnect(input: ConnectInput, deps: ConnectDeps): Promis
   }
   const rts = reconstruct(fills);
   setEquity(rts, input.account0 && input.account0 > 0 ? input.account0 : estimateAccount(rts));
-  return { ok: true, summary: summarize(rts), roundTrips: rts };
+  const scored = scoreTrader(rts);
+  const tierReading = input.wallet ? toTierReading(input.wallet, scored) : undefined;
+  return { ok: true, summary: summarize(rts), roundTrips: rts, scored, tierReading };
 }
 
 /** node:http handler for POST /connect/history. Body is JSON ConnectInput. Secrets never logged. */
