@@ -136,7 +136,7 @@ export function getOrCreateAccount(s: EngineState, owner: Address): Account {
       tier: null,
       lastNonce: -1,
       realizedPnl6: 0n,
-      behavior: { trades: 0, liquidations: 0, volumeUsd6: 0n, fundedUsd6: 0n, firstSeenSeq: s.seq },
+      behavior: { trades: 0, liquidations: 0, volumeUsd6: 0n, fundedUsd6: 0n, firstSeenSeq: s.seq, stressVolumeUsd6: 0n, stressTrades: 0 },
     };
     s.accounts.set(owner, a);
   }

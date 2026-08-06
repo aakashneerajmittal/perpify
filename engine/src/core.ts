@@ -49,6 +49,7 @@ import {
   stateRoot,
   type EngineState,
 } from "./state.js";
+import { STRESS_GAP_COEFF6 } from "./risk/tierScore.js";
 import type { Account, Address, Command, EngineEvent, EngineParams, MarketId, Order, Side, Trade, TriggerOrder } from "./types.js";
 
 export { INSURANCE_ACCOUNT };
@@ -128,7 +129,18 @@ function applyFill(
   // behavior tracking for live tiers (skip the insurance fund's backstop fills)
   if (owner !== INSURANCE_ACCOUNT) {
     a.behavior.trades += 1;
-    a.behavior.volumeUsd6 += notionalUsd6(qty, px);
+    const notional = notionalUsd6(qty, px);
+    a.behavior.volumeUsd6 += notional;
+    // Regime tag: was the venue pricing elevated overnight/gap risk — or defensive in
+    // reduce-only — at the moment this filled? Scoring behavior against the risk the venue
+    // itself was broadcasting is the "scored through the cycle" signal (behavioral spec §6-7).
+    // Replay-safe: gap/confidence readings are sequenced in the same command log as fills, so
+    // the regime at each fill is reconstructed deterministically on replay-on-boot.
+    const mkt = marketState(s, market);
+    if (mkt.gapCoeff6 >= STRESS_GAP_COEFF6 || mkt.reduceOnly) {
+      a.behavior.stressTrades += 1;
+      a.behavior.stressVolumeUsd6 += notional;
+    }
   }
 
   let remainingQty = qty;

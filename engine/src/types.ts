@@ -176,6 +176,11 @@ export interface BehaviorStats {
   volumeUsd6: Usd6; // cumulative traded notional
   fundedUsd6: Usd6; // cumulative deposits (sizing baseline)
   firstSeenSeq: number; // tenure anchor (seq of first activity)
+  /** notional traded while the venue was pricing elevated overnight/gap risk (or was defensive
+   *  in reduce-only) — i.e. the regime the fill happened in. Powers regime-conditioned scoring:
+   *  the same turnover is a worse risk signal when it was piled on during the dark period. */
+  stressVolumeUsd6: Usd6;
+  stressTrades: number; // fills placed while the regime was stressed
 }
 
 // ---------- commands (the ONLY way anything enters the core) ----------

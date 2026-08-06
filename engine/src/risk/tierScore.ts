@@ -1,17 +1,32 @@
 /**
- * Behavioral tier scoring (tier-v0.2).
+ * Behavioral tier scoring (tier-v0.2.1).
  *
  * Cold start: a wallet with little/no history gets a *provisional* tier derived
  * deterministically from its address — so two wallets pay different margin immediately (the
  * demo), honestly labelled provisional. As the wallet actually trades, the live model takes
  * over and scores from observed behavior: liquidation history, realized-PnL discipline,
- * turnover vs funding (over-sizing), and tenure. Every tier ships with its named contributing
- * factors (explainability is the feature). Pure function of its inputs → replayable when
- * dispatched into the engine as a TierUpdate reading.
+ * turnover vs funding (over-sizing), regime-adjusted sizing, and tenure.
+ *
+ * Regime-conditioned ("scored through the cycle"): the venue broadcasts a gap coefficient that
+ * rises in the overnight/weekend dark period and under stress. The same turnover is a worse
+ * risk signal when it was piled on while that premium was elevated, so behavior is scored
+ * against the risk the venue itself was pricing at fill time (see BehaviorStats.stressVolumeUsd6,
+ * tagged in core.applyFill). Every tier ships with its named contributing factors (explainability
+ * is the feature). Pure function of its inputs → replayable when dispatched into the engine as a
+ * TierUpdate reading.
  */
 import type { BehaviorStats, TierCode } from "../types.js";
 
 export const TIER_MULT: Record<TierCode, number> = { A: 0.75, B: 0.9, C: 1.0, D: 1.2, E: 1.45 };
+
+/**
+ * Gap coefficient (1e6-scaled) at/above which the venue is pricing a material overnight/gap
+ * premium — the regime we treat as "stressed" for behavioral scoring. 1.15 ≈ a 15%+ dark-period
+ * premium, i.e. between a normal and a crisis weekend on the gap-v0.1 curve. Fills that land
+ * at/above this (or while the market is reduce-only) are tagged as stress activity in
+ * core.applyFill; scoreTier then penalizes over-sizing that concentrated in these windows.
+ */
+export const STRESS_GAP_COEFF6 = 1_150_000n;
 
 export interface TierResult {
   tier: TierCode;
@@ -73,7 +88,7 @@ function normalize(factors: { name: string; contribution: number }[]): { name: s
 export function scoreTier(owner: string, behavior: BehaviorStats, realizedPnl6: bigint, nowSeq: number): TierResult {
   const provisional = demoTierForAddress(owner);
   if (behavior.trades < 4) {
-    return { tier: provisional.tier, tierMult: provisional.tierMult, factors: provisional.factors, modelVersion: "tier-v0.2-provisional" };
+    return { tier: provisional.tier, tierMult: provisional.tierMult, factors: provisional.factors, modelVersion: "tier-v0.2.1-provisional" };
   }
 
   let score = 0;
@@ -111,12 +126,28 @@ export function scoreTier(owner: string, behavior: BehaviorStats, realizedPnl6: 
     factors.push({ name: "consistent-sizing", contribution: 0.2 });
   }
 
-  // 4) tenure — established behavior earns trust
+  // 4) regime-adjusted sizing ("scored through the cycle") — the venue prices a gap premium that
+  //    rises in the overnight/weekend dark period and under stress. The SAME turnover is a worse
+  //    risk signal when it was piled on while that premium was elevated. Over-sizing INTO the dark
+  //    period is the clearest tell of an undisciplined trader; sizing modestly through it earns
+  //    trust. Uses stress-tagged volume from core.applyFill (gap coeff ≥ STRESS_GAP_COEFF6 or
+  //    reduce-only at fill time).
+  const stressTurnover = Number(behavior.stressVolumeUsd6) / 1e6 / funded;
+  const stressShare = Number(behavior.volumeUsd6) > 0 ? Number(behavior.stressVolumeUsd6) / Number(behavior.volumeUsd6) : 0;
+  if (stressTurnover > 8) {
+    score -= 1.5;
+    factors.push({ name: "oversizing-into-stress", contribution: -0.35 });
+  } else if (behavior.stressTrades >= 3 && stressShare < 0.25) {
+    score += 0.75;
+    factors.push({ name: "disciplined-through-stress", contribution: 0.2 });
+  }
+
+  // 5) tenure — established behavior earns trust
   if (nowSeq - behavior.firstSeenSeq > 2000) {
     score += 0.5;
     factors.push({ name: "tenure", contribution: 0.15 });
   }
 
   const tier: TierCode = score >= 3 ? "A" : score >= 1.5 ? "B" : score >= 0 ? "C" : score >= -1.5 ? "D" : "E";
-  return { tier, tierMult: TIER_MULT[tier], factors: normalize(factors), modelVersion: "tier-v0.2-live" };
+  return { tier, tierMult: TIER_MULT[tier], factors: normalize(factors), modelVersion: "tier-v0.2.1-live" };
 }
