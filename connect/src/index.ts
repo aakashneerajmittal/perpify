@@ -9,3 +9,22 @@
 export type { Fill, RoundTrip, EnrichHooks, Exchange } from "./types.js";
 export { reconstruct, setEquity } from "./reconstruct.js";
 export { normalize, normalizeBinance, normalizeBybit, normalizeOkx, normSymbol } from "./normalizers.js";
+export { signBinanceQuery, signBybit, signOkx, okxTimestamp } from "./sign.js";
+export {
+  fetchTradeHistory,
+  fetchTransport,
+  type Creds,
+  type Transport,
+  type HttpRequest,
+  type HttpResponse,
+  type FetchOpts,
+} from "./client.js";
+export {
+  runConnect,
+  createConnectHandler,
+  startConnectServer,
+  type ConnectInput,
+  type ConnectResult,
+  type ConnectSummary,
+  type ConnectDeps,
+} from "./server.js";
