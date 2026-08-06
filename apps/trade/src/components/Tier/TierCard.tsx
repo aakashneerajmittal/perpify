@@ -129,7 +129,7 @@ export default function TierCard() {
             );
           })}
           <Box sx={{ fontFamily: MONO_FAMILY, fontSize: 9.5, color: DIM, mt: "10px", lineHeight: 1.6 }}>
-            {s.modelVersion || "tier-v0.1"} · provisional · refits as you trade
+            {s.modelVersion || "tier-v0.1"} · {String(s.modelVersion || "").includes("provisional") ? "provisional" : "live"} · refits as you trade
           </Box>
         </Box>
       </Collapse>

@@ -8,6 +8,16 @@ export interface TierFactor {
   name: string;
   contribution: number;
 }
+/** the last live tier move (behavior repriced margin) — drives the transient "margin moved"
+ *  moment. `seq` increments on every change so the toast fires even for a repeated transition. */
+export interface TierChange {
+  from: string;
+  to: string;
+  fromMult: number | null;
+  toMult: number;
+  factors: TierFactor[];
+  seq: number;
+}
 export interface SessionInfoState {
   market: string | null;
   tier: "A" | "B" | "C" | "D" | "E" | null;
@@ -20,6 +30,7 @@ export interface SessionInfoState {
   gapCoefficient: number | null;
   factors: TierFactor[];
   modelVersion: string | null;
+  lastChange: TierChange | null;
 }
 
 const initial: SessionInfoState = {
@@ -33,7 +44,8 @@ const initial: SessionInfoState = {
   takerFeeBps: null,
   gapCoefficient: null,
   factors: [],
-  modelVersion: null
+  modelVersion: null,
+  lastChange: null
 };
 
 export default function sessionInfo(state: SessionInfoState = initial, action: any): SessionInfoState {
@@ -53,6 +65,22 @@ export default function sessionInfo(state: SessionInfoState = initial, action: a
         gapCoefficient: typeof p.gapCoefficient === "number" ? p.gapCoefficient : state.gapCoefficient,
         factors: Array.isArray(p.factors) ? p.factors : state.factors,
         modelVersion: p.modelVersion ?? state.modelVersion
+      };
+    }
+    case "TIER_CHANGED": {
+      const p = action.payload || {};
+      if (!p.to) return state;
+      const seq = (state.lastChange?.seq ?? 0) + 1;
+      return {
+        ...state,
+        lastChange: {
+          from: p.from,
+          to: p.to,
+          fromMult: typeof p.fromMult === "number" ? p.fromMult : null,
+          toMult: typeof p.toMult === "number" ? p.toMult : state.tierMult,
+          factors: Array.isArray(p.factors) ? p.factors : [],
+          seq
+        }
       };
     }
     case "PERPIFY_LOGOUT":

@@ -6,6 +6,7 @@ import React from "react";
 import { Outlet } from "react-router-dom";
 import OnboardingStepTopBar from "@/components/UserVerification/KycVerification/KycNudges/OnboardingStepTopBar";
 import { useCheckLoginStatus } from "@/frontend-BL/services/ThirdPartyServices/SuperTokens/SuperTokenHelper";
+import TierChangeToast from "@/components/Tier/TierChangeToast";
 
 const Home = () => {
   const { isLoggedIn } = useCheckLoginStatus();
@@ -33,6 +34,7 @@ const Home = () => {
         </Box>
       </Box>
       <ConnectionStatus />
+      <TierChangeToast />
     </Box>
   );
 };

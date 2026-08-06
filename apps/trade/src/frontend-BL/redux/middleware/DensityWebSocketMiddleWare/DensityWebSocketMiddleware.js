@@ -417,7 +417,27 @@ const densitySocketMiddleware = () => {
     // named explainability factors. It uses a top-level `type` (not eventType), so
     // handle it before the eventType switch and store it for the tier UI.
     if (JSON.parse(event.data).type === "SESSION_INFO") {
-      store.dispatch({ type: "SESSION_INFO_UPDATE", payload: JSON.parse(event.data) });
+      const payload = JSON.parse(event.data);
+      // Detect a LIVE tier move — the trader's own behavior just repriced their margin — so the UI
+      // can surface the "your behavior changed your margin" moment. Compare against the tier we
+      // held before applying the update; the engine only pushes SESSION_INFO when it changed.
+      const prev = (store.getState() && store.getState().sessionInfo) || {};
+      const prevTier = prev.tier;
+      const prevMult = typeof prev.tierMult === "number" ? prev.tierMult : null;
+      store.dispatch({ type: "SESSION_INFO_UPDATE", payload });
+      const multMoved = prevMult !== null && typeof payload.tierMult === "number" && Math.abs(prevMult - payload.tierMult) > 1e-9;
+      if (prevTier && payload.tier && (prevTier !== payload.tier || multMoved)) {
+        store.dispatch({
+          type: "TIER_CHANGED",
+          payload: {
+            from: prevTier,
+            to: payload.tier,
+            fromMult: prevMult,
+            toMult: payload.tierMult,
+            factors: Array.isArray(payload.factors) ? payload.factors : []
+          }
+        });
+      }
       return;
     }
     // PERPIFY: order/trade history over the socket (no REST history endpoint). SNAPSHOT paints
