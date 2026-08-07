@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Perpify Trader-DNA read-only connect — the server surface that turns a trader's real exchange history into the round-trips the behavioral model scores. Data ingestion + reconstruction core (no secrets).",
   "scripts": {
+    "start": "tsx src/main.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

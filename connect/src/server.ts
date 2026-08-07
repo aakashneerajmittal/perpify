@@ -93,6 +93,11 @@ export function createConnectHandler(deps?: Partial<ConnectDeps>) {
   const transport = deps?.transport ?? fetchTransport;
   const now = deps?.now;
   return (req: http.IncomingMessage, res: http.ServerResponse): void => {
+    if (req.method === "GET" && req.url && req.url.startsWith("/health")) {
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ ok: true, service: "perpify-connect" }));
+      return;
+    }
     if (req.method !== "POST" || !req.url || !req.url.startsWith("/connect/history")) {
       res.writeHead(404, { "content-type": "application/json" });
       res.end(JSON.stringify({ ok: false, error: "not found" }));

@@ -1,0 +1,18 @@
+# Render service for the read-only connect surface. Deploy alongside the engine.
+# Aakash: create the service from this file, then set any secrets in the Render dashboard
+# (never commit real keys). Testnet needs no secrets; mainnet sets CONNECT_ATTEST_KEY.
+services:
+  - type: web
+    name: perpify-connect
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npx tsx src/main.ts
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "8787"
+      # Mainnet tier attestation (leave UNSET on testnet): the service signs each verified tier
+      # reading with this key; the engine verifies with its CONNECT_ATTEST_PUBKEY. Set in dashboard.
+      - key: CONNECT_ATTEST_KEY
+        sync: false
