@@ -21,7 +21,7 @@ import type { Command, MarketId, Side, Tif, TierCode } from "../types.js";
 import { px8 as toPx8, qty8 as toQty8, usd6 } from "../fixed.js";
 import { MARKET_IDS } from "../state.js";
 import { computeGapReading, gapScaleFor } from "../risk/gapCoefficient.js";
-import { demoTierForAddress, scoreTier } from "../risk/tierScore.js";
+import { demoTierForAddress, scoreTier, type ConnectProvisional } from "../risk/tierScore.js";
 import { orderFields, verifyOrder } from "../auth/eip712.js";
 import { getAddress } from "ethers";
 import { handleRest } from "./rest.js";
@@ -67,6 +67,9 @@ export class WireServer {
   /** demo: markets currently pinned to their weekend-elevated gap coefficient so the
    *  "prices the dark" story is demonstrable off-hours. main.ts's refresh skips these. */
   demoWeekendMarkets = new Set<MarketId>();
+  /** verified provisional tiers carried in from a read-only connect, per wallet — used as the
+   *  cold-start tier until live on-venue behavior takes over (see refreshTiers / scoreTier). */
+  private connectTiers = new Map<string, ConnectProvisional>();
   /** demo: markets forced into low-confidence reduce-only (new exposure blocked). */
   demoReduceOnlyMarkets = new Set<MarketId>();
 
@@ -319,6 +322,29 @@ export class WireServer {
       return;
     }
 
+    if (m?.type === "connect_tier") {
+      // A verified provisional tier from the read-only connect service (Trader-DNA scored the
+      // trader's real off-venue history). Seeds the cold-start tier and is applied immediately;
+      // live on-venue behavior overrides it once past the activity floor (see refreshTiers).
+      // TESTNET: trusted as sent. MAINNET TODO: verify a connect-service signature first.
+      const TIERS: TierCode[] = ["A", "B", "C", "D", "E"];
+      const tier = String(m.tier) as TierCode;
+      const tierMult = Number(m.tierMult);
+      if (!TIERS.includes(tier) || !isFinite(tierMult) || tierMult < 0.5 || tierMult > 2) return;
+      const factors = Array.isArray(m.factors)
+        ? m.factors.slice(0, 8).map((f: any) => ({ name: String(f?.name ?? "factor"), contribution: Number(f?.contribution) || 0 }))
+        : [];
+      const modelVersion = typeof m.modelVersion === "string" ? m.modelVersion : "dna-connect";
+      const cp: ConnectProvisional = { tier, tierMult, factors, modelVersion };
+      this.connectTiers.set(owner, cp);
+      this.dispatch({
+        kind: "TierUpdate",
+        reading: { wallet: owner, tier, tierMult, factors, modelVersion, signature: "0xconnect-verified" },
+      });
+      for (const sock of this.sockets.get(owner) ?? []) this.send(sock, this.bus.traderInfo(owner));
+      return;
+    }
+
     if (m?.type === "demo_gap") {
       // DEMO: simulate a severe reopen gap adverse to the sender's position in the named
       // market (default: the market they hold, else the flagship), big enough to breach
@@ -504,7 +530,7 @@ export class WireServer {
       if (wss.size === 0) continue;
       const a = this.bus.state.accounts.get(owner);
       if (!a) continue;
-      const r = scoreTier(owner, a.behavior, a.realizedPnl6, this.bus.state.seq);
+      const r = scoreTier(owner, a.behavior, a.realizedPnl6, this.bus.state.seq, this.connectTiers.get(owner));
       const cur = a.tier;
       const changed = !cur || cur.tier !== r.tier || Math.abs(Number(cur.tierMult6) / 1e6 - r.tierMult) > 1e-9;
       if (!changed) continue;

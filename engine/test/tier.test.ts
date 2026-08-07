@@ -146,3 +146,20 @@ describe("tier-v0.2.2 round-trip & tilt features (R-multiple, MAE, disposition, 
     expect(named(tooFew, "deep-drawdowns")).toBe(false);
   });
 });
+
+describe("connect provisional tier (read-only history hand-off)", () => {
+  const cp = { tier: "A" as const, tierMult: 0.75, factors: [{ name: "connected-history", contribution: 1 }], modelVersion: "dna-v0.1-connect" };
+
+  it("seeds the cold-start tier from verified connect history instead of the address demo tier", () => {
+    const cold = scoreTier(W, beh({ trades: 1 }), 0n, 100, cp);
+    expect(cold.tier).toBe("A");
+    expect(cold.tierMult).toBe(0.75);
+    expect(cold.modelVersion).toContain("connect");
+  });
+
+  it("is overridden by live on-venue behavior once past the activity floor", () => {
+    const live = scoreTier(W, beh({ trades: 30, liquidations: 2, volumeUsd6: usd6(5_000_000) }), usd6(-8000), 5000, cp);
+    expect(RANK.indexOf(live.tier)).toBeGreaterThan(RANK.indexOf("A")); // reckless → worse than the seeded A
+    expect(live.modelVersion).toContain("live");
+  });
+});

@@ -86,9 +86,35 @@ function normalize(factors: { name: string; contribution: number }[]): { name: s
  * Live behavioral tier from observed behavior. Below an activity floor it returns the
  * provisional address tier (immediate differentiation); above it, it scores from real signals.
  */
-export function scoreTier(owner: string, behavior: BehaviorStats, realizedPnl6: bigint, nowSeq: number): TierResult {
-  const provisional = demoTierForAddress(owner);
+/** A verified provisional tier carried in from a read-only connect (Trader-DNA scored the trader's
+ *  real off-venue history). Used as the cold-start provisional instead of the address-derived demo
+ *  tier — but only below the activity floor; once the wallet has real on-venue behavior, the live
+ *  model takes over and can override it. */
+export interface ConnectProvisional {
+  tier: TierCode;
+  tierMult: number;
+  factors: { name: string; contribution: number }[];
+  modelVersion?: string;
+}
+
+export function scoreTier(
+  owner: string,
+  behavior: BehaviorStats,
+  realizedPnl6: bigint,
+  nowSeq: number,
+  connectProvisional?: ConnectProvisional,
+): TierResult {
   if (behavior.trades < 4) {
+    // A verified connect tier (real history) beats the address-derived demo tier at cold start.
+    if (connectProvisional) {
+      return {
+        tier: connectProvisional.tier,
+        tierMult: connectProvisional.tierMult,
+        factors: connectProvisional.factors,
+        modelVersion: connectProvisional.modelVersion ?? "tier-connect-provisional",
+      };
+    }
+    const provisional = demoTierForAddress(owner);
     return { tier: provisional.tier, tierMult: provisional.tierMult, factors: provisional.factors, modelVersion: "tier-v0.2.2-provisional" };
   }
 
