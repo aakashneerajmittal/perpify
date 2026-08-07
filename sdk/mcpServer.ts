@@ -14,11 +14,12 @@
 import { createInterface } from "node:readline";
 import { randomBytes } from "node:crypto";
 import { imRequired, mmRequired, collateralRequired } from "../engine/src/margin.js";
-import { usd6, toCoeff6 } from "../engine/src/fixed.js";
+import { usd6, toCoeff6, px8, qty8 } from "../engine/src/fixed.js";
 import { DEFAULT_PARAMS } from "../engine/src/state.js";
 import { computeGapReading, gapScaleFor } from "../engine/src/risk/gapCoefficient.js";
 import { demoTierForAddress, TIER_MULT } from "../engine/src/risk/tierScore.js";
 import { backtestGapScenarios } from "./backtest.js";
+import { addressOf, buildSignedOrder } from "./signedOrder.js";
 import { PerpifyClient, fetchVenueHealth, type Market, type Side } from "./perpifyClient.js";
 import type { TierCode } from "../engine/src/types.js";
 
@@ -170,6 +171,25 @@ const TOOLS = [
     },
   },
   {
+    name: "place_order_signed",
+    description:
+      "Place an order with real wallet authentication (auth-v1): the order is EIP-712 signed by your private key and the engine verifies the recovered signer == this connection's owner before it touches the book. This is how AI agents authenticate on Perpify — by wallet, exactly like humans. The private key is used only to sign locally; it is NEVER sent to the venue or logged (only the signature + public address go on the wire). 'market' crosses IOC at the live mark; 'limit' rests GTC.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        privateKey: { type: "string", description: "0x wallet private key (testnet). Signs locally; never transmitted." },
+        symbol: { type: "string", description: "market id, e.g. NVDA-PERP" },
+        side: { type: "string", enum: ["buy", "sell"] },
+        qty: { type: "number", description: "size in contracts (base units)" },
+        orderType: { type: "string", enum: ["market", "limit"], description: "default 'market'" },
+        price: { type: "number", description: "required for limit; ignored for market" },
+        reduceOnly: { type: "boolean" },
+        nonce: { type: "number", description: "monotonic per wallet (replay guard); defaults to now()" },
+      },
+      required: ["privateKey", "symbol", "side", "qty"],
+    },
+  },
+  {
     name: "place_bracket",
     description: "Arm reduce-only Take-Profit and/or Stop-Loss triggers that close an existing position when the mark crosses. positionSide is the side you HOLD (long/short); the triggers fire on the opposite side.",
     inputSchema: {
@@ -295,6 +315,41 @@ async function callTool(name: string, args: any): Promise<any> {
       c.placeOrder({ symbol, side, qty: Number(args.qty), price: Number(price.toFixed(2)), tif, reduceOnly: !!args.reduceOnly });
     });
     return { placed: { symbol, side, qty: Number(args.qty), orderType, price: orderType === "limit" ? Number(price.toFixed(2)) : "market" }, ...res };
+  }
+  if (name === "place_order_signed") {
+    const privateKey = String(args.privateKey);
+    const owner = addressOf(privateKey).toLowerCase(); // connection token = the signer's address
+    const symbol = String(args.symbol);
+    const side = args.side as Side;
+    const orderType = (args.orderType ?? "market") as "market" | "limit";
+    let price = Number(args.price);
+    let tif: "GTC" | "IOC" = "GTC";
+    if (orderType === "market") {
+      const q = await getMark(symbol);
+      if (!(q.mark > 0)) throw new Error("no live mark for " + symbol);
+      price = side === "buy" ? q.mark * 1.05 : q.mark * 0.95; // cross the book (5% slippage cap)
+      tif = "IOC";
+    } else if (!(price > 0)) {
+      throw new Error("limit order needs a price");
+    }
+    const nonce = Number(args.nonce) > 0 ? Number(args.nonce) : Date.now(); // monotonic per wallet
+    const signed = await buildSignedOrder(privateKey, {
+      market: symbol,
+      side,
+      qty8: qty8(Number(args.qty)),
+      price8: px8(Number(price.toFixed(2))),
+      tif,
+      reduceOnly: !!args.reduceOnly,
+      nonce,
+    });
+    const res = await withClient<any>(owner, 1600, (c) => {
+      c.placeOrderSigned(signed);
+    });
+    // never echo the private key back; the signature is public
+    return {
+      placed: { symbol, side, qty: Number(args.qty), orderType, price: orderType === "limit" ? Number(price.toFixed(2)) : "market", auth: "eip712-signed", owner },
+      ...res,
+    };
   }
   if (name === "place_bracket") {
     const symbol = args.symbol as Market;

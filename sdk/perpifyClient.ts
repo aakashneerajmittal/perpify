@@ -110,6 +110,11 @@ export class PerpifyClient {
   placeOrder(o: OrderReq): boolean {
     return this.send({ type: "place_order", symbol: o.symbol, side: o.side, qty: o.qty, price: o.price, tif: o.tif ?? "GTC", reduceOnly: !!o.reduceOnly, id: o.id });
   }
+  /** Send a pre-signed EIP-712 order (build it with sdk/signedOrder.buildSignedOrder). The engine
+   *  verifies the signature recovers to this connection's owner before it touches the book. */
+  placeOrderSigned(signedMsg: Record<string, unknown>): boolean {
+    return this.send(signedMsg);
+  }
   cancel(symbol: Market, orderId: string): boolean {
     return this.send({ type: "cancel", symbol, orderId });
   }
