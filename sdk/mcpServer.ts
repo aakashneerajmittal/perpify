@@ -18,6 +18,7 @@ import { usd6, toCoeff6 } from "../engine/src/fixed.js";
 import { DEFAULT_PARAMS } from "../engine/src/state.js";
 import { computeGapReading, gapScaleFor } from "../engine/src/risk/gapCoefficient.js";
 import { demoTierForAddress, TIER_MULT } from "../engine/src/risk/tierScore.js";
+import { backtestGapScenarios } from "./backtest.js";
 import { PerpifyClient, fetchVenueHealth, type Market, type Side } from "./perpifyClient.js";
 import type { TierCode } from "../engine/src/types.js";
 
@@ -125,6 +126,23 @@ const TOOLS = [
     },
   },
   {
+    name: "backtest_gap",
+    description:
+      "Backtest a position against Perpify's gap model: initial/maintenance margin, max leverage and liquidation price at the LIVE gap coefficient AND at the full weekend dark-period premium under each volatility regime (calm→crisis). Shows how the dark period reprices your risk BEFORE you trade — required margin rises and max leverage falls through the cycle. Markets: " +
+      MARKETS.join(", ") + ".",
+    inputSchema: {
+      type: "object",
+      properties: {
+        market: { type: "string", description: "market id, e.g. NVDA-PERP" },
+        notionalUsd: { type: "number", description: "position notional in USD" },
+        side: { type: "string", enum: ["buy", "sell"], description: "default buy" },
+        tier: { type: "string", enum: ["A", "B", "C", "D", "E"], description: "behavioral tier (default C)" },
+        entryPrice: { type: "number", description: "entry price (default: live mark)" },
+      },
+      required: ["market", "notionalUsd"],
+    },
+  },
+  {
     name: "new_demo_wallet",
     description: "Generate a fresh testnet wallet address. It is auto-funded with 100,000 testnet USDC the first time it connects (e.g. via get_account or place_order). No real funds, no signing.",
     inputSchema: { type: "object", properties: {} },
@@ -228,6 +246,28 @@ async function callTool(name: string, args: any): Promise<any> {
       collateralRequired: col,
       maxLeverage: DEFAULT_PARAMS.maxLeverageByTier[tier],
       effectiveLeverage: col > 0 ? Math.round((Number(args.notionalUsd) / col) * 100) / 100 : null,
+    };
+  }
+  if (name === "backtest_gap") {
+    const market = String(args.market);
+    const tier: TierCode = (args.tier ?? "C") as TierCode;
+    const side = (args.side ?? "buy") as "buy" | "sell";
+    const notionalUsd = Number(args.notionalUsd);
+    // live mark + gap coefficient (entry defaults to the live mark)
+    const q = await getMark(market).catch(() => null);
+    const entryPx = Number(args.entryPrice) > 0 ? Number(args.entryPrice) : q?.mark;
+    if (!entryPx || !(entryPx > 0)) throw new Error("no entry price (pass entryPrice or ensure the market has a live mark)");
+    const scenarios = backtestGapScenarios({ market, entryPx, notionalUsd, side, tier, liveGapCoefficient: q?.gapCoefficient });
+    return {
+      market,
+      side,
+      tier,
+      notionalUsd,
+      entryPrice: entryPx,
+      liveGapCoefficient: q?.gapCoefficient ?? null,
+      session: q?.session ?? null,
+      scenarios,
+      note: "Perpify prices the overnight/weekend dark period INTO margin before the gap. Higher gap coefficient → more margin, lower max leverage, a farther liquidation buffer.",
     };
   }
   if (name === "new_demo_wallet") {

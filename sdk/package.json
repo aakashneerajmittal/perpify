@@ -6,14 +6,16 @@
   "description": "Perpify TypeScript client + Model Context Protocol server for the venue.",
   "scripts": {
     "mcp": "tsx mcpServer.ts",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "ws": "^8.21.1"
+    "ws": "^8.21.2"
   },
   "devDependencies": {
     "@types/ws": "^8.18.1",
     "tsx": "^4.19.0",
-    "typescript": "^5.6.0"
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
   }
 }
