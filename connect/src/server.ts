@@ -11,6 +11,7 @@ import type { Exchange, RoundTrip } from "./types.js";
 import { reconstruct, setEquity } from "./reconstruct.js";
 import { fetchTradeHistory, fetchTransport, type Creds, type Transport } from "./client.js";
 import { scoreTrader, toTierReading, type ScoredTrader } from "./score.js";
+import { signTierAttestation } from "./attest.js";
 
 export interface ConnectInput {
   exchange: Exchange;
@@ -85,6 +86,16 @@ export async function runConnect(input: ConnectInput, deps: ConnectDeps): Promis
   setEquity(rts, input.account0 && input.account0 > 0 ? input.account0 : estimateAccount(rts));
   const scored = scoreTrader(rts);
   const tierReading = input.wallet ? toTierReading(input.wallet, scored) : undefined;
+  // Mainnet attestation: sign the reading so the engine can verify it (decision 1). Testnet leaves
+  // CONNECT_ATTEST_KEY unset → the reading keeps its stub signature and the engine trusts as sent.
+  if (tierReading && process.env.CONNECT_ATTEST_KEY) {
+    const issuedAt = deps.now ? deps.now() : Date.now();
+    tierReading.issuedAt = issuedAt;
+    tierReading.signature = await signTierAttestation(
+      { wallet: tierReading.wallet, tier: tierReading.tier, tierMult: tierReading.tierMult, modelVersion: tierReading.modelVersion, issuedAt },
+      process.env.CONNECT_ATTEST_KEY,
+    );
+  }
   return { ok: true, summary: summarize(rts), roundTrips: rts, scored, tierReading };
 }
 

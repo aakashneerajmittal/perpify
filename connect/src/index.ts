@@ -29,6 +29,7 @@ export {
   type ConnectDeps,
 } from "./server.js";
 export { extractFeatures, featureVector, FEATURES, type FeatureMap, type FeatureName } from "./features.js";
+export { canonicalTierMessage, signTierAttestation, type TierAttestation } from "./attest.js";
 export {
   scoreTrader,
   toTierReading,

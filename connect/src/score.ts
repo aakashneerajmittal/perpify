@@ -175,6 +175,7 @@ export function toTierReading(wallet: string, scored: ScoredTrader, model: DnaMo
     tierMult: scored.tierMult,
     factors: scored.factors,
     modelVersion: `${model.modelVersion}-connect`,
-    signature: "0xconnect-verified",
+    issuedAt: 0, // set + signed in runConnect when CONNECT_ATTEST_KEY is configured (mainnet)
+    signature: "0xconnect-verified", // testnet stub; replaced by a real attestation on mainnet
   };
 }

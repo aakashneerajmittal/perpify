@@ -22,6 +22,7 @@ import { px8 as toPx8, qty8 as toQty8, usd6 } from "../fixed.js";
 import { MARKET_IDS } from "../state.js";
 import { computeGapReading, gapScaleFor } from "../risk/gapCoefficient.js";
 import { demoTierForAddress, scoreTier, type ConnectProvisional } from "../risk/tierScore.js";
+import { verifyTierAttestation } from "./attest.js";
 import { orderFields, verifyOrder } from "../auth/eip712.js";
 import { getAddress } from "ethers";
 import { handleRest } from "./rest.js";
@@ -335,6 +336,18 @@ export class WireServer {
         ? m.factors.slice(0, 8).map((f: any) => ({ name: String(f?.name ?? "factor"), contribution: Number(f?.contribution) || 0 }))
         : [];
       const modelVersion = typeof m.modelVersion === "string" ? m.modelVersion : "dna-connect";
+      // Mainnet attestation: if a connect-service pubkey is configured, require a valid, fresh
+      // signature over this exact reading (recovering to that address). Testnet leaves it unset
+      // and trusts as sent (matches the token=wallet testnet auth).
+      const attestPubkey = process.env.CONNECT_ATTEST_PUBKEY;
+      if (attestPubkey) {
+        const v = verifyTierAttestation(
+          { wallet: owner, tier, tierMult, modelVersion, issuedAt: Number(m.issuedAt) || 0 },
+          String(m.signature ?? ""),
+          attestPubkey,
+        );
+        if (!v.ok) return; // reject unattested / invalid connect tiers on mainnet
+      }
       const cp: ConnectProvisional = { tier, tierMult, factors, modelVersion };
       this.connectTiers.set(owner, cp);
       this.dispatch({
